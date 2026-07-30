@@ -29,6 +29,8 @@ export function KartuKerjaVisual({
   jumlahPekerjaanSelesai,
   rataRataPenilaian,
   jumlahPenilai,
+  bidangNama,
+  wilayahNama,
   className,
 }: {
   kartu: KartuKerja;
@@ -38,10 +40,13 @@ export function KartuKerjaVisual({
   jumlahPekerjaanSelesai: number;
   rataRataPenilaian: number;
   jumlahPenilai: number;
+  /** override lookup mock — pakai ini kalau kartu berasal dari data Supabase asli */
+  bidangNama?: string | null;
+  wilayahNama?: string | null;
   className?: string;
 }) {
-  const bidang = bidangKerja.find((b) => b.id === kartu.bidang_utama_id);
-  const wl = wilayah.find((w) => w.id === pekerja.wilayah_id);
+  const namaBidang = bidangNama ?? bidangKerja.find((b) => b.id === kartu.bidang_utama_id)?.nama ?? null;
+  const namaWilayah = wilayahNama ?? wilayah.find((w) => w.id === pekerja.wilayah_id)?.nama ?? null;
   const urlVerifikasi = `https://kita-kerja.example/verify/${kartu.token_publik}`;
 
   return (
@@ -70,11 +75,11 @@ export function KartuKerjaVisual({
           </span>
           <div>
             <h3 className="text-h2">{inisialkanNamaBelakang(pekerja.nama)}</h3>
-            <p className="text-body text-tanah-600">{bidang?.nama ?? "—"}</p>
-            {wl && (
+            <p className="text-body text-tanah-600">{namaBidang ?? "—"}</p>
+            {namaWilayah && (
               <p className="flex items-center gap-1 text-label text-tanah-500">
                 <MapPin className="size-4" aria-hidden />
-                {wl.nama} · pengalaman {kartu.pengalaman_tahun} tahun
+                {namaWilayah} · pengalaman {kartu.pengalaman_tahun} tahun
               </p>
             )}
           </div>

@@ -10,6 +10,7 @@ const BodySchema = z.object({
   code: z.string().length(6),
   intent: z.enum(["signin", "register"]),
   role: z.enum(["pekerja", "pemberi_kerja", "pendamping"]).optional(),
+  nama: z.string().trim().min(3).max(100).optional(),
 });
 
 export async function POST(request: Request) {
@@ -117,10 +118,16 @@ export async function POST(request: Request) {
     .single();
 
   if (existing) {
-    return NextResponse.json({
-      ok: true,
-      redirect: tujuanPeran(existing.peran),
-    });
+    let redirect = tujuanPeran(existing.peran);
+    if (existing.peran === "pekerja") {
+      const { data: kartu } = await service
+        .from("kartu_kerja")
+        .select("diterbitkan_pada")
+        .eq("pekerja_id", userId)
+        .maybeSingle();
+      if (!kartu?.diterbitkan_pada) redirect = "/worker/interview";
+    }
+    return NextResponse.json({ ok: true, redirect });
   }
 
   if (body.intent !== "register" || !body.role) {
@@ -132,7 +139,7 @@ export async function POST(request: Request) {
 
   const { error: insertError } = await service.from("pengguna").insert({
     id: userId,
-    nama: phone,
+    nama: body.nama?.trim() || phone,
     no_hp: phone,
     peran: body.role,
     status_verifikasi: "hp_terverifikasi",
@@ -145,8 +152,23 @@ export async function POST(request: Request) {
     );
   }
 
+  // Setiap pekerja butuh tepat satu baris kartu_kerja (kolom lain pakai
+  // default DB — kosong sampai Ngobrol Kerja/isi manual menerbitkannya).
+  if (body.role === "pekerja") {
+    const { error: kartuError } = await service.from("kartu_kerja").insert({
+      pekerja_id: userId,
+    });
+
+    if (kartuError) {
+      return NextResponse.json(
+        { ok: false, pesan: "Gagal menyiapkan kartu kerja." },
+        { status: 500 }
+      );
+    }
+  }
+
   return NextResponse.json({
     ok: true,
-    redirect: tujuanPeran(body.role),
+    redirect: body.role === "pekerja" ? "/worker/interview" : tujuanPeran(body.role),
   });
 }

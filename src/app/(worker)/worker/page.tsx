@@ -10,16 +10,15 @@ import {
 
 import { KeadaanKosong } from "@/component/bersama/KeadaanKosong";
 import { KartuLowongan } from "@/component/pekerja/KartuLowongan";
+import { createClient } from "@/lib/supabase/server-client";
+import { getDashboardPekerja } from "@/lib/data/kartu-kerja";
 import {
   formatTanggal,
-  kartuWarto,
-  keahlianWarto,
   kesepakatanAktifWarto,
   lamaran,
   lowongan,
   pekerjaUtama,
   saringanAman,
-  statistikWarto,
   upahTeks,
 } from "@/lib/mock";
 
@@ -30,9 +29,19 @@ import { INFO_STATUS_LAMARAN } from "./status-lamaran";
  * Beranda pekerja (`/worker`):
  * sapaan → status Kartu Kerja → kesepakatan aktif (menonjol, tanggal bayar)
  * → lowongan yang cocok → lamaran berjalan.
- * Semua data dari mock sentral; tidak ada panggilan API.
+ *
+ * Sapaan dan status Kartu Kerja pakai data asli (pengguna + kartu_kerja yang
+ * login). Kesepakatan/lowongan/lamaran masih dari mock Pak Warto — belum
+ * ada alur lamar-kerja asli, jadi sengaja belum diganti (proyek terpisah).
  */
-export default function HalamanBerandaPekerja() {
+export default async function HalamanBerandaPekerja() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const dashboard = await getDashboardPekerja(user!.id);
+  const kartuSudahTerbit = !!dashboard.kartu?.diterbitkan_pada;
+
   const lamaranWarto = lamaran.filter((l) => l.pekerja_id === pekerjaUtama.id);
   const idSudahDilamar = new Set(lamaranWarto.map((l) => l.lowongan_id));
 
@@ -50,7 +59,7 @@ export default function HalamanBerandaPekerja() {
     <div className="flex flex-col gap-10">
       {/* Sapaan */}
       <header>
-        <SapaanWaktu nama="Pak Warto" />
+        <SapaanWaktu nama={dashboard.pengguna.nama} />
         <p className="mt-1 text-body-lg text-tanah-600">
           Ini kabar pekerjaan Anda hari ini.
         </p>
@@ -99,24 +108,35 @@ export default function HalamanBerandaPekerja() {
         <h2 id="judul-kartu" className="text-h2 text-tanah-900">
           Kartu Kerja Anda
         </h2>
-        <Link
-          href="/worker/card"
-          className="mt-3 block rounded-2xl border border-tanah-200 bg-tanah-0 p-5 shadow-1 transition-shadow duration-(--duration-fast) hover:shadow-2 focus-visible:ring-[3px] focus-visible:ring-biru-600/40 focus-visible:outline-none"
-        >
-          <p className="flex items-center gap-2 text-h3 text-tanah-900">
-            <IdCard className="size-6 shrink-0 text-biru-600" aria-hidden />
-            Kartu aktif
-          </p>
-          <p className="mt-2 text-body text-tanah-600">
-            {statistikWarto.jumlahPekerjaanSelesai} pekerjaan selesai ·{" "}
-            {keahlianWarto.length} keahlian · pengalaman{" "}
-            {kartuWarto.pengalaman_tahun} tahun
-          </p>
-          <p className="mt-3 inline-flex items-center gap-2 text-body font-bold text-biru-600">
-            Lihat Kartu Kerja
-            <ArrowRight className="size-5" aria-hidden />
-          </p>
-        </Link>
+        {kartuSudahTerbit ? (
+          <Link
+            href="/worker/card"
+            className="mt-3 block rounded-2xl border border-tanah-200 bg-tanah-0 p-5 shadow-1 transition-shadow duration-(--duration-fast) hover:shadow-2 focus-visible:ring-[3px] focus-visible:ring-biru-600/40 focus-visible:outline-none"
+          >
+            <p className="flex items-center gap-2 text-h3 text-tanah-900">
+              <IdCard className="size-6 shrink-0 text-biru-600" aria-hidden />
+              Kartu aktif
+            </p>
+            <p className="mt-2 text-body text-tanah-600">
+              {dashboard.statistik.jumlahPekerjaanSelesai} pekerjaan selesai ·{" "}
+              {dashboard.keahlian.length} keahlian · pengalaman{" "}
+              {dashboard.kartu!.pengalaman_tahun} tahun
+            </p>
+            <p className="mt-3 inline-flex items-center gap-2 text-body font-bold text-biru-600">
+              Lihat Kartu Kerja
+              <ArrowRight className="size-5" aria-hidden />
+            </p>
+          </Link>
+        ) : (
+          <KeadaanKosong
+            className="mt-3"
+            ikon={IdCard}
+            judul="Anda belum punya Kartu Kerja"
+            penjelasan="Ceritakan pengalaman kerja Anda lewat Ngobrol Kerja — kira-kira 3 menit — dan Kartu Kerja Anda langsung terbit."
+            labelAksi="Mulai Ngobrol Kerja"
+            hrefAksi="/worker/interview"
+          />
+        )}
       </section>
 
       {/* Lowongan yang cocok */}
