@@ -158,6 +158,18 @@
   }
 }
 
+/* ============================================================
+   Cetak — Kartu Kerja dicetak dan dibawa ke calon pemberi kerja.
+   Semua chrome aplikasi (nav, header, aksi layar) disembunyikan.
+   ============================================================ */
+@media print {
+  nav,
+  header,
+  .tanpa-cetak {
+    display: none !important;
+  }
+}
+
 @layer utilities {
   .text-display {
     font-size: var(--text-display);
