@@ -48,6 +48,13 @@ function IsiHasil() {
   const [saringan, setSaringan] = useState<{ tingkat: string; temuan: TemuanSaringan[] } | null>(
     null,
   );
+  /** id lowongan sesudah percobaan tayang pertama — dipakai supaya percobaan
+   * ulang (mis. sesudah moderasi) MEMPERBARUI baris yang sama, bukan
+   * membuat baris baru setiap kali "Tayangkan" ditekan */
+  const [lowonganId, setLowonganId] = useState<string | null>(null);
+  /** nama keahlian yang disarankan AI (belum di-resolve ke keahlian_baku.id
+   * — ditampilkan sebagai info, tidak dikirim sebagai keahlian_ids) */
+  const [keahlianDisarankan, setKeahlianDisarankan] = useState<string[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -65,6 +72,15 @@ function IsiHasil() {
         const json = await res.json();
         if (!res.ok) throw new Error(json.pesan || "Gagal membaca tulisan Anda.");
         const d = json.data;
+        // "mulai" HARUS ISO yyyy-mm-dd untuk kolom `date` di Postgres — Gemini
+        // kadang mengembalikan teks bebas ("senin", "senin depan"). Tolak apa
+        // pun yang bukan ISO alih-alih mengirimnya mentah ke /api/jobs/publish
+        // (yang akan gagal insert dengan pesan tidak jelas bagi pemberi kerja).
+        const mulaiIsoValid = /^\d{4}-\d{2}-\d{2}$/.test(d.mulai ?? "");
+        const yangBelumJelas: string[] = d.yang_belum_jelas ?? [];
+        if (!mulaiIsoValid && d.mulai) {
+          yangBelumJelas.push("Tanggal mulai yang pasti");
+        }
         setBidang({
           judul: d.judul_baku ?? "",
           jenisKerja: d.jenis_kerja ?? "",
@@ -74,12 +90,13 @@ function IsiHasil() {
           keahlianIds: [],
           upah: d.upah_ditawarkan ? String(d.upah_ditawarkan) : "",
           satuanUpah: d.satuan_upah ?? "harian",
-          mulai: d.mulai ?? "",
+          mulai: mulaiIsoValid ? d.mulai : "",
           syaratTersirat: d.syarat_tersirat ?? [],
-          yangBelumJelas: d.yang_belum_jelas ?? [],
+          yangBelumJelas,
           kelengkapan: d.kelengkapan ?? 0,
           teksAsli: teks,
         });
+        setKeahlianDisarankan(d.keahlian_dibutuhkan ?? []);
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Terjadi kesalahan.");
         router.replace("/employer/post");
@@ -91,12 +108,19 @@ function IsiHasil() {
 
   async function tayangkan(paksa: boolean) {
     if (!bidang || menayangkan) return;
+    if (!bidang.judul.trim()) {
+      toast.error("Judul lowongan perlu diisi dulu.");
+      return;
+    }
     setMenayangkan(true);
     try {
       const res = await fetch("/api/jobs/publish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          // hadir sesudah percobaan pertama supaya percobaan ulang
+          // MEMPERBARUI baris yang sama, bukan membuat baris baru
+          lowongan_id: lowonganId ?? undefined,
           teks_asli: bidang.teksAsli,
           judul_baku: bidang.judul,
           jenis_kerja: bidang.jenisKerja || null,
@@ -113,11 +137,17 @@ function IsiHasil() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.pesan || "Gagal menayangkan lowongan.");
-      sessionStorage.removeItem(KUNCI_TEKS_LOWONGAN);
+      setLowonganId(json.data.lowongan_id);
       if (json.data.status === "moderasi") {
+        // JANGAN hapus sessionStorage di sini — bila pemberi kerja memuat
+        // ulang halaman saat memperbaiki temuan moderasi, teks aslinya
+        // harus tetap ada supaya useEffect di atas tidak mengalihkan ke
+        // /employer/post dan kehilangan tulisannya.
         setSaringan(json.data.saringan);
         setKeadaan("sunting");
       } else {
+        // status "tayang" adalah keadaan akhir — aman menghapus sekarang
+        sessionStorage.removeItem(KUNCI_TEKS_LOWONGAN);
         setKeadaan(paksa ? "tayang_dengan_penanda" : "tayang");
       }
     } catch (err) {
@@ -268,6 +298,27 @@ function IsiHasil() {
             <p className="rounded-lg bg-tanah-0 px-4 py-3 text-body text-tanah-600 shadow-1">
               Tidak ada syarat tersirat dari tulisan ini.
             </p>
+          )}
+          {keahlianDisarankan.length > 0 && (
+            <div>
+              <h3 className="text-label font-semibold text-biru-900">
+                Keahlian yang disarankan
+              </h3>
+              <ul className="mt-2 flex flex-wrap gap-2">
+                {keahlianDisarankan.map((k, i) => (
+                  <li
+                    key={i}
+                    className="rounded-pill bg-tanah-0 px-3 py-1 text-label text-tanah-800 shadow-1"
+                  >
+                    {k}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-1 text-label text-tanah-600">
+                Sekadar informasi — belum tersambung ke daftar keahlian baku,
+                jadi belum dipakai untuk mencocokkan pekerja.
+              </p>
+            </div>
           )}
         </section>
 

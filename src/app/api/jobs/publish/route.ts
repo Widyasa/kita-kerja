@@ -5,6 +5,9 @@ import { jalankanSaringan } from "@/lib/engine/screening-runner";
 import { z } from "zod";
 
 const BodySchema = z.object({
+  /** hadir bila menayangkan ulang lowongan yang sama (mis. setelah keadaan
+   * moderasi) — mencegah baris lowongan duplikat di setiap percobaan */
+  lowongan_id: z.string().uuid().optional(),
   teks_asli: z.string().min(3).max(5000),
   judul_baku: z.string().trim().min(3).max(200),
   jenis_kerja: z.enum(["harian", "borongan", "paruh_waktu", "menginap"]).nullable(),
@@ -33,27 +36,50 @@ export async function POST(request: Request) {
 
   const supabase = await createClient();
 
-  const { data: lowongan, error } = await supabase
-    .from("lowongan")
-    .insert({
-      pemberi_kerja_id: userOrResponse.id,
-      teks_asli: body.teks_asli,
-      judul_baku: body.judul_baku,
-      jenis_kerja: body.jenis_kerja,
-      jumlah_pekerja: body.jumlah_pekerja,
-      upah_ditawarkan: body.upah_ditawarkan,
-      satuan_upah: body.satuan_upah,
-      lokasi_teks: body.lokasi_teks,
-      wilayah_id: body.wilayah_id,
-      mulai: body.mulai,
-      syarat_tersirat: body.syarat_tersirat,
-      status: "draf",
-    })
-    .select("id")
-    .single();
+  const kolomLowongan = {
+    teks_asli: body.teks_asli,
+    judul_baku: body.judul_baku,
+    jenis_kerja: body.jenis_kerja,
+    jumlah_pekerja: body.jumlah_pekerja,
+    upah_ditawarkan: body.upah_ditawarkan,
+    satuan_upah: body.satuan_upah,
+    lokasi_teks: body.lokasi_teks,
+    wilayah_id: body.wilayah_id,
+    mulai: body.mulai,
+    syarat_tersirat: body.syarat_tersirat,
+  };
 
-  if (error || !lowongan) {
-    return NextResponse.json({ ok: false, pesan: "Gagal menyimpan lowongan." }, { status: 500 });
+  let lowongan: { id: string };
+  if (body.lowongan_id) {
+    // Percobaan ulang (mis. sesudah moderasi) — perbarui baris yang sama,
+    // jangan buat baris baru. Pastikan baris itu milik pemberi kerja ini.
+    const { data, error } = await supabase
+      .from("lowongan")
+      .update({ ...kolomLowongan, status: "draf" })
+      .eq("id", body.lowongan_id)
+      .eq("pemberi_kerja_id", userOrResponse.id)
+      .select("id")
+      .single();
+    if (error || !data) {
+      return NextResponse.json({ ok: false, pesan: "Gagal menyimpan lowongan." }, { status: 500 });
+    }
+    lowongan = data;
+    // Ganti daftar keahlian lama sebelum menulis yang baru
+    await supabase.from("lowongan_keahlian").delete().eq("lowongan_id", lowongan.id);
+  } else {
+    const { data, error } = await supabase
+      .from("lowongan")
+      .insert({
+        pemberi_kerja_id: userOrResponse.id,
+        ...kolomLowongan,
+        status: "draf",
+      })
+      .select("id")
+      .single();
+    if (error || !data) {
+      return NextResponse.json({ ok: false, pesan: "Gagal menyimpan lowongan." }, { status: 500 });
+    }
+    lowongan = data;
   }
 
   if (body.keahlian_ids.length > 0) {
