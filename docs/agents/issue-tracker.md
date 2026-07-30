@@ -11,9 +11,7 @@ Issues and PRDs for this repo live as GitHub issues. Use the `gh` CLI for all op
 - **Apply / remove labels**: `gh issue edit <number> --add-label "..."` / `--remove-label "..."`
 - **Close**: `gh issue close <number> --comment "..."`
 
-Infer the repo from `git remote -v` — `gh` does this automatically when run inside a clone.
-
-**Note:** this repo is not yet a git repository with a GitHub remote. Until `git init` + push to GitHub, pass `--repo <owner>/<repo>` to `gh` or run from the clone.
+Repo: `Widyasa/kita-kerja` — inferred automatically by `gh` inside the clone.
 
 ## When a skill says "publish to the issue tracker"
 

@@ -1,0 +1,3 @@
+# Geocoding via Nominatim with offline kecamatan fallback
+
+The matching engine needs distances, but informal addresses are free text and paid geocoders need billing accounts. We geocode `lokasi_teks` server-side via Nominatim (OpenStreetMap) exactly once at lowongan confirmation, caching the result in `lowongan.lat/lng` per its usage policy. If geocoding fails, returns nothing, or the network is down, we fall back to a seeded kecamatan-centroid table covering the seed wilayah, so distance — and therefore matching and the demo — never depend on a live external call. Workers pick their kecamatan from a list, so the worker side never calls the API. Distances are always displayed as approximations ("~7 km").

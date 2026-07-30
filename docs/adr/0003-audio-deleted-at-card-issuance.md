@@ -1,0 +1,3 @@
+# Audio recordings are deleted at Kartu Kerja issuance
+
+Interview audio is upload-first so a failed AI call never loses a worker's answer, but once the worker confirms their profile and the Kartu Kerja is issued, the evidence chain lives in `kutipan_bukti` text (validated against the transcript), not in audio. We auto-delete the session's recordings at issuance, sweep sessions stale over 7 days, and say so in the consent copy. The rejected alternative — keep recordings until the worker deletes them — preserves almost no value (a re-interview makes fresh recordings) while keeping a breachable archive of low-literacy users' voices that most workers will never bother to purge.
