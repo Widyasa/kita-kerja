@@ -2,7 +2,8 @@ import { BriefcaseBusiness, OctagonAlert } from "lucide-react";
 
 import { KeadaanKosong } from "@/component/bersama/KeadaanKosong";
 import { KartuLowongan } from "@/component/pekerja/KartuLowongan";
-import { lowongan, saringanAman } from "@/lib/mock";
+import { createClient } from "@/lib/supabase/server-client";
+import { daftarLowonganUntukPekerja } from "@/lib/data/lowongan";
 
 /**
  * Daftar lowongan (`/worker/jobs`):
@@ -11,13 +12,15 @@ import { lowongan, saringanAman } from "@/lib/mock";
  * - lowongan berisiko_tinggi SELALU di bagian bawah, dengan pembatas
  *   dan penanda jelas (Bagian 12: tetap ditampilkan, tidak disembunyikan)
  */
-export default function HalamanDaftarLowongan() {
-  const tayang = lowongan.filter((l) => l.status === "tayang");
-  const tingkat = (id: string) =>
-    saringanAman.find((s) => s.lowongan_id === id)?.tingkat;
+export default async function HalamanDaftarLowongan() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { lowongan: tayang } = await daftarLowonganUntukPekerja(user!.id);
 
-  const biasa = tayang.filter((l) => tingkat(l.id) !== "berisiko_tinggi");
-  const berisiko = tayang.filter((l) => tingkat(l.id) === "berisiko_tinggi");
+  const biasa = tayang.filter((l) => l.saringan?.tingkat !== "berisiko_tinggi");
+  const berisiko = tayang.filter((l) => l.saringan?.tingkat === "berisiko_tinggi");
 
   return (
     <div className="flex flex-col gap-6">
