@@ -7,6 +7,7 @@ import {
   BriefcaseBusiness,
   IdCard,
   History,
+  CircleUser,
   type LucideIcon,
 } from "lucide-react";
 
@@ -24,6 +25,7 @@ const TAB: { href: string; label: string; ikon: LucideIcon }[] = [
   { href: "/worker/jobs", label: "Lowongan", ikon: BriefcaseBusiness },
   { href: "/worker/card", label: "Kartu", ikon: IdCard },
   { href: "/worker/history", label: "Riwayat", ikon: History },
+  { href: "/worker/profile", label: "Profil", ikon: CircleUser },
 ];
 
 function tabAktif(pathname: string, href: string): boolean {
@@ -39,7 +41,7 @@ export function NavBawahPekerja() {
       aria-label="Navigasi utama pekerja"
       className="fixed inset-x-0 bottom-0 z-50 border-t border-tanah-200 bg-tanah-0 pb-[env(safe-area-inset-bottom)] pt-2"
     >
-      <ul className="mx-auto grid h-16 max-w-(--max-worker) grid-cols-5">
+      <ul className="mx-auto grid h-16 max-w-(--max-worker) grid-cols-6">
         {TAB.map((tab) => {
           const aktif = tabAktif(pathname, tab.href);
           const Ikon = tab.ikon;
