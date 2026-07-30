@@ -2,15 +2,13 @@
  * Data pekerja asli dari Supabase — pengganti mock Pak Warto di
  * /worker dan /worker/card. Server-only (dipanggil dari Server Component).
  *
- * Lapis kepercayaan keahlian butuh join pekerjaan → kesepakatan_kerja →
- * lowongan_keahlian yang RLS-nya belum mengizinkan pekerja membaca lowongan
- * pihak lain (lihat proyek jobs/agreements berikutnya). Sampai itu selesai,
- * setiap keahlian ditampilkan "diklaim" — sesuai kenyataan: belum ada
- * pekerjaan yang tercatat lewat aplikasi untuk memverifikasinya.
+ * Lapis kepercayaan diturunkan lewat RPC lapis_keahlian_pekerja (Task 1).
  */
 
 import { createClient } from "@/lib/supabase/server-client";
-import type { KartuKeahlian, KartuKerja, Pengguna } from "@/lib/mock/types";
+import type { KartuKerja, Pengguna } from "@/lib/mock/types";
+import { ambilKeahlianTampil } from "./keahlian";
+import type { KeahlianTampil } from "./types";
 
 export interface RiwayatPekerjaanRingkas {
   id: string;
@@ -25,7 +23,7 @@ export interface DashboardPekerja {
   wilayahNama: string | null;
   kartu: KartuKerja | null;
   bidangNama: string | null;
-  keahlian: KartuKeahlian[];
+  keahlian: KeahlianTampil[];
   statistik: {
     jumlahPekerjaanSelesai: number;
     rataRataPenilaian: number;
@@ -87,18 +85,9 @@ export async function getDashboardPekerja(userId: string): Promise<DashboardPeke
     bidangNama = bd?.nama ?? null;
   }
 
-  const { data: keahlianRows } = await supabase
-    .from("kartu_keahlian")
-    .select(
-      "id, kartu_id, keahlian_id, nama_diajukan, sebutan_pekerja, level, kutipan_bukti, keyakinan, sumber, dikonfirmasi_pekerja",
-    )
-    .eq("kartu_id", kartu.id)
-    .eq("dikonfirmasi_pekerja", true);
-
-  const keahlian: KartuKeahlian[] = (keahlianRows ?? []).map((k) => ({
-    ...k,
-    lapis: "diklaim" as const,
-  }));
+  const keahlian = await ambilKeahlianTampil(supabase, kartu.id, userId, {
+    hanyaDikonfirmasi: true,
+  });
 
   const { count: jumlahPekerjaanSelesai } = await supabase
     .from("pekerjaan")
