@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "seed": "tsx supabase/seed.ts",
+    "verify:foundation": "node scripts/verify-foundation.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
@@ -37,6 +39,7 @@
     "eslint-config-next": "16.2.12",
     "postcss": "8.5.25",
     "tailwindcss": "4.3.3",
+    "tsx": "^4.23.1",
     "typescript": "^5.8.3"
   }
 }
