@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { toast } from "sonner";
 import {
   ArrowLeft,
   ArrowRight,
   HandHeart,
   HardHat,
+  Loader2,
   MessageSquareText,
   UsersRound,
   type LucideIcon,
@@ -55,19 +57,58 @@ const PILIHAN_PERAN: {
 
 const NOMOR_LANGKAH: Record<Langkah, number> = { peran: 1, hp: 2, otp: 3 };
 
-/**
- * Daftar `/register` — tiga layar, satu tugas per layar:
- * 1. Pilih peran (kartu pilihan besar) → 2. nomor HP → 3. OTP (LangkahOTP).
- * DEMO: kode contoh ditampilkan, kode apa pun yang lengkap diterima,
- * lalu diarahkan ke beranda peran yang dipilih.
- */
 export default function RegisterPage() {
   const router = useRouter();
   const [langkah, setLangkah] = useState<Langkah>("peran");
   const [peran, setPeran] = useState<(typeof PILIHAN_PERAN)[number] | null>(null);
   const [noHp, setNoHp] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const hpValid = noHp.replace(/\D/g, "").length >= 9;
+
+  async function kirimOTP(e: React.FormEvent) {
+    e.preventDefault();
+    if (!hpValid || loading || !peran) return;
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: noHp }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.pesan || "Gagal mengirim OTP.");
+      setLangkah("otp");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Terjadi kesalahan.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function verifikasiOTP(kode: string) {
+    if (loading || !peran) return;
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone: noHp,
+          code: kode,
+          intent: "register",
+          role: peran.peran,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.pesan || "Verifikasi gagal.");
+      router.push(json.redirect);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Terjadi kesalahan.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="mx-auto flex w-full max-w-(--max-worker) flex-col gap-8 px-4 py-12 sm:py-16">
@@ -154,13 +195,7 @@ export default function RegisterPage() {
             </p>
           </header>
 
-          <form
-            className="flex flex-col gap-6"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (hpValid) setLangkah("otp");
-            }}
-          >
+          <form className="flex flex-col gap-6" onSubmit={kirimOTP}>
             <div className="flex flex-col gap-2">
               <label htmlFor="no-hp" className="text-label text-tanah-800">
                 Nomor HP
@@ -174,10 +209,15 @@ export default function RegisterPage() {
                 className="h-14 text-body-lg"
                 value={noHp}
                 onChange={(e) => setNoHp(e.target.value)}
+                disabled={loading}
               />
             </div>
-            <Button type="submit" variant="aksen" size="lg" disabled={!hpValid}>
-              <MessageSquareText aria-hidden />
+            <Button type="submit" variant="aksen" size="lg" disabled={!hpValid || loading}>
+              {loading ? (
+                <Loader2 className="animate-spin" aria-hidden />
+              ) : (
+                <MessageSquareText aria-hidden />
+              )}
               Kirim kode SMS
             </Button>
           </form>
@@ -187,6 +227,7 @@ export default function RegisterPage() {
             variant="ghost"
             className="self-start"
             onClick={() => setLangkah("peran")}
+            disabled={loading}
           >
             <ArrowLeft aria-hidden />
             Ganti peran
@@ -209,13 +250,14 @@ export default function RegisterPage() {
             — di versi demo, kode apa pun yang lengkap diterima.
           </p>
 
-          <LangkahOTP onSelesai={() => router.push(peran?.tujuan ?? "/worker")} />
+          <LangkahOTP onSelesai={verifikasiOTP} />
 
           <Button
             type="button"
             variant="ghost"
             className="self-start"
             onClick={() => setLangkah("hp")}
+            disabled={loading}
           >
             <ArrowLeft aria-hidden />
             Ganti nomor HP
