@@ -1,0 +1,8 @@
+# Batch generasi ilustrasi Kita Kerja — jalan setelah kuota image aktif
+$ErrorActionPreference = 'Continue'
+$style = "Warm flat editorial illustration, soft geometric shapes, subtle paper-grain texture. Strict limited palette: warm cream #FAF9F7 background, deep trustworthy blue #2547EB, warm amber #D97706 accents, warm earthy browns #5C5649 and #A69F92. No gradients, no neon, friendly rounded forms, generous negative space, dignified mood. Modern Indonesian civic-poster style, premium editorial quality."
+
+node .scratch/gen-image.mjs .scratch/ilus-tukang.jpg 3:2 "$style Subject: an Indonesian construction worker (tukang bangunan) wearing a simple cap, laying ceramic tiles on a wall with a trowel, mortar bucket beside him. Calm, focused, dignified. Waist-up, character off-center right."
+node .scratch/gen-image.mjs .scratch/ilus-art.jpg 3:2 "$style Subject: an Indonesian housekeeper (asisten rumah tangga) smiling gently while tidying a bright living room, holding folded laundry. Warm domestic scene, plants in background. Waist-up, character off-center left."
+node .scratch/gen-image.mjs .scratch/ilus-montir.jpg 3:2 "$style Subject: an Indonesian motorbike mechanic (montir) crouching beside a small matic motorcycle, holding a wrench, toolbox open. Confident posture. Character centered, bike to the right."
+node .scratch/gen-image.mjs .scratch/ilus-hero.jpg 21:9 "$style Wide panoramic scene: three Indonesian informal workers standing together with quiet pride at dawn — a construction worker with a trowel, a housekeeper with a tote bag, a gardener with pruning shears — soft skyline of a Javanese town behind them. Horizontal banner composition, characters right of center, wide empty cream space on the left for text."

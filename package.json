@@ -12,6 +12,7 @@
     "verify:foundation": "node scripts/verify-foundation.mjs"
   },
   "dependencies": {
+    "@google/genai": "^2.14.0",
     "@hookform/resolvers": "^5.0.1",
     "@radix-ui/react-slot": "^1.2.2",
     "@supabase/ssr": "^0.6.1",

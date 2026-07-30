@@ -1,0 +1,1 @@
+{"action":"evaluate","args":{"code":"(()=>{const p=document.querySelector(\"nextjs-portal\"); const sr=p.shadowRoot; const t=[...sr.querySelectorAll(\"h1,h2,h3,[class*=message],[class*=title],[class*=desc]\")].map(e=>e.textContent.trim().slice(0,300)).filter(Boolean); return JSON.stringify(t.slice(0,8));})()"},"session":"kk-visual-review"}

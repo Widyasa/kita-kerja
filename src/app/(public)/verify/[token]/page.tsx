@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import { BadgeLapis } from "@/component/bersama/BadgeLapis";
+import { LabelSection } from "@/component/bersama/LabelSection";
 import {
   bidangKerja,
   formatTanggal,
@@ -33,6 +34,11 @@ import {
  * TIDAK PERNAH menampilkan nomor HP, alamat lengkap, atau audio.
  * Nama belakang diinisialkan. Token apa pun selain token kartu aktif
  * mendapat SATU halaman sopan yang seragam (kasus tidak dibedakan).
+ *
+ * Bahasa visual "dossier": halaman dibaca seperti lembar bukti tercetak —
+ * identitas + panel keaslian dua kolom di desktop, angka sebagai strip
+ * ledger, keahlian dan riwayat sebagai baris ledger. Di bawah 1024px
+ * runtuh ke satu kolom dengan urutan baca yang sama.
  */
 export const metadata: Metadata = {
   title: "Verifikasi Kartu Kerja — Kita Kerja",
@@ -103,73 +109,83 @@ export default async function VerifyPage({
     .slice(0, 5);
 
   return (
-    <main className="mx-auto flex w-full max-w-(--max-worker) flex-col gap-8 px-4 py-10 sm:py-12">
-      {/* identitas — nama belakang diinisialkan */}
-      <div className="flex items-center gap-4">
-        <span
-          aria-hidden
-          className="flex size-16 shrink-0 items-center justify-center rounded-full bg-kuning-100 text-h2 font-bold text-kuning-800"
-        >
-          {inisialNama(pekerjaUtama.nama)}
-        </span>
-        <div>
-          <h1 className="text-h1">{inisialkanNamaBelakang(pekerjaUtama.nama)}</h1>
-          <p className="flex items-center gap-1.5 text-body text-tanah-600">
-            <MapPin className="size-4" aria-hidden />
-            {bidang?.nama ?? "—"} · {wl?.nama ?? "—"}
-          </p>
-        </div>
-      </div>
-
-      {/* panel keaslian */}
-      <div className="flex items-start gap-3 rounded-xl bg-aman-50 p-5">
-        <ShieldCheck className="mt-0.5 size-7 shrink-0 text-aman-600" aria-hidden />
-        <div>
-          <p className="text-h3 text-aman-600">Kartu ini asli dan masih berlaku</p>
-          {kartuWarto.diterbitkan_pada && (
-            <p className="text-label text-tanah-600">
-              Diterbitkan {formatTanggal(kartuWarto.diterbitkan_pada)}
+    <main className="mx-auto w-full max-w-5xl border-x border-tanah-200 px-14 py-16 max-lg:max-w-(--max-worker) max-lg:border-x-0 max-lg:px-4 max-lg:py-10">
+      {/* identitas + panel keaslian — dua kolom di desktop */}
+      <div className="grid grid-cols-[1.1fr_0.9fr] items-end gap-12 max-lg:grid-cols-1 max-lg:gap-6">
+        <div className="flex items-center gap-5">
+          <span
+            aria-hidden
+            className="flex size-20 shrink-0 items-center justify-center rounded-full bg-kuning-100 text-h1 font-bold text-kuning-800 max-lg:size-16"
+          >
+            {inisialNama(pekerjaUtama.nama)}
+          </span>
+          <div>
+            <LabelSection label="Kartu Kerja terverifikasi" />
+            <h1 className="mt-3 text-[clamp(2rem,3.6vw,3.25rem)] leading-[1.04] font-extrabold tracking-[-0.025em] text-balance">
+              {inisialkanNamaBelakang(pekerjaUtama.nama)}
+            </h1>
+            <p className="mt-2 flex items-center gap-1.5 text-body-lg text-tanah-600">
+              <MapPin className="size-4" aria-hidden />
+              {bidang?.nama ?? "—"} · {wl?.nama ?? "—"}
             </p>
-          )}
+          </div>
+        </div>
+
+        {/* panel keaslian */}
+        <div className="flex items-start gap-3 rounded-xl bg-aman-50 p-5">
+          <ShieldCheck className="mt-0.5 size-7 shrink-0 text-aman-600" aria-hidden />
+          <div>
+            <p className="text-h3 text-aman-600">Kartu ini asli dan masih berlaku</p>
+            {kartuWarto.diterbitkan_pada && (
+              <p className="text-label text-tanah-600">
+                Diterbitkan {formatTanggal(kartuWarto.diterbitkan_pada)}
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* bukti angka — display */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="flex flex-col items-center gap-1 rounded-xl bg-tanah-0 p-5 text-center shadow-1">
-          <p className="flex items-center gap-2 text-display text-biru-600 tabular-nums">
-            <BriefcaseBusiness className="size-8" aria-hidden />
+      {/* bukti angka — strip ledger rata kiri */}
+      <div className="mt-14 grid grid-cols-2 divide-x-2 divide-tanah-200 border-y-2 border-tanah-200 py-8 max-lg:py-6">
+        <div className="flex flex-col gap-2 pr-8 max-lg:pr-5">
+          <p className="flex items-center gap-2 text-[4rem] leading-none font-extrabold tracking-[-0.03em] text-biru-600 tabular-nums max-lg:text-[3rem]">
             {statistikWarto.jumlahPekerjaanSelesai}
           </p>
-          <p className="text-label text-tanah-600">pekerjaan selesai</p>
+          <p className="text-label flex items-center gap-1.5 text-tanah-600">
+            <BriefcaseBusiness className="size-4" aria-hidden />
+            pekerjaan selesai
+          </p>
         </div>
-        <div className="flex flex-col items-center gap-1 rounded-xl bg-tanah-0 p-5 text-center shadow-1">
-          <p className="flex items-center gap-2 text-display text-kuning-800 tabular-nums">
-            <Star className="size-8 fill-kuning-500 text-kuning-500" aria-hidden />
+        <div className="flex flex-col gap-2 px-8 max-lg:px-5">
+          <p className="flex items-center gap-2 text-[4rem] leading-none font-extrabold tracking-[-0.03em] text-kuning-800 tabular-nums max-lg:text-[3rem]">
             {statistikWarto.rataRataPenilaian.toFixed(1).replace(".", ",")}
           </p>
-          <p className="text-label text-tanah-600">
+          <p className="text-label flex items-center gap-1.5 text-tanah-600">
+            <Star className="size-4 fill-kuning-500 text-kuning-500" aria-hidden />
             dari {statistikWarto.jumlahPenilai} penilai
           </p>
         </div>
       </div>
 
-      {/* keahlian dikelompokkan per lapis kepercayaan */}
-      <section className="flex flex-col gap-6">
+      {/* keahlian dikelompokkan per lapis kepercayaan — baris ledger */}
+      <section className="mt-14 flex flex-col divide-y-2 divide-tanah-200 border-y-2 border-tanah-200">
         {URUTAN_LAPIS.map((lapis) => {
           const daftar = keahlianWarto.filter((k) => k.lapis === lapis);
           if (daftar.length === 0) return null;
           return (
-            <div key={lapis} className="flex flex-col gap-3">
-              <div className="flex flex-wrap items-center gap-3">
+            <div
+              key={lapis}
+              className="grid grid-cols-[0.4fr_0.6fr] gap-10 py-8 max-lg:grid-cols-1 max-lg:gap-3"
+            >
+              <div className="flex flex-wrap content-start items-center gap-3">
                 <BadgeLapis lapis={lapis} />
                 <h2 className="text-h3">{JUDUL_LAPIS[lapis]}</h2>
               </div>
-              <ul className="flex flex-col gap-2">
+              <ul className="flex flex-col divide-y divide-tanah-200">
                 {daftar.map((k) => (
                   <li
                     key={k.id}
-                    className="rounded-lg bg-tanah-0 px-4 py-3 text-body font-semibold shadow-1"
+                    className="py-3 text-body font-semibold first:pt-0 last:pb-0 max-lg:py-3 max-lg:first:pt-3 max-lg:last:pb-3"
                   >
                     {namaKeahlian(k)}
                   </li>
@@ -180,21 +196,29 @@ export default async function VerifyPage({
         })}
       </section>
 
-      {/* pekerjaan terakhir yang dikonfirmasi — tanpa nama pemberi kerja */}
-      <section className="flex flex-col gap-3">
-        <h2 className="text-h3">Pekerjaan terakhir yang dikonfirmasi</h2>
-        <ul className="flex flex-col divide-y divide-tanah-200 rounded-xl bg-tanah-0 shadow-1">
+      {/* pekerjaan terakhir yang dikonfirmasi — ledger tanggal kiri,
+          tanpa nama pemberi kerja */}
+      <section className="mt-14">
+        <h2 className="text-h2">Pekerjaan terakhir yang dikonfirmasi</h2>
+        <ul className="mt-6 flex flex-col divide-y divide-tanah-200 border-y border-tanah-200">
           {pekerjaanTerakhir.map((p) => {
             const nama = keahlianBaku.find((b) => b.id === p.keahlian_id)?.nama_baku ?? "Pekerjaan";
             const lokasiKecil = p.judul.split(",").pop()?.trim();
             const wlKerja = wilayah.find((w) => w.id === p.wilayah_id);
             return (
-              <li key={p.id} className="flex flex-col gap-0.5 px-4 py-3">
-                <span className="text-body font-semibold">{nama}</span>
-                <span className="text-label text-tanah-600">
+              <li
+                key={p.id}
+                className="grid grid-cols-[10rem_1fr] items-baseline gap-6 py-4 max-lg:grid-cols-1 max-lg:gap-0.5"
+              >
+                <span className="font-mono text-label font-bold tracking-[0.04em] text-tanah-600 tabular-nums">
                   {formatterBulan.format(new Date(p.selesai_pada))}
-                  {lokasiKecil ? ` · ${lokasiKecil}` : ""}
-                  {wlKerja ? `, ${wlKerja.nama}` : ""}
+                </span>
+                <span className="text-body">
+                  <span className="font-semibold">{nama}</span>
+                  <span className="text-tanah-600">
+                    {lokasiKecil ? ` · ${lokasiKecil}` : ""}
+                    {wlKerja ? `, ${wlKerja.nama}` : ""}
+                  </span>
                 </span>
               </li>
             );
@@ -203,7 +227,7 @@ export default async function VerifyPage({
       </section>
 
       {/* disclaimer jujur */}
-      <div className="flex items-start gap-3 rounded-xl border border-tanah-200 bg-tanah-0 p-5">
+      <div className="mt-14 flex items-start gap-3 rounded-xl border border-tanah-200 bg-tanah-0 p-5">
         <Info className="mt-0.5 size-6 shrink-0 text-tanah-500" aria-hidden />
         <p className="text-body text-tanah-700">
           Kita Kerja menampilkan riwayat yang dikonfirmasi kedua pihak. Kami
@@ -211,7 +235,7 @@ export default async function VerifyPage({
         </p>
       </div>
 
-      <p className="text-center text-label text-tanah-500">
+      <p className="mt-10 border-t border-tanah-200 pt-6 text-center text-label text-tanah-500">
         Halaman ini dibagikan sendiri oleh pemilik kartu dan bisa dinonaktifkan
         kapan saja.{" "}
         <Link

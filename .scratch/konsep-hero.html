@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Konsep Hero — Kita Kerja</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --biru-600:#2547EB; --biru-50:#EFF4FF; --biru-100:#DBE6FE;
+    --kuning-600:#D97706; --kuning-100:#FEF3C7; --kuning-800:#92400E;
+    --tanah-50:#FAF9F7; --tanah-100:#F3F1ED; --tanah-200:#E6E2DA; --tanah-500:#7D766A;
+    --tanah-600:#5C5649; --tanah-900:#1A1814;
+  }
+  *{margin:0;box-sizing:border-box}
+  body{font-family:"Plus Jakarta Sans",sans-serif;background:var(--tanah-50);color:var(--tanah-900)}
+  .wrap{max-width:1200px;margin:0 auto;padding:0 32px}
+
+  /* ===== NAV ===== */
+  nav{display:flex;justify-content:space-between;align-items:center;padding:28px 0}
+  .logo{font-weight:800;font-size:22px;letter-spacing:-.02em}
+  .logo em{font-style:normal;color:var(--biru-600)}
+  .masuk{font-weight:700;font-size:17px;color:var(--biru-600);text-decoration:none;border:2px solid var(--biru-600);border-radius:14px;padding:10px 22px}
+
+  /* ===== HERO: off-grid editorial, bukan kiri-teks kanan-gambar ===== */
+  .hero{position:relative;padding:56px 0 96px}
+  .mikro{font-family:"JetBrains Mono",monospace;font-size:13px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--kuning-600)}
+  h1{font-size:clamp(56px,7.2vw,104px);line-height:.98;font-weight:800;letter-spacing:-.035em;max-width:11ch;margin-top:24px}
+  h1 .bukti{color:var(--biru-600)}
+  h1 .garis{position:relative;white-space:nowrap}
+  h1 .garis::after{content:"";position:absolute;left:0;right:0;bottom:.08em;height:.14em;background:var(--kuning-100);z-index:-1;border-radius:99px}
+  .sub{font-size:21px;line-height:1.5;color:var(--tanah-600);max-width:44ch;margin-top:32px}
+  .cta-row{display:flex;gap:16px;margin-top:40px;flex-wrap:wrap}
+  .cta{display:inline-flex;align-items:center;gap:12px;height:64px;padding:0 32px;border-radius:18px;font-size:20px;font-weight:700;text-decoration:none}
+  .cta-utama{background:var(--kuning-600);color:var(--tanah-900);box-shadow:0 8px 24px rgba(217,119,6,.28)}
+  .cta-kedua{border:2.5px solid var(--biru-600);color:var(--biru-600)}
+
+  /* slot ilustrasi: mengambang off-grid, tumpang tindih dengan teks */
+  .hero-fig{position:absolute;right:-40px;top:-24px;width:min(52vw,640px);aspect-ratio:3/2;border-radius:28px;background:var(--biru-50);overflow:hidden;transform:rotate(1.5deg);box-shadow:0 24px 64px rgba(26,24,20,.10)}
+  .hero-fig img{width:100%;height:100%;object-fit:cover;display:block}
+  .hero-fig .kosong{display:grid;place-items:center;height:100%;color:var(--biru-600);font-weight:700;font-size:18px;text-align:center;padding:24px}
+
+  /* ===== STRIP STATISTIK: terang, angka sebagai momen ===== */
+  .stat{border-top:2px solid var(--tanah-200);border-bottom:2px solid var(--tanah-200);padding:72px 0;display:grid;grid-template-columns:1.2fr .8fr;gap:48px;align-items:end}
+  .stat .angka{font-size:clamp(72px,9vw,140px);font-weight:800;letter-spacing:-.04em;line-height:.9;color:var(--biru-600)}
+  .stat .angka small{display:block;font-size:clamp(20px,2vw,28px);letter-spacing:0;color:var(--tanah-900);margin-top:16px;font-weight:700;line-height:1.3;max-width:18ch}
+  .stat p{font-size:19px;line-height:1.55;color:var(--tanah-600)}
+  .stat p b{color:var(--tanah-900)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav><div class="logo">Kita<em>Kerja</em></div><a class="masuk" href="#">Masuk</a></nav>
+
+  <header class="hero">
+    <p class="mikro">Portal kerja informal Indonesia</p>
+    <h1>Pengalaman Anda <span class="bukti">belum punya <span class="garis">bukti.</span></span><br>Sekarang punya.</h1>
+    <p class="sub">Ceritakan pekerjaan Anda dengan suara. Kita Kerja mengubahnya menjadi Kartu Kerja yang bisa dibawa ke mana pun — dan dipercaya siapa pun.</p>
+    <div class="cta-row">
+      <a class="cta cta-utama" href="#">Saya cari kerja →</a>
+      <a class="cta cta-kedua" href="#">Saya butuh pekerja</a>
+    </div>
+    <div class="hero-fig"><div class="kosong">[ ilustrasi-hero.jpg<br>menyusul setelah kuota aktif ]</div></div>
+  </header>
+
+  <section class="stat">
+    <div class="angka">87,74<small>juta pekerja informal di Indonesia</small></div>
+    <p><b>Bekerja tanpa satu pun bukti pengalaman.</b> Setiap pindah tempat, reputasi kembali ke nol. Kita Kerja mengubah pengalaman yang sudah ada menjadi bukti yang bisa dibawa ke mana pun.</p>
+  </section>
+</div>
+</body>
+</html>

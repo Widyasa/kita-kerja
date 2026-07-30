@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Mic, PencilLine } from "lucide-react";
 
+import { LabelSection } from "@/component/bersama/LabelSection";
 import { KartuPertanyaan } from "@/component/pekerja/KartuPertanyaan";
 import { TombolRekam } from "@/component/pekerja/TombolRekam";
 import { Button } from "@/component/ui/button";
@@ -28,6 +29,10 @@ import {
  *    gagal (3 pilihan)          menyusun ──► /worker/interview/result
  *
  * Progres disimpan di sessionStorage — tahan refresh di tengah wawancara.
+ *
+ * Bahasa visual "dossier": desktop dua kolom — percakapan di kiri, jawaban
+ * terekam sebagai panel ledger di kanan (dibatasi garis vertikal). Di bawah
+ * 1024px runtuh ke satu kolom: pertanyaan → rekam → jawaban sebelumnya.
  */
 
 type Tahap = "pengantar" | "putaran" | "berpikir" | "gagal" | "menyusun";
@@ -152,53 +157,59 @@ export default function HalamanNgobrolKerja() {
   // ============ PENGANTAR + IZIN ============
   if (tahap === "pengantar") {
     return (
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-12">
         <div className="flex items-center justify-between gap-2">
           <Button variant="ghost" size="sm" onClick={() => router.push("/worker")}>
             <ArrowLeft aria-hidden />
             Kembali
           </Button>
-          <p className="mikro text-tanah-500">Langkah 1 dari 3</p>
+          <LabelSection label="Langkah 1 dari 3" />
         </div>
 
-        <div className="flex flex-col gap-4">
-          <h1 className="text-h1">Kita ngobrol dulu ya</h1>
-          <p className="text-body-lg text-tanah-700">
-            Saya akan tanya beberapa hal tentang pekerjaan Bapak/Ibu. Jawab pakai
-            suara saja, tidak perlu menulis.
-          </p>
-          <p className="text-body-lg text-tanah-700">
-            Boleh pakai bahasa daerah. Kira-kira 3 menit.
-          </p>
-        </div>
-
-        <div className="flex items-start gap-4 rounded-xl border border-tanah-200 bg-tanah-0 p-5 shadow-1">
-          <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-biru-50 text-biru-600">
-            <Mic className="size-6" aria-hidden />
-          </span>
-          <div>
-            <p className="text-body font-semibold text-tanah-900">
-              Kita perlu izin memakai mikrofon
+        <div className="grid grid-cols-[1.05fr_0.95fr] items-start gap-14 max-lg:grid-cols-1 max-lg:gap-8">
+          <div className="flex flex-col gap-4">
+            <h1 className="text-[clamp(2rem,3.6vw,3.25rem)] leading-[1.04] font-extrabold tracking-[-0.025em] text-balance">
+              Kita ngobrol dulu ya
+            </h1>
+            <p className="max-w-[42ch] text-body-lg text-balance text-tanah-700">
+              Saya akan tanya beberapa hal tentang pekerjaan Bapak/Ibu. Jawab
+              pakai suara saja, tidak perlu menulis.
             </p>
-            <p className="mt-1 text-body text-tanah-600">
-              Rekaman hanya untuk membuat Kartu Kerja Anda. Bisa dihapus kapan
-              saja.
+            <p className="max-w-[42ch] text-body-lg text-balance text-tanah-700">
+              Boleh pakai bahasa daerah. Kira-kira 3 menit.
             </p>
           </div>
+
+          <div className="flex flex-col gap-4 lg:border-l lg:border-tanah-200 lg:pl-14">
+            <div className="flex items-start gap-4 rounded-xl border border-tanah-200 bg-tanah-0 p-5 shadow-1">
+              <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-biru-50 text-biru-600">
+                <Mic className="size-6" aria-hidden />
+              </span>
+              <div>
+                <p className="text-body font-semibold text-tanah-900">
+                  Kita perlu izin memakai mikrofon
+                </p>
+                <p className="mt-1 text-body text-tanah-600">
+                  Rekaman hanya untuk membuat Kartu Kerja Anda. Bisa dihapus
+                  kapan saja.
+                </p>
+              </div>
+            </div>
+
+            <Button size="lg" className="w-full" onClick={mintaIzinLaluMulai}>
+              <Mic aria-hidden />
+              Mulai ngobrol
+            </Button>
+
+            {/* Jalur manual ditawarkan SEJAK AWAL, bukan setelah gagal */}
+            <Button variant="link" asChild className="min-h-12 w-full">
+              <Link href="/worker/interview/manual">
+                Lebih suka menulis sendiri? Isi manual
+                <ArrowRight aria-hidden />
+              </Link>
+            </Button>
+          </div>
         </div>
-
-        <Button size="lg" className="w-full" onClick={mintaIzinLaluMulai}>
-          <Mic aria-hidden />
-          Mulai ngobrol
-        </Button>
-
-        {/* Jalur manual ditawarkan SEJAK AWAL, bukan setelah gagal */}
-        <Button variant="link" asChild className="min-h-12 w-full">
-          <Link href="/worker/interview/manual">
-            Lebih suka menulis sendiri? Isi manual
-            <ArrowRight aria-hidden />
-          </Link>
-        </Button>
       </div>
     );
   }
@@ -206,15 +217,18 @@ export default function HalamanNgobrolKerja() {
   // ============ GAGAL — tepat tiga pilihan, tanpa galat teknis ============
   if (tahap === "gagal") {
     return (
-      <div className="flex flex-col gap-6">
+      <div className="grid grid-cols-[1.05fr_0.95fr] items-start gap-14 max-lg:grid-cols-1 max-lg:gap-8">
         <div className="flex flex-col gap-4">
-          <h1 className="text-h1">Mikrofonnya belum bisa dipakai</h1>
-          <p className="text-body-lg text-tanah-700">
-            Tidak apa-apa, ini sering terjadi. Pilih salah satu di bawah ini ya.
+          <h1 className="text-[clamp(2rem,3.6vw,3.25rem)] leading-[1.04] font-extrabold tracking-[-0.025em] text-balance">
+            Mikrofonnya belum bisa dipakai
+          </h1>
+          <p className="max-w-[42ch] text-body-lg text-balance text-tanah-700">
+            Tidak apa-apa, ini sering terjadi. Pilih salah satu di bawah ini
+            ya.
           </p>
         </div>
 
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 lg:border-l lg:border-tanah-200 lg:pl-14">
           <Button size="lg" className="w-full" onClick={mintaIzinLaluMulai}>
             <Mic aria-hidden />
             Coba rekam lagi
@@ -241,7 +255,7 @@ export default function HalamanNgobrolKerja() {
 
   // ============ PUTARAN WAWANCARA (+ BERPIKIR) ============
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-10">
       <div className="flex items-center justify-between gap-2">
         <Button variant="ghost" size="sm" onClick={() => router.push("/worker")}>
           <ArrowLeft aria-hidden />
@@ -249,33 +263,43 @@ export default function HalamanNgobrolKerja() {
         </Button>
       </div>
 
-      <KartuPertanyaan
-        nomor={nomorTampil}
-        total={TOTAL}
-        pertanyaan={putaranTampil.pertanyaan}
-      />
+      <div className="grid grid-cols-[1.1fr_0.9fr] items-start gap-14 max-lg:grid-cols-1 max-lg:gap-8">
+        <div className="flex flex-col gap-6">
+          <KartuPertanyaan
+            nomor={nomorTampil}
+            total={TOTAL}
+            pertanyaan={putaranTampil.pertanyaan}
+          />
 
-      {jawabanTampil.length > 0 && <JawabanSebelumnya jawaban={jawabanTampil} />}
+          {tahap === "berpikir" ? (
+            <PesanProses teks="Sebentar ya, saya dengarkan dulu…" />
+          ) : (
+            <TombolRekam mode="tahan" onSelesai={rekamSelesai} className="py-2" />
+          )}
 
-      {tahap === "berpikir" ? (
-        <PesanProses teks="Sebentar ya, saya dengarkan dulu…" />
-      ) : (
-        <TombolRekam mode="tahan" onSelesai={rekamSelesai} className="py-2" />
-      )}
+          <div className="flex flex-col items-start gap-1">
+            <Button
+              variant="ghost"
+              disabled={!bolehSudahCukup}
+              onClick={() => setTahap("menyusun")}
+            >
+              Sudah cukup, buat kartu saya
+              <ArrowRight aria-hidden />
+            </Button>
+            {!bolehSudahCukup && (
+              <p className="text-label text-tanah-500">
+                Bisa dipakai setelah 3 pertanyaan terjawab.
+              </p>
+            )}
+          </div>
+        </div>
 
-      <div className="flex flex-col items-center gap-1">
-        <Button
-          variant="ghost"
-          disabled={!bolehSudahCukup}
-          onClick={() => setTahap("menyusun")}
-        >
-          Sudah cukup, buat kartu saya
-          <ArrowRight aria-hidden />
-        </Button>
-        {!bolehSudahCukup && (
-          <p className="text-label text-tanah-500">
-            Bisa dipakai setelah 3 pertanyaan terjawab.
-          </p>
+        {/* jawaban terekam — panel ledger di kolom kanan (desktop),
+            mengalir di bawah tombol rekam (HP) */}
+        {jawabanTampil.length > 0 && (
+          <aside className="lg:border-l lg:border-tanah-200 lg:pl-14">
+            <JawabanSebelumnya jawaban={jawabanTampil} />
+          </aside>
         )}
       </div>
     </div>

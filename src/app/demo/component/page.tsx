@@ -68,8 +68,8 @@ export default function HalamanKatalogKomponen() {
   return (
     <main className="mx-auto flex w-full max-w-(--max-worker) flex-col gap-12 px-4 py-10">
       <header>
-        <p className="mikro text-kuning-700">Demo — hanya untuk juri</p>
-        <h1 className="text-h1">Katalog Komponen Kita Kerja</h1>
+        <p className="mikro font-mono tracking-[0.18em] text-kuning-700">Demo — hanya untuk juri</p>
+        <h1 className="text-[2.5rem] leading-[1.05] font-extrabold tracking-[-0.02em] text-balance">Katalog Komponen Kita Kerja</h1>
         <p className="text-body-lg text-tanah-600">
           Seluruh komponen Bagian 4.5 dengan data mock Pak Warto Sugianto.
           Besar, jelas, hangat, dan tenang.
