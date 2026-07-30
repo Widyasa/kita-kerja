@@ -10,33 +10,32 @@ import {
 
 import { KeadaanKosong } from "@/component/bersama/KeadaanKosong";
 import { Button } from "@/component/ui/button";
-import {
-  formatTanggal,
-  inisialNama,
-  kartuKerja,
-  pendampingUtama,
-  pengguna,
-  wilayah,
-} from "@/lib/mock";
+import { createClient } from "@/lib/supabase/server-client";
+import { pekerjaDidampingi } from "@/lib/data/pendamping";
+import { profilPengguna } from "@/lib/data/profil";
+import { formatTanggal, inisialNama } from "@/lib/mock/utils";
 
 /**
- * /companion — daftar pekerja yang didampingi Pak Slamet (fase 2, data mock).
+ * /companion — daftar pekerja yang didampingi pendamping yang sedang masuk.
  * Menampilkan status Kartu Kerja masing-masing pekerja (sudah terbit / belum,
  * kapan terakhir diperbarui) dan CTA besar untuk mendaftarkan pekerja baru.
  *
  * Prinsip CONTEXT.md: akun pekerja yang didaftarkan pendamping MILIK pekerja.
  * Kalimat peran ini wajib selalu terlihat di halaman ini.
  */
-export default function HalamanPekerjaDidampingi() {
-  const didampingi = pengguna.filter(
-    (p) => p.didampingi_oleh === pendampingUtama.id,
-  );
+export default async function HalamanPekerjaDidampingi() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { profil } = await profilPengguna(user!.id);
+  const didampingi = await pekerjaDidampingi(user!.id);
 
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-3">
         <p className="mikro text-kuning-700">
-          {pendampingUtama.nama} — Pendamping
+          {profil.nama} — Pendamping
         </p>
         <h1 className="text-h1">Pekerja Saya</h1>
         {/* Kalimat peran — wajib selalu terlihat (CONTEXT.md) */}
@@ -67,8 +66,6 @@ export default function HalamanPekerjaDidampingi() {
       ) : (
         <ul className="flex flex-col gap-4">
           {didampingi.map((pekerja) => {
-            const kartu = kartuKerja.find((k) => k.pekerja_id === pekerja.id);
-            const wl = wilayah.find((w) => w.id === pekerja.wilayah_id);
             return (
               <li
                 key={pekerja.id}
@@ -84,14 +81,12 @@ export default function HalamanPekerjaDidampingi() {
                   <div className="min-w-0">
                     <p className="text-h3">{pekerja.nama}</p>
                     <p className="text-body text-tanah-600">
-                      {pekerja.umur ? `${pekerja.umur} tahun` : ""}
-                      {pekerja.umur && wl ? " · " : ""}
-                      {wl?.nama ?? "Wilayah belum diisi"}
+                      {pekerja.wilayah_nama ?? "Wilayah belum diisi"}
                     </p>
                   </div>
                 </div>
 
-                {kartu ? (
+                {pekerja.punya_kartu ? (
                   <div className="flex items-start gap-3 rounded-xl bg-aman-50 p-4">
                     <CircleCheck
                       className="mt-0.5 size-6 shrink-0 text-aman-600"
@@ -103,10 +98,7 @@ export default function HalamanPekerjaDidampingi() {
                       </p>
                       <p className="text-body text-tanah-600">
                         Terakhir diperbarui{" "}
-                        {kartu.diterbitkan_pada
-                          ? formatTanggal(kartu.diterbitkan_pada)
-                          : "belum tercatat"}
-                        .
+                        {formatTanggal(pekerja.kartu_diterbitkan_pada!)}.
                       </p>
                     </div>
                   </div>
