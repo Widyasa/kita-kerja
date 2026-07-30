@@ -59,7 +59,12 @@ interface KartuPublik {
   bidang_utama: { nama: string } | { nama: string }[] | null;
   // `id` di sini adalah id pekerja (untuk parameter RPC), TIDAK PERNAH
   // dirender ke JSX — lihat komentar di titik pemakaian di bawah.
-  pekerja: { id: string; nama: string } | { id: string; nama: string }[] | null;
+  // `wilayah` hanya level kabupaten/kecamatan (bukan alamat lengkap) —
+  // aman untuk verifikasi publik, dan memang bagian desain asli halaman ini.
+  pekerja:
+    | { id: string; nama: string; wilayah: { nama: string } | { nama: string }[] | null }
+    | { id: string; nama: string; wilayah: { nama: string } | { nama: string }[] | null }[]
+    | null;
   keahlian: {
     sebutan_pekerja: string | null;
     nama_diajukan: string | null;
@@ -108,7 +113,7 @@ export default async function VerifyPage({
     .select(
       `aktif_publik, ringkasan, pengalaman_tahun, diterbitkan_pada,
        bidang_utama:bidang_utama_id(nama),
-       pekerja:pekerja_id(id, nama),
+       pekerja:pekerja_id(id, nama, wilayah:wilayah_id(nama)),
        keahlian:kartu_keahlian(sebutan_pekerja, nama_diajukan, level, kutipan_bukti, keahlian_id, keahlian:keahlian_id(nama_baku))`,
     )
     .eq("token_publik", token)
@@ -131,6 +136,10 @@ export default async function VerifyPage({
   if (!pekerja) {
     return halamanTidakDitemukan();
   }
+
+  // Wilayah tingkat kabupaten/kecamatan — bukan alamat lengkap, aman untuk
+  // kartu verifikasi publik (memang bagian desain asli halaman ini).
+  const wilayahPekerja = Array.isArray(pekerja.wilayah) ? pekerja.wilayah[0] : pekerja.wilayah;
 
   // pekerja.id dipakai HANYA sebagai parameter RPC di server, tidak pernah
   // dikirim ke JSX / klien.
@@ -182,7 +191,7 @@ export default async function VerifyPage({
             </h1>
             <p className="mt-2 flex items-center gap-1.5 text-body-lg text-tanah-600">
               <MapPin className="size-4" aria-hidden />
-              {bidangUtama?.nama ?? "—"}
+              {bidangUtama?.nama ?? "—"} · {wilayahPekerja?.nama ?? "—"}
             </p>
           </div>
         </div>
