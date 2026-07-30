@@ -1,0 +1,140 @@
+/* ============================================================
+   Kita Kerja — Design tokens (Bagian 4)
+   Warm, high-contrast, mobile-first tokens for informal workers.
+   ============================================================ */
+
+:root {
+  /* Biru Amanah — trust, verification, navigation */
+  --biru-50: #eff4ff;
+  --biru-100: #dbe6fe;
+  --biru-200: #bfd3fe;
+  --biru-300: #93b4fd;
+  --biru-400: #608cfa;
+  --biru-500: #3b66f6;
+  --biru-600: #2547eb;
+  --biru-700: #1d35d8;
+  --biru-800: #1e2daf;
+  --biru-900: #1e2c8a;
+
+  /* Kuning Kerja — primary actions, highlights */
+  --kuning-50: #fffbeb;
+  --kuning-100: #fef3c7;
+  --kuning-200: #fde68a;
+  --kuning-300: #fcd34d;
+  --kuning-400: #fbbf24;
+  --kuning-500: #f59e0b;
+  --kuning-600: #d97706;
+  --kuning-700: #b45309;
+  --kuning-800: #92400e;
+  --kuning-900: #78350f;
+
+  /* Tanah — warm neutrals. No cold grays. */
+  --tanah-0: #ffffff;
+  --tanah-50: #faf9f7;
+  --tanah-100: #f3f1ed;
+  --tanah-200: #e6e2da;
+  --tanah-300: #d1cbc0;
+  --tanah-400: #a69f92;
+  --tanah-500: #7d766a;
+  --tanah-600: #5c5649;
+  --tanah-700: #423e34;
+  --tanah-800: #2b2822;
+  --tanah-900: #1a1814;
+
+  /* Semantic */
+  --aman-50: #f0fdf4;
+  --aman-600: #16a34a;
+  --hati-50: #fffbeb;
+  --hati-600: #d97706;
+  --bahaya-50: #fef2f2;
+  --bahaya-600: #dc2626;
+
+  /* Trust layers — Kartu Kerja */
+  --lapis-terverifikasi-bg: var(--biru-50);
+  --lapis-terverifikasi-fg: var(--biru-600);
+  --lapis-dinilai-bg: var(--kuning-50);
+  --lapis-dinilai-fg: var(--kuning-600);
+  --lapis-diklaim-bg: var(--tanah-100);
+  --lapis-diklaim-fg: var(--tanah-500);
+
+  /* Typography scale — mobile first */
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, monospace;
+
+  --text-display: 2.5rem; /* 40px */
+  --text-display-line: 2.75rem; /* 44px */
+  --text-h1: 2rem; /* 32px */
+  --text-h1-line: 2.375rem; /* 38px */
+  --text-h2: 1.625rem; /* 26px */
+  --text-h2-line: 2rem; /* 32px */
+  --text-h3: 1.3125rem; /* 21px */
+  --text-h3-line: 1.75rem; /* 28px */
+  --text-body-lg: 1.1875rem; /* 19px */
+  --text-body-lg-line: 1.875rem; /* 30px */
+  --text-body: 1.0625rem; /* 17px */
+  --text-body-line: 1.75rem; /* 28px */
+  --text-label: 0.9375rem; /* 15px */
+  --text-label-line: 1.375rem; /* 22px */
+  --text-mikro: 0.8125rem; /* 13px */
+  --text-mikro-line: 1.125rem; /* 18px */
+  --text-button: 1.1875rem; /* 19px minimum */
+
+  --weight-regular: 400;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-extrabold: 800;
+
+  /* Spacing — 4px base */
+  --space-1: 0.25rem; /* 4px */
+  --space-2: 0.5rem; /* 8px */
+  --space-3: 0.75rem; /* 12px */
+  --space-4: 1rem; /* 16px */
+  --space-5: 1.25rem; /* 20px */
+  --space-6: 1.5rem; /* 24px */
+  --space-8: 2rem; /* 32px */
+  --space-10: 2.5rem; /* 40px */
+  --space-12: 3rem; /* 48px */
+  --space-16: 4rem; /* 64px */
+  --space-20: 5rem; /* 80px */
+
+  /* Radius */
+  --radius-sm: 0.5rem; /* 8px */
+  --radius-md: 0.75rem; /* 12px */
+  --radius-lg: 1rem; /* 16px */
+  --radius-xl: 1.25rem; /* 20px */
+  --radius-2xl: 1.75rem; /* 28px */
+  --radius-pill: 999px;
+
+  /* Touch targets & max widths */
+  --touch-min: 3rem; /* 48px */
+  --cta-height: 3.5rem; /* 56px */
+  --record-size: 5.5rem; /* 88px */
+  --max-worker: 32.5rem; /* 520px */
+  --max-employer: 70rem; /* 1120px */
+
+  /* Shadows — soft, warm-tinted */
+  --shadow-1: 0 1px 2px rgba(26, 24, 20, 0.06),
+    0 1px 3px rgba(26, 24, 20, 0.05);
+  --shadow-2: 0 4px 12px rgba(26, 24, 20, 0.08);
+  --shadow-3: 0 12px 32px rgba(26, 24, 20, 0.1);
+
+  /* Motion */
+  --duration-fast: 150ms;
+  --duration-medium: 240ms;
+  --duration-slow: 400ms;
+  --ease-default: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :root {
+    --motion-enabled: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-enabled: 0;
+  }
+}

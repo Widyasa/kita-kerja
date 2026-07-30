@@ -1,0 +1,180 @@
+@import "tailwindcss";
+@import "./token.css";
+
+@theme inline {
+  /* Colors */
+  --color-biru-50: var(--biru-50);
+  --color-biru-100: var(--biru-100);
+  --color-biru-200: var(--biru-200);
+  --color-biru-300: var(--biru-300);
+  --color-biru-400: var(--biru-400);
+  --color-biru-500: var(--biru-500);
+  --color-biru-600: var(--biru-600);
+  --color-biru-700: var(--biru-700);
+  --color-biru-800: var(--biru-800);
+  --color-biru-900: var(--biru-900);
+
+  --color-kuning-50: var(--kuning-50);
+  --color-kuning-100: var(--kuning-100);
+  --color-kuning-200: var(--kuning-200);
+  --color-kuning-300: var(--kuning-300);
+  --color-kuning-400: var(--kuning-400);
+  --color-kuning-500: var(--kuning-500);
+  --color-kuning-600: var(--kuning-600);
+  --color-kuning-700: var(--kuning-700);
+  --color-kuning-800: var(--kuning-800);
+  --color-kuning-900: var(--kuning-900);
+
+  --color-tanah-0: var(--tanah-0);
+  --color-tanah-50: var(--tanah-50);
+  --color-tanah-100: var(--tanah-100);
+  --color-tanah-200: var(--tanah-200);
+  --color-tanah-300: var(--tanah-300);
+  --color-tanah-400: var(--tanah-400);
+  --color-tanah-500: var(--tanah-500);
+  --color-tanah-600: var(--tanah-600);
+  --color-tanah-700: var(--tanah-700);
+  --color-tanah-800: var(--tanah-800);
+  --color-tanah-900: var(--tanah-900);
+
+  --color-aman-50: var(--aman-50);
+  --color-aman-600: var(--aman-600);
+  --color-hati-50: var(--hati-50);
+  --color-hati-600: var(--hati-600);
+  --color-bahaya-50: var(--bahaya-50);
+  --color-bahaya-600: var(--bahaya-600);
+
+  --color-lapis-terverifikasi-bg: var(--lapis-terverifikasi-bg);
+  --color-lapis-terverifikasi-fg: var(--lapis-terverifikasi-fg);
+  --color-lapis-dinilai-bg: var(--lapis-dinilai-bg);
+  --color-lapis-dinilai-fg: var(--lapis-dinilai-fg);
+  --color-lapis-diklaim-bg: var(--lapis-diklaim-bg);
+  --color-lapis-diklaim-fg: var(--lapis-diklaim-fg);
+
+  /* Typography */
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  --text-display: var(--text-display);
+  --text-h1: var(--text-h1);
+  --text-h2: var(--text-h2);
+  --text-h3: var(--text-h3);
+  --text-body-lg: var(--text-body-lg);
+  --text-body: var(--text-body);
+  --text-label: var(--text-label);
+  --text-mikro: var(--text-mikro);
+  --text-button: var(--text-button);
+
+  /* Spacing */
+  --spacing-1: var(--space-1);
+  --spacing-2: var(--space-2);
+  --spacing-3: var(--space-3);
+  --spacing-4: var(--space-4);
+  --spacing-5: var(--space-5);
+  --spacing-6: var(--space-6);
+  --spacing-8: var(--space-8);
+  --spacing-10: var(--space-10);
+  --spacing-12: var(--space-12);
+  --spacing-16: var(--space-16);
+  --spacing-20: var(--space-20);
+
+  /* Radius */
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-2xl: var(--radius-2xl);
+  --radius-pill: var(--radius-pill);
+
+  /* Shadows */
+  --shadow-1: var(--shadow-1);
+  --shadow-2: var(--shadow-2);
+  --shadow-3: var(--shadow-3);
+
+  /* Motion */
+  --ease-default: var(--ease-default);
+  --duration-fast: var(--duration-fast);
+  --duration-medium: var(--duration-medium);
+  --duration-slow: var(--duration-slow);
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--tanah-50);
+    color: var(--tanah-900);
+    font-size: var(--text-body);
+    line-height: var(--text-body-line);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Hard rule: nothing below 15px except .mikro */
+  body,
+  p,
+  span,
+  a,
+  button,
+  input,
+  textarea,
+  select,
+  label {
+    font-size: clamp(var(--text-label), 1rem, var(--text-body-lg));
+  }
+
+  .mikro {
+    font-size: var(--text-mikro);
+    line-height: var(--text-mikro-line);
+    font-weight: var(--weight-bold);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+}
+
+@layer utilities {
+  .text-display {
+    font-size: var(--text-display);
+    line-height: var(--text-display-line);
+    font-weight: var(--weight-extrabold);
+  }
+
+  .text-h1 {
+    font-size: var(--text-h1);
+    line-height: var(--text-h1-line);
+    font-weight: var(--weight-bold);
+  }
+
+  .text-h2 {
+    font-size: var(--text-h2);
+    line-height: var(--text-h2-line);
+    font-weight: var(--weight-bold);
+  }
+
+  .text-h3 {
+    font-size: var(--text-h3);
+    line-height: var(--text-h3-line);
+    font-weight: var(--weight-semibold);
+  }
+
+  .text-body-lg {
+    font-size: var(--text-body-lg);
+    line-height: var(--text-body-lg-line);
+    font-weight: var(--weight-regular);
+  }
+
+  .text-body {
+    font-size: var(--text-body);
+    line-height: var(--text-body-line);
+    font-weight: var(--weight-regular);
+  }
+
+  .text-label {
+    font-size: var(--text-label);
+    line-height: var(--text-label-line);
+    font-weight: var(--weight-semibold);
+  }
+}
