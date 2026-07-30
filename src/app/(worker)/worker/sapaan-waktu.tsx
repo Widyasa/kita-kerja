@@ -11,16 +11,21 @@ export function SapaanWaktu({ nama }: { nama: string }) {
   const [sapaan, setSapaan] = useState("Selamat datang");
 
   useEffect(() => {
-    const jam = new Date().getHours();
-    setSapaan(
-      jam < 11
-        ? "Selamat pagi"
-        : jam < 15
-          ? "Selamat siang"
-          : jam < 19
-            ? "Selamat sore"
-            : "Selamat malam",
-    );
+    // Ditunda satu tick agar bukan setState sinkron di dalam effect
+    // (aturan react-hooks/set-state-in-effect); semantik tetap sama.
+    const timer = setTimeout(() => {
+      const jam = new Date().getHours();
+      setSapaan(
+        jam < 11
+          ? "Selamat pagi"
+          : jam < 15
+            ? "Selamat siang"
+            : jam < 19
+              ? "Selamat sore"
+              : "Selamat malam",
+      );
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   return (

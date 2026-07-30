@@ -136,11 +136,11 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Hard rule: nothing below 15px except .mikro */
+  /* Hard rule: nothing below 15px except .mikro.
+     span & a sengaja tidak disetel — mereka mewarisi ukuran induk
+     (mis. penekanan berwarna di dalam judul display/h1). */
   body,
   p,
-  span,
-  a,
   button,
   input,
   textarea,
