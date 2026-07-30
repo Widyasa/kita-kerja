@@ -82,7 +82,9 @@ CREATE POLICY "lowongan_keahlian_own" ON lowongan_keahlian FOR ALL USING (
 CREATE POLICY "saringan_aman_select_public" ON saringan_aman FOR SELECT USING (
   EXISTS (SELECT 1 FROM lowongan WHERE lowongan.id = saringan_aman.lowongan_id AND lowongan.status = 'tayang')
 );
-CREATE POLICY "saringan_aman_own" ON saringan_aman FOR ALL USING (
+-- Employer can read screening results for their own lowongan (any status);
+-- writes are service-role only (PROMPT Bagian 8), so no INSERT/UPDATE/DELETE policy.
+CREATE POLICY "saringan_aman_own" ON saringan_aman FOR SELECT USING (
   EXISTS (SELECT 1 FROM lowongan WHERE lowongan.id = saringan_aman.lowongan_id AND lowongan.pemberi_kerja_id = auth.uid())
 );
 
