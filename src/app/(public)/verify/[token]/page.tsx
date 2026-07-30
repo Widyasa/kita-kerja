@@ -11,19 +11,11 @@ import {
 
 import { BadgeLapis } from "@/component/bersama/BadgeLapis";
 import { LabelSection } from "@/component/bersama/LabelSection";
+import { createServiceClient } from "@/lib/supabase/server-client";
 import {
-  bidangKerja,
   formatTanggal,
   inisialkanNamaBelakang,
   inisialNama,
-  kartuWarto,
-  keahlianBaku,
-  keahlianWarto,
-  pekerjaUtama,
-  riwayatWarto,
-  statistikWarto,
-  wilayah,
-  type KartuKeahlian,
   type LapisKepercayaan,
 } from "@/lib/mock";
 
@@ -37,18 +29,19 @@ import {
  *
  * Bahasa visual "dossier": halaman dibaca seperti lembar bukti tercetak —
  * identitas + panel keaslian dua kolom di desktop, angka sebagai strip
- * ledger, keahlian dan riwayat sebagai baris ledger. Di bawah 1024px
- * runtuh ke satu kolom dengan urutan baca yang sama.
+ * ledger, keahlian sebagai baris ledger. Di bawah 1024px runtuh ke satu
+ * kolom dengan urutan baca yang sama.
+ *
+ * Data dibaca lewat createServiceClient() langsung di server component ini
+ * (bukan self-fetch ke /api/cards/[token]) karena halaman ini publik dan
+ * tidak terikat sesi pengguna mana pun — pola kolom eksplisit yang sama
+ * dengan route tersebut: jangan pernah expose ID internal, nomor HP, atau
+ * alamat lengkap.
  */
 export const metadata: Metadata = {
   title: "Verifikasi Kartu Kerja — Kita Kerja",
   robots: { index: false, follow: false },
 };
-
-const formatterBulan = new Intl.DateTimeFormat("id-ID", {
-  month: "short",
-  year: "numeric",
-});
 
 const URUTAN_LAPIS: LapisKepercayaan[] = ["terverifikasi", "dinilai", "diklaim"];
 
@@ -58,11 +51,45 @@ const JUDUL_LAPIS: Record<LapisKepercayaan, string> = {
   diklaim: "Keahlian yang dinyatakan sendiri",
 };
 
-function namaKeahlian(k: KartuKeahlian): string {
+interface KartuPublik {
+  aktif_publik: boolean;
+  ringkasan: string | null;
+  pengalaman_tahun: number;
+  diterbitkan_pada: string | null;
+  bidang_utama: { nama: string } | { nama: string }[] | null;
+  // `id` di sini adalah id pekerja (untuk parameter RPC), TIDAK PERNAH
+  // dirender ke JSX — lihat komentar di titik pemakaian di bawah.
+  pekerja: { id: string; nama: string } | { id: string; nama: string }[] | null;
+  keahlian: {
+    sebutan_pekerja: string | null;
+    nama_diajukan: string | null;
+    level: string;
+    kutipan_bukti: string;
+    keahlian_id: string | null;
+    keahlian: { nama_baku: string } | { nama_baku: string }[] | null;
+  }[];
+}
+
+function halamanTidakDitemukan() {
   return (
-    keahlianBaku.find((b) => b.id === k.keahlian_id)?.nama_baku ??
-    k.nama_diajukan ??
-    k.sebutan_pekerja
+    <main className="mx-auto flex w-full max-w-(--max-worker) flex-col items-center gap-6 px-4 py-20 text-center">
+      <span className="flex size-16 items-center justify-center rounded-full bg-tanah-100 text-tanah-600">
+        <ShieldQuestion className="size-8" aria-hidden />
+      </span>
+      <h1 className="text-h1 text-balance">
+        Kartu tidak ditemukan atau sudah dinonaktifkan pemiliknya
+      </h1>
+      <p className="text-body-lg max-w-md text-balance text-tanah-600">
+        Periksa kembali tautan yang Anda pindai, atau minta pemilik kartu
+        membagikan tautan terbarunya.
+      </p>
+      <Link
+        href="/"
+        className="inline-flex min-h-12 items-center rounded-md px-4 text-body font-bold text-biru-600 underline underline-offset-4 focus-visible:ring-[3px] focus-visible:ring-biru-600/40"
+      >
+        Apa itu Kita Kerja?
+      </Link>
+    </main>
   );
 }
 
@@ -72,41 +99,70 @@ export default async function VerifyPage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
+  const supabase = await createServiceClient();
+
+  // Kolom eksplisit — jangan pernah expose ID internal, nomor HP, atau
+  // alamat lengkap. Sama seperti pola di GET /api/cards/[token].
+  const { data: kartuRow } = await supabase
+    .from("kartu_kerja")
+    .select(
+      `aktif_publik, ringkasan, pengalaman_tahun, diterbitkan_pada,
+       bidang_utama:bidang_utama_id(nama),
+       pekerja:pekerja_id(id, nama),
+       keahlian:kartu_keahlian(sebutan_pekerja, nama_diajukan, level, kutipan_bukti, keahlian_id, keahlian:keahlian_id(nama_baku))`,
+    )
+    .eq("token_publik", token)
+    .maybeSingle<KartuPublik>();
 
   // Hanya token kartu yang aktif publik yang menampilkan kartu.
-  // Token lain APA PUN → halaman seragam yang sopan (jangan bedakan kasus).
-  if (token !== kartuWarto.token_publik || !kartuWarto.aktif_publik) {
-    return (
-      <main className="mx-auto flex w-full max-w-(--max-worker) flex-col items-center gap-6 px-4 py-20 text-center">
-        <span className="flex size-16 items-center justify-center rounded-full bg-tanah-100 text-tanah-600">
-          <ShieldQuestion className="size-8" aria-hidden />
-        </span>
-        <h1 className="text-h1 text-balance">
-          Kartu tidak ditemukan atau sudah dinonaktifkan pemiliknya
-        </h1>
-        <p className="text-body-lg max-w-md text-balance text-tanah-600">
-          Periksa kembali tautan yang Anda pindai, atau minta pemilik kartu
-          membagikan tautan terbarunya.
-        </p>
-        <Link
-          href="/"
-          className="inline-flex min-h-12 items-center rounded-md px-4 text-body font-bold text-biru-600 underline underline-offset-4 focus-visible:ring-[3px] focus-visible:ring-biru-600/40"
-        >
-          Apa itu Kita Kerja?
-        </Link>
-      </main>
-    );
+  // Token lain APA PUN (tidak dikenal, salah format, atau nonaktif) →
+  // halaman seragam yang sopan (jangan bedakan kasus).
+  if (!kartuRow || !kartuRow.aktif_publik) {
+    return halamanTidakDitemukan();
   }
 
-  const bidang = bidangKerja.find((b) => b.id === kartuWarto.bidang_utama_id);
-  const wl = wilayah.find((w) => w.id === pekerjaUtama.wilayah_id);
+  const pekerja = Array.isArray(kartuRow.pekerja) ? kartuRow.pekerja[0] : kartuRow.pekerja;
+  const bidangUtama = Array.isArray(kartuRow.bidang_utama)
+    ? kartuRow.bidang_utama[0]
+    : kartuRow.bidang_utama;
 
-  // Maksimal 5 pekerjaan terakhir yang DIKONFIRMASI KEDUA PIHAK,
-  // tanpa nama pemberi kerja — yang ditampilkan: bulan, keahlian, lokasi.
-  const pekerjaanTerakhir = riwayatWarto
-    .filter((p) => p.dikonfirmasi_selesai_pekerja && p.dikonfirmasi_selesai_pemberi)
-    .sort((a, b) => b.selesai_pada.localeCompare(a.selesai_pada))
-    .slice(0, 5);
+  // Tanpa pekerja terhubung, kartu tidak valid untuk ditampilkan — perlakukan
+  // sama seperti token tidak ditemukan (jangan bedakan kasus ke pemindai).
+  if (!pekerja) {
+    return halamanTidakDitemukan();
+  }
+
+  // pekerja.id dipakai HANYA sebagai parameter RPC di server, tidak pernah
+  // dikirim ke JSX / klien.
+  const pekerjaId = pekerja.id;
+
+  const { data: jejak } = await supabase.rpc("rekam_jejak_pekerja", {
+    p_pekerja: pekerjaId,
+  });
+  const statistik = (
+    jejak as
+      | { pekerjaan_selesai: number; rata_penilaian: number; jumlah_penilai: number }[]
+      | null
+  )?.[0] ?? { pekerjaan_selesai: 0, rata_penilaian: 0, jumlah_penilai: 0 };
+
+  const { data: lapisBaris } = await supabase.rpc("lapis_keahlian_pekerja", {
+    p_pekerja: pekerjaId,
+  });
+  const petaLapis = new Map(
+    ((lapisBaris ?? []) as { keahlian_id: string; lapis: LapisKepercayaan }[]).map((r) => [
+      r.keahlian_id,
+      r.lapis,
+    ]),
+  );
+
+  const keahlian = kartuRow.keahlian.map((k, i) => {
+    const baku = Array.isArray(k.keahlian) ? k.keahlian[0] : k.keahlian;
+    return {
+      id: `${i}`,
+      nama_tampil: baku?.nama_baku ?? k.nama_diajukan ?? k.sebutan_pekerja ?? "Keahlian",
+      lapis: (k.keahlian_id && petaLapis.get(k.keahlian_id)) || ("diklaim" as LapisKepercayaan),
+    };
+  });
 
   return (
     <main className="mx-auto w-full max-w-5xl border-x border-tanah-200 px-14 py-16 max-lg:max-w-(--max-worker) max-lg:border-x-0 max-lg:px-4 max-lg:py-10">
@@ -117,16 +173,16 @@ export default async function VerifyPage({
             aria-hidden
             className="flex size-20 shrink-0 items-center justify-center rounded-full bg-kuning-100 text-h1 font-bold text-kuning-800 max-lg:size-16"
           >
-            {inisialNama(pekerjaUtama.nama)}
+            {inisialNama(pekerja.nama)}
           </span>
           <div>
             <LabelSection label="Kartu Kerja terverifikasi" />
             <h1 className="mt-3 text-[clamp(2rem,3.6vw,3.25rem)] leading-[1.04] font-extrabold tracking-[-0.025em] text-balance">
-              {inisialkanNamaBelakang(pekerjaUtama.nama)}
+              {inisialkanNamaBelakang(pekerja.nama)}
             </h1>
             <p className="mt-2 flex items-center gap-1.5 text-body-lg text-tanah-600">
               <MapPin className="size-4" aria-hidden />
-              {bidang?.nama ?? "—"} · {wl?.nama ?? "—"}
+              {bidangUtama?.nama ?? "—"}
             </p>
           </div>
         </div>
@@ -136,9 +192,9 @@ export default async function VerifyPage({
           <ShieldCheck className="mt-0.5 size-7 shrink-0 text-aman-600" aria-hidden />
           <div>
             <p className="text-h3 text-aman-600">Kartu ini asli dan masih berlaku</p>
-            {kartuWarto.diterbitkan_pada && (
+            {kartuRow.diterbitkan_pada && (
               <p className="text-label text-tanah-600">
-                Diterbitkan {formatTanggal(kartuWarto.diterbitkan_pada)}
+                Diterbitkan {formatTanggal(kartuRow.diterbitkan_pada)}
               </p>
             )}
           </div>
@@ -149,7 +205,7 @@ export default async function VerifyPage({
       <div className="mt-14 grid grid-cols-2 divide-x-2 divide-tanah-200 border-y-2 border-tanah-200 py-8 max-lg:py-6">
         <div className="flex flex-col gap-2 pr-8 max-lg:pr-5">
           <p className="flex items-center gap-2 text-[4rem] leading-none font-extrabold tracking-[-0.03em] text-biru-600 tabular-nums max-lg:text-[3rem]">
-            {statistikWarto.jumlahPekerjaanSelesai}
+            {statistik.pekerjaan_selesai}
           </p>
           <p className="text-label flex items-center gap-1.5 text-tanah-600">
             <BriefcaseBusiness className="size-4" aria-hidden />
@@ -158,11 +214,13 @@ export default async function VerifyPage({
         </div>
         <div className="flex flex-col gap-2 px-8 max-lg:px-5">
           <p className="flex items-center gap-2 text-[4rem] leading-none font-extrabold tracking-[-0.03em] text-kuning-800 tabular-nums max-lg:text-[3rem]">
-            {statistikWarto.rataRataPenilaian.toFixed(1).replace(".", ",")}
+            {statistik.jumlah_penilai > 0
+              ? statistik.rata_penilaian.toFixed(1).replace(".", ",")
+              : "—"}
           </p>
           <p className="text-label flex items-center gap-1.5 text-tanah-600">
             <Star className="size-4 fill-kuning-500 text-kuning-500" aria-hidden />
-            dari {statistikWarto.jumlahPenilai} penilai
+            dari {statistik.jumlah_penilai} penilai
           </p>
         </div>
       </div>
@@ -170,7 +228,7 @@ export default async function VerifyPage({
       {/* keahlian dikelompokkan per lapis kepercayaan — baris ledger */}
       <section className="mt-14 flex flex-col divide-y-2 divide-tanah-200 border-y-2 border-tanah-200">
         {URUTAN_LAPIS.map((lapis) => {
-          const daftar = keahlianWarto.filter((k) => k.lapis === lapis);
+          const daftar = keahlian.filter((k) => k.lapis === lapis);
           if (daftar.length === 0) return null;
           return (
             <div
@@ -187,43 +245,13 @@ export default async function VerifyPage({
                     key={k.id}
                     className="py-3 text-body font-semibold first:pt-0 last:pb-0 max-lg:py-3 max-lg:first:pt-3 max-lg:last:pb-3"
                   >
-                    {namaKeahlian(k)}
+                    {k.nama_tampil}
                   </li>
                 ))}
               </ul>
             </div>
           );
         })}
-      </section>
-
-      {/* pekerjaan terakhir yang dikonfirmasi — ledger tanggal kiri,
-          tanpa nama pemberi kerja */}
-      <section className="mt-14">
-        <h2 className="text-h2">Pekerjaan terakhir yang dikonfirmasi</h2>
-        <ul className="mt-6 flex flex-col divide-y divide-tanah-200 border-y border-tanah-200">
-          {pekerjaanTerakhir.map((p) => {
-            const nama = keahlianBaku.find((b) => b.id === p.keahlian_id)?.nama_baku ?? "Pekerjaan";
-            const lokasiKecil = p.judul.split(",").pop()?.trim();
-            const wlKerja = wilayah.find((w) => w.id === p.wilayah_id);
-            return (
-              <li
-                key={p.id}
-                className="grid grid-cols-[10rem_1fr] items-baseline gap-6 py-4 max-lg:grid-cols-1 max-lg:gap-0.5"
-              >
-                <span className="font-mono text-label font-bold tracking-[0.04em] text-tanah-600 tabular-nums">
-                  {formatterBulan.format(new Date(p.selesai_pada))}
-                </span>
-                <span className="text-body">
-                  <span className="font-semibold">{nama}</span>
-                  <span className="text-tanah-600">
-                    {lokasiKecil ? ` · ${lokasiKecil}` : ""}
-                    {wlKerja ? `, ${wlKerja.nama}` : ""}
-                  </span>
-                </span>
-              </li>
-            );
-          })}
-        </ul>
       </section>
 
       {/* disclaimer jujur */}
