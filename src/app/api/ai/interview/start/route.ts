@@ -58,6 +58,7 @@ export async function POST() {
         pertanyaan: { type: "string" },
         sudah_cukup: { type: "boolean" },
       },
+      required: ["pertanyaan", "sudah_cukup"],
     },
     zodSchema: SkemaWawancaraKeluaran,
     temperature: 0.6,

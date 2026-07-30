@@ -21,7 +21,9 @@ function getClient(): GoogleGenAI {
 export class GeminiError extends Error {
   constructor(
     public kode: "konfigurasi" | "kuota" | "gagal" | "validasi" | "jaringan",
-    public pesan_pengguna: string
+    public pesan_pengguna: string,
+    /** Detail teknis (jsonText mentah, isu Zod) — masuk ke log_ai.catatan, tidak ke pengguna. */
+    public debug?: string
   ) {
     super(pesan_pengguna);
   }
@@ -104,7 +106,11 @@ export async function callGemini<T>({
     const parsed = JSON.parse(jsonText);
     const zodResult = zodSchema.safeParse(parsed);
     if (!zodResult.success) {
-      throw new GeminiError("validasi", "Jawaban AI tidak sesuai format. Coba dengan kalimat lain.");
+      throw new GeminiError(
+        "validasi",
+        "Jawaban AI tidak sesuai format. Coba dengan kalimat lain.",
+        `raw=${jsonText.slice(0, 800)} | issues=${JSON.stringify(zodResult.error.issues).slice(0, 800)}`
+      );
     }
 
     const latensiMs = Date.now() - mulai;
@@ -123,7 +129,7 @@ export async function callGemini<T>({
     const latensiMs = Date.now() - mulai;
 
     if (err instanceof GeminiError) {
-      logAi({ userId, jenis, model: modelName, latensiMs, status: "ditolak_validasi", catatan: err.message }).catch(() => {});
+      logAi({ userId, jenis, model: modelName, latensiMs, status: "ditolak_validasi", catatan: err.debug ?? err.message }).catch(() => {});
       return { ok: false, kode: err.kode, pesan_pengguna: err.pesan_pengguna };
     }
 

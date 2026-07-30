@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/server";
-import { createClient, createServiceClient } from "@/lib/supabase/server-client";
+import { createClient } from "@/lib/supabase/server-client";
 import { callGemini } from "@/lib/ai/gemini-client";
+import { transcribeAudio } from "@/lib/ai/groq-client";
 import { SkemaWawancaraKeluaran } from "@/lib/ai/output-schemas";
 import { PROMPT_WAWANCARA_SYSTEM } from "@/lib/ai/prompt-interview";
+import { transcodeKeWav } from "@/lib/audio/transcode";
 import { z } from "zod";
 
 const BodySchema = z.object({
   sesi_id: z.string().uuid(),
-  jawaban: z.string().min(1).max(2000),
+  audio_base64: z.string().min(1),
+  mime_type: z.string().min(1),
 });
 
 export async function POST(request: Request) {
@@ -57,7 +60,45 @@ export async function POST(request: Request) {
     );
   }
 
-  // Build history dari putaran sebelumnya
+  // Browser cuma bisa rekam webm/opus secara konsisten; transcode dulu ke wav
+  // supaya format-nya pasti didukung layanan transkrip.
+  let audioWavBase64: string;
+  try {
+    audioWavBase64 = await transcodeKeWav(body.audio_base64, body.mime_type);
+  } catch (err) {
+    const { createServiceClient } = await import("@/lib/supabase/server-client");
+    const service = await createServiceClient();
+    await service.from("log_ai").insert({
+      pengguna_id: userOrResponse.id,
+      jenis: "wawancara",
+      model: "transcode",
+      status: "gagal",
+      catatan: String(err instanceof Error ? err.stack ?? err.message : err).slice(0, 1000),
+    }).then(undefined, () => {});
+    return NextResponse.json(
+      { ok: false, pesan: "Gagal memproses rekaman audio. Coba rekam ulang." },
+      { status: 400 }
+    );
+  }
+
+  // 1. Transkrip via Groq Whisper (model ASR asli, terpisah dari Gemini).
+  const transkripsi = await transcribeAudio(audioWavBase64, userOrResponse.id);
+  if (!transkripsi.ok) {
+    return NextResponse.json(
+      { ok: false, pesan: transkripsi.pesan_pengguna },
+      { status: transkripsi.kode === "kuota" ? 429 : 503 }
+    );
+  }
+
+  const jawaban = transkripsi.text.trim();
+  if (!jawaban) {
+    return NextResponse.json(
+      { ok: false, pesan: "Rekaman tidak terdengar jelas. Coba bicara lebih dekat ke mikrofon dan rekam ulang." },
+      { status: 422 }
+    );
+  }
+
+  // 2. Pertanyaan berikutnya via Gemini (text-only, dari transkrip Groq).
   const history = (sesi.putaran as any[]).map((p) =>
     `Q${p.nomor}: ${p.pertanyaan}\nA: ${p.transkrip}`
   ).join("\n\n");
@@ -67,7 +108,7 @@ export async function POST(request: Request) {
     promptParts: [
       { role: "user", parts: [{ text: PROMPT_WAWANCARA_SYSTEM }] },
       ...(history ? [{ role: "user", parts: [{ text: `Riwayat sebelumnya:\n${history}` }] }] : []),
-      { role: "user", parts: [{ text: `Putaran ${sesi.jumlah_putaran + 1}.\nJawaban pekerja: ${body.jawaban}` }] },
+      { role: "user", parts: [{ text: `Putaran ${sesi.jumlah_putaran + 1}.\nJawaban pekerja: ${jawaban}` }] },
     ],
     responseSchema: {
       type: "object",
@@ -75,18 +116,26 @@ export async function POST(request: Request) {
         pertanyaan: { type: "string" },
         sudah_cukup: { type: "boolean" },
       },
+      required: ["pertanyaan", "sudah_cukup"],
     },
     zodSchema: SkemaWawancaraKeluaran,
-    temperature: 0.6,
+    temperature: 0.4,
     userId: userOrResponse.id,
   });
+
+  if (!ai.ok) {
+    return NextResponse.json(
+      { ok: false, pesan: ai.pesan_pengguna },
+      { status: 503 }
+    );
+  }
 
   const putaranBaru = [
     ...(sesi.putaran as any[]),
     {
       nomor: sesi.jumlah_putaran + 1,
-      pertanyaan: ai.ok ? ai.data.pertanyaan : "Bisa ceritakan lebih lanjut?",
-      transkrip: body.jawaban,
+      pertanyaan: ai.data.pertanyaan,
+      transkrip: jawaban,
       dibuat_pada: new Date().toISOString(),
     },
   ];
@@ -111,9 +160,10 @@ export async function POST(request: Request) {
     ok: true,
     data: {
       sesi_id: body.sesi_id,
-      pertanyaan: ai.ok ? ai.data.pertanyaan : "Bisa ceritakan lebih lanjut?",
+      transkrip: jawaban,
+      pertanyaan: ai.data.pertanyaan,
       putaran: sesi.jumlah_putaran + 1,
-      sudah_cukup: ai.ok ? ai.data.sudah_cukup : false,
+      sudah_cukup: ai.data.sudah_cukup,
     },
   });
 }
