@@ -36,7 +36,7 @@ export function NavBawahPekerja() {
   return (
     <nav
       aria-label="Navigasi utama pekerja"
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-tanah-200 bg-tanah-0 pb-[env(safe-area-inset-bottom)]"
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-tanah-200 bg-tanah-0 pb-[env(safe-area-inset-bottom)] pt-2"
     >
       <ul className="mx-auto grid h-16 max-w-(--max-worker) grid-cols-4">
         {TAB.map((tab) => {

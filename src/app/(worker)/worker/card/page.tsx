@@ -103,7 +103,7 @@ export default function HalamanKartuKerja() {
             <Button
               asChild
               size="lg"
-              className="h-auto min-h-14 w-full px-4 py-2 text-label whitespace-normal"
+              className="h-auto min-h-14 w-full px-4 py-2 text-label text-white whitespace-normal"
             >
               <Link href="/worker/card/print">
                 <Printer aria-hidden />
