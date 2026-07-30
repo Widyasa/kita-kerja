@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { Users, UserPlus, type LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { TombolKeluar } from "@/component/bersama/TombolKeluar";
 
 /**
  * NavBawahPendamping — 2 tab besar (Bagian 4.5), meniru gaya NavBawahPekerja.
@@ -30,7 +31,7 @@ export function NavBawahPendamping() {
       aria-label="Navigasi utama pendamping"
       className="fixed inset-x-0 bottom-0 z-50 border-t border-tanah-200 bg-tanah-0 pb-[env(safe-area-inset-bottom)]"
     >
-      <ul className="mx-auto grid h-16 max-w-(--max-worker) grid-cols-2">
+      <ul className="mx-auto grid h-16 max-w-(--max-worker) grid-cols-3">
         {TAB.map((tab) => {
           const aktif = tabAktif(pathname, tab.href);
           const Ikon = tab.ikon;
@@ -63,6 +64,9 @@ export function NavBawahPendamping() {
             </li>
           );
         })}
+        <li>
+          <TombolKeluar variant="vertical" />
+        </li>
       </ul>
     </nav>
   );

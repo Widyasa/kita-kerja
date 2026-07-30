@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { TombolKeluar } from "./TombolKeluar";
 
 /**
  * NavPemberi — sidebar di layar >= lg, bottom nav di layar sempit.
@@ -70,6 +71,9 @@ export function NavPemberi() {
       >
         <p className="mb-4 px-4 py-2 text-h3 text-biru-600">Kita Kerja</p>
         {MENU.map((m) => tautan(m, false))}
+        <div className="mt-auto pt-4">
+          <TombolKeluar variant="horizontal" />
+        </div>
       </nav>
 
       {/* Bottom nav < lg */}
@@ -77,8 +81,9 @@ export function NavPemberi() {
         aria-label="Navigasi pemberi kerja"
         className="fixed inset-x-0 bottom-0 z-50 border-t border-tanah-200 bg-tanah-0 pb-[env(safe-area-inset-bottom)] lg:hidden"
       >
-        <div className="mx-auto grid h-16 grid-cols-4">
+        <div className="mx-auto grid h-16 grid-cols-5">
           {MENU.map((m) => tautan(m, true))}
+          <TombolKeluar variant="vertical" />
         </div>
       </nav>
     </>
