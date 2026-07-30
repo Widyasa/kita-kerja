@@ -2,25 +2,13 @@ import { House, Megaphone, Star } from "lucide-react";
 
 import { BadgeLapis } from "@/component/bersama/BadgeLapis";
 import { KeadaanKosong } from "@/component/bersama/KeadaanKosong";
-import {
-  formatRupiah,
-  formatTanggal,
-  penilaianWarto,
-  riwayatWarto,
-  upahTeks,
-  wilayah,
-} from "@/lib/mock";
+import { createClient } from "@/lib/supabase/server-client";
+import { riwayatPekerja } from "@/lib/data/riwayat";
+import { formatRupiah, formatTanggal, upahTeks } from "@/lib/mock/utils";
 
-import { GrafikPenghasilan, type TitikBulan } from "./grafik-penghasilan";
+import { GrafikPenghasilan } from "./grafik-penghasilan";
 
-const JUMLAH_BULAN_GRAFIK = 8;
 const JUMLAH_RIWAYAT_TAMPIL = 10;
-
-function labelBulan(kunci: string): string {
-  return new Date(`${kunci}-02`).toLocaleDateString("id-ID", {
-    month: "short",
-  });
-}
 
 /**
  * Riwayat (`/worker/history`):
@@ -28,25 +16,13 @@ function labelBulan(kunci: string): string {
  * → daftar pekerjaan selesai dengan penilaian dan BadgeLapis
  * → ajakan lapor upah (kecil, tidak mengganggu).
  */
-export default function HalamanRiwayat() {
-  const riwayat = [...riwayatWarto].sort((a, b) =>
-    b.selesai_pada.localeCompare(a.selesai_pada),
-  );
-  const totalSemua = riwayat.reduce((a, p) => a + p.upah_diterima, 0);
-  const penilaianByPekerjaan = new Map(
-    penilaianWarto.map((n) => [n.pekerjaan_id, n]),
-  );
-
-  // Total penghasilan per bulan, 8 bulan terakhir
-  const perBulan = new Map<string, number>();
-  for (const p of riwayat) {
-    const kunci = p.selesai_pada.slice(0, 7);
-    perBulan.set(kunci, (perBulan.get(kunci) ?? 0) + p.upah_diterima);
-  }
-  const dataGrafik: TitikBulan[] = [...perBulan.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .slice(-JUMLAH_BULAN_GRAFIK)
-    .map(([kunci, total]) => ({ bulan: labelBulan(kunci), total }));
+export default async function HalamanRiwayat() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { pekerjaan: riwayat, totalPenghasilan: totalSemua, perBulan: dataGrafik } =
+    await riwayatPekerja(user!.id);
 
   return (
     <div className="flex flex-col gap-8">
@@ -110,11 +86,6 @@ export default function HalamanRiwayat() {
             </h2>
             <ul className="mt-3 flex flex-col gap-3">
               {riwayat.slice(0, JUMLAH_RIWAYAT_TAMPIL).map((p) => {
-                const wl = wilayah.find((w) => w.id === p.wilayah_id);
-                const nilai = penilaianByPekerjaan.get(p.id);
-                const duaPihak =
-                  p.dikonfirmasi_selesai_pekerja &&
-                  p.dikonfirmasi_selesai_pemberi;
                 return (
                   <li
                     key={p.id}
@@ -124,25 +95,25 @@ export default function HalamanRiwayat() {
                       <h3 className="text-body font-bold text-tanah-900">
                         {p.judul}
                       </h3>
-                      {duaPihak && <BadgeLapis lapis="terverifikasi" />}
+                      {p.dua_pihak && <BadgeLapis lapis="terverifikasi" />}
                     </div>
                     <p className="mt-1 text-label text-tanah-600">
                       {formatTanggal(p.selesai_pada)}
-                      {wl ? ` · ${wl.nama}` : ""} ·{" "}
-                      {upahTeks(p.upah_diterima, p.satuan)}
+                      {p.wilayah_nama ? ` · ${p.wilayah_nama}` : ""} ·{" "}
+                      {upahTeks(p.upah, p.satuan)}
                     </p>
-                    {nilai && (
+                    {p.skor !== null && (
                       <div className="mt-3 rounded-lg bg-kuning-50 p-3">
                         <p className="flex items-center gap-2 text-label font-semibold text-kuning-800">
                           <Star
                             className="size-4 shrink-0 fill-kuning-500 text-kuning-500"
                             aria-hidden
                           />
-                          Dinilai {nilai.skor} dari 5 oleh pemberi kerja
+                          Dinilai {p.skor} dari 5 oleh pemberi kerja
                         </p>
-                        {nilai.catatan && (
+                        {p.catatan && (
                           <p className="mt-1 text-label text-tanah-700 italic">
-                            &ldquo;{nilai.catatan}&rdquo;
+                            &ldquo;{p.catatan}&rdquo;
                           </p>
                         )}
                       </div>
