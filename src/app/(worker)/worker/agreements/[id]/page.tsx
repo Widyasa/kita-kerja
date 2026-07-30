@@ -2,14 +2,9 @@ import Link from "next/link";
 import { ArrowLeft, CalendarCheck, FileSearch } from "lucide-react";
 
 import { KeadaanKosong } from "@/component/bersama/KeadaanKosong";
-import {
-  formatTanggal,
-  kesepakatan,
-  lowongan,
-  pengguna,
-  upahTeks,
-  type KesepakatanKerja,
-} from "@/lib/mock";
+import { createClient } from "@/lib/supabase/server-client";
+import { kesepakatanUntukPihak, type KesepakatanTampil } from "@/lib/data/kesepakatan";
+import { formatTanggal, upahTeks } from "@/lib/mock/utils";
 
 import { AksiKesepakatan } from "./aksi-kesepakatan";
 
@@ -22,19 +17,16 @@ function Baris({ label, isi }: { label: string; isi: string }) {
   );
 }
 
-function DokumenKesepakatan({ k }: { k: KesepakatanKerja }) {
-  const lw = lowongan.find((l) => l.id === k.lowongan_id);
-  const pemberi = pengguna.find((p) => p.id === k.pemberi_kerja_id);
-
+function DokumenKesepakatan({ k }: { k: KesepakatanTampil }) {
   return (
     <article className="rounded-2xl border border-tanah-200 bg-tanah-0 p-5 shadow-1">
       <header className="border-b border-tanah-200 pb-4">
         <p className="text-label text-tanah-600">Kesepakatan kerja antara</p>
         <p className="mt-1 text-h3 text-tanah-900">
-          Pak Warto dan {pemberi?.nama ?? "pemberi kerja"}
+          {k.nama_pekerja} dan {k.nama_pemberi}
         </p>
-        {lw && (
-          <p className="mt-1 text-body text-tanah-600">{lw.judul_baku}</p>
+        {k.judul_lowongan && (
+          <p className="mt-1 text-body text-tanah-600">{k.judul_lowongan}</p>
         )}
       </header>
 
@@ -52,7 +44,7 @@ function DokumenKesepakatan({ k }: { k: KesepakatanKerja }) {
       <dl className="mt-2">
         <Baris label="Lingkup pekerjaan" isi={k.lingkup} />
         <Baris label="Upah" isi={upahTeks(k.upah_disepakati, k.satuan)} />
-        <Baris label="Tanggal mulai" isi={formatTanggal(k.mulai)} />
+        <Baris label="Tanggal mulai" isi={k.mulai ? formatTanggal(k.mulai) : "Belum ditentukan"} />
         <Baris
           label="Tanggal selesai"
           isi={
@@ -78,7 +70,11 @@ export default async function HalamanKesepakatan({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const k = kesepakatan.find((item) => item.id === id);
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const k = await kesepakatanUntukPihak(id, user!.id);
 
   if (!k) {
     return (
@@ -91,8 +87,6 @@ export default async function HalamanKesepakatan({
       />
     );
   }
-
-  const pemberi = pengguna.find((p) => p.id === k.pemberi_kerja_id);
 
   return (
     <div className="flex flex-col gap-8">
@@ -115,7 +109,13 @@ export default async function HalamanKesepakatan({
 
       <DokumenKesepakatan k={k} />
 
-      <AksiKesepakatan namaPemberi={pemberi?.nama ?? "pemberi kerja"} />
+      <AksiKesepakatan
+        kesepakatanId={k.id}
+        namaPemberi={k.nama_pemberi}
+        sudahOtp={k.otp_pekerja_sudah}
+        statusAwal={k.status}
+        pekerjaanSelesai={k.pekerjaan_selesai}
+      />
     </div>
   );
 }

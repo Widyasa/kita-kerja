@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import {
   BadgeCheck,
   CircleCheck,
@@ -11,6 +12,7 @@ import {
 
 import { LangkahOTP } from "@/component/bersama/LangkahOTP";
 import { Button } from "@/component/ui/button";
+import type { StatusKesepakatan } from "@/lib/mock/types";
 
 /**
  * Aksi di bawah dokumen kesepakatan (Bagian 6.8):
@@ -19,12 +21,99 @@ import { Button } from "@/component/ui/button";
  * 2. Tombol "Pekerjaan selesai" — konfirmasi dua pihak (pemberi kerja
  *    juga harus mengonfirmasi).
  * 3. Tautan laporkan masalah.
- * Semua state client-side, tanpa panggilan API.
+ * Terhubung ke /api/agreements/otp, /api/jobs/complete, /api/problems/report.
  */
-export function AksiKesepakatan({ namaPemberi }: { namaPemberi: string }) {
-  const [tahap, setTahap] = useState<"kirim" | "otp" | "aktif">("kirim");
-  const [selesaiDiminta, setSelesaiDiminta] = useState(false);
+export function AksiKesepakatan({
+  kesepakatanId,
+  namaPemberi,
+  sudahOtp,
+  statusAwal,
+  pekerjaanSelesai,
+}: {
+  kesepakatanId: string;
+  namaPemberi: string;
+  sudahOtp: boolean;
+  statusAwal: StatusKesepakatan;
+  pekerjaanSelesai: boolean;
+}) {
+  const [tahap, setTahap] = useState<"kirim" | "otp" | "aktif">(
+    sudahOtp || statusAwal === "berjalan" ? "aktif" : "kirim",
+  );
+  const [selesaiDiminta, setSelesaiDiminta] = useState(pekerjaanSelesai);
   const [laporanTerkirim, setLaporanTerkirim] = useState(false);
+  const [sibuk, setSibuk] = useState(false);
+
+  async function kirimKode() {
+    setSibuk(true);
+    try {
+      const res = await fetch("/api/agreements/otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kesepakatan_id: kesepakatanId, aksi: "kirim" }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.pesan || "Gagal mengirim kode.");
+      setTahap("otp");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Terjadi kesalahan.");
+    } finally {
+      setSibuk(false);
+    }
+  }
+
+  async function verifikasiKode(kode: string) {
+    setSibuk(true);
+    try {
+      const res = await fetch("/api/agreements/otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kesepakatan_id: kesepakatanId, aksi: "verifikasi", kode_otp: kode }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.pesan || "Kode tidak cocok.");
+      setTahap("aktif");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Terjadi kesalahan.");
+    } finally {
+      setSibuk(false);
+    }
+  }
+
+  async function tandaiSelesai() {
+    setSibuk(true);
+    try {
+      const res = await fetch("/api/jobs/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ kesepakatan_id: kesepakatanId, pihak: "pekerja" }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.pesan || "Gagal menandai selesai.");
+      setSelesaiDiminta(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Terjadi kesalahan.");
+    } finally {
+      setSibuk(false);
+    }
+  }
+
+  async function laporkan() {
+    setSibuk(true);
+    try {
+      const res = await fetch("/api/problems/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jenis: "upah_tidak_dibayar" }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.pesan || "Gagal mengirim laporan.");
+      setLaporanTerkirim(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Terjadi kesalahan.");
+    } finally {
+      setSibuk(false);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-8">
@@ -62,15 +151,16 @@ export function AksiKesepakatan({ namaPemberi }: { namaPemberi: string }) {
               <Button
                 size="lg"
                 className="mt-4 w-full"
-                onClick={() => setTahap("otp")}
+                onClick={kirimKode}
+                disabled={sibuk}
               >
                 Kirim kode ke HP saya
               </Button>
             ) : (
               <LangkahOTP
                 className="mt-6"
-                onSelesai={() => setTahap("aktif")}
-                onKirimUlang={() => undefined}
+                onSelesai={verifikasiKode}
+                onKirimUlang={kirimKode}
               />
             )}
           </>
@@ -106,7 +196,8 @@ export function AksiKesepakatan({ namaPemberi }: { namaPemberi: string }) {
               variant="outline"
               size="lg"
               className="mt-4 w-full"
-              onClick={() => setSelesaiDiminta(true)}
+              onClick={tandaiSelesai}
+              disabled={sibuk}
             >
               Pekerjaan selesai
             </Button>
@@ -128,7 +219,8 @@ export function AksiKesepakatan({ namaPemberi }: { namaPemberi: string }) {
           <Button
             variant="ghost"
             className="min-h-12 text-body text-bahaya-600 underline underline-offset-4"
-            onClick={() => setLaporanTerkirim(true)}
+            onClick={laporkan}
+            disabled={sibuk}
           >
             <Flag aria-hidden />
             Laporkan masalah
