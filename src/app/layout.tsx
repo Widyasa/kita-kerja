@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import { Toaster } from "sonner";
 import "@/gaya/globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -41,6 +42,16 @@ export default function RootLayout({
         className={`${plusJakartaSans.variable} ${jetBrainsMono.variable} antialiased`}
       >
         {children}
+        <Toaster
+          position="top-center"
+          richColors
+          closeButton
+          toastOptions={{
+            style: {
+              fontFamily: "var(--font-sans), sans-serif",
+            },
+          }}
+        />
       </body>
     </html>
   );
