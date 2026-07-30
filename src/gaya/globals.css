@@ -96,6 +96,29 @@
   --duration-fast: var(--duration-fast);
   --duration-medium: var(--duration-medium);
   --duration-slow: var(--duration-slow);
+
+  /* Alias semantik shadcn/ui -> token Kita Kerja (semua netral hangat, bukan abu-abu dingin) */
+  --color-background: var(--tanah-50);
+  --color-foreground: var(--tanah-900);
+  --color-card: var(--tanah-0);
+  --color-card-foreground: var(--tanah-900);
+  --color-popover: var(--tanah-0);
+  --color-popover-foreground: var(--tanah-900);
+  /* biru-600 #2547EB di atas putih = 5,96:1 (AA) */
+  --color-primary: var(--biru-600);
+  --color-primary-foreground: var(--tanah-0);
+  --color-secondary: var(--tanah-100);
+  --color-secondary-foreground: var(--tanah-800);
+  /* tanah-600 #5C5649 di atas tanah-100 #F3F1ED = 6,4:1 (AA) */
+  --color-muted: var(--tanah-100);
+  --color-muted-foreground: var(--tanah-600);
+  --color-accent: var(--kuning-100);
+  --color-accent-foreground: var(--kuning-900);
+  --color-destructive: var(--bahaya-600);
+  --color-destructive-foreground: var(--tanah-0);
+  --color-border: var(--tanah-200);
+  --color-input: var(--tanah-300);
+  --color-ring: var(--biru-600);
 }
 
 @layer base {
