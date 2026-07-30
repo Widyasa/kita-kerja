@@ -4,7 +4,7 @@ Informal job portal & local network service — Web Development Competition, Vet
 
 ## Live URL
 
-TBD — deployment in progress.
+Deployment skipped for now — run `npx vercel login`, then I can deploy and update this URL.
 
 ## Stack
 
