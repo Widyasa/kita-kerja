@@ -12,13 +12,13 @@ import { KeadaanKosong } from "@/component/bersama/KeadaanKosong";
 import { KartuLowongan } from "@/component/pekerja/KartuLowongan";
 import { createClient } from "@/lib/supabase/server-client";
 import { getDashboardPekerja } from "@/lib/data/kartu-kerja";
+import { daftarLowonganUntukPekerja } from "@/lib/data/lowongan";
 import {
   formatTanggal,
   kesepakatanAktifWarto,
   lamaran,
   lowongan,
   pekerjaUtama,
-  saringanAman,
   upahTeks,
 } from "@/lib/mock";
 
@@ -30,9 +30,10 @@ import { INFO_STATUS_LAMARAN } from "./status-lamaran";
  * sapaan → status Kartu Kerja → kesepakatan aktif (menonjol, tanggal bayar)
  * → lowongan yang cocok → lamaran berjalan.
  *
- * Sapaan dan status Kartu Kerja pakai data asli (pengguna + kartu_kerja yang
- * login). Kesepakatan/lowongan/lamaran masih dari mock Pak Warto — belum
- * ada alur lamar-kerja asli, jadi sengaja belum diganti (proyek terpisah).
+ * Sapaan, status Kartu Kerja, dan lowongan yang cocok pakai data asli
+ * (pengguna + kartu_kerja + pencocokan lowongan). Kesepakatan aktif dan
+ * lamaran berjalan masih dari mock Pak Warto — belum ada alur
+ * kesepakatan/lamaran asli, jadi sengaja belum diganti (proyek terpisah).
  */
 export default async function HalamanBerandaPekerja() {
   const supabase = await createClient();
@@ -43,17 +44,12 @@ export default async function HalamanBerandaPekerja() {
   const kartuSudahTerbit = !!dashboard.kartu?.diterbitkan_pada;
 
   const lamaranWarto = lamaran.filter((l) => l.pekerja_id === pekerjaUtama.id);
-  const idSudahDilamar = new Set(lamaranWarto.map((l) => l.lowongan_id));
 
-  // Lowongan cocok: aman, masih tayang, belum dilamar, dan belum jadi kesepakatan
-  const cocok = lowongan.filter(
-    (l) =>
-      l.status === "tayang" &&
-      !idSudahDilamar.has(l.id) &&
-      l.id !== kesepakatanAktifWarto.lowongan_id &&
-      saringanAman.find((s) => s.lowongan_id === l.id)?.tingkat === "aman",
-  );
-  const teratas = cocok.slice(0, 3);
+  const { lowongan: lowonganCocok, idSudahDilamar: idSudahDilamarAsli } =
+    await daftarLowonganUntukPekerja(user!.id);
+  const teratas = lowonganCocok
+    .filter((l) => !idSudahDilamarAsli.has(l.id))
+    .slice(0, 3);
 
   return (
     <div className="flex flex-col gap-10">
