@@ -8,7 +8,7 @@ const BodySchema = z.object({
     .array(
       z.object({
         id: z.string().uuid(),
-        nama_diajukan: z.string().trim().min(1).max(100).optional(),
+        nama_tampil: z.string().trim().min(1).max(100).optional(),
         level: z.enum(["pemula", "terampil", "ahli"]).optional(),
       }),
     )
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
 
   for (const item of body.items) {
     const patch: Record<string, unknown> = { dikonfirmasi_pekerja: true };
-    if (item.nama_diajukan) patch.nama_diajukan = item.nama_diajukan;
+    if (item.nama_tampil) patch.nama_diajukan = item.nama_tampil;
     if (item.level) patch.level = item.level;
 
     const { error } = await supabase

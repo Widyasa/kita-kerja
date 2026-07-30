@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "@/component/ui/button";
-import type { KartuKeahlian as TKartuKeahlian } from "@/lib/mock";
+import type { KeahlianTampil } from "@/lib/data/types";
 import { KartuKonfirmasi } from "../_komponen/KartuKonfirmasi";
 import { PesanProses } from "../_komponen/PesanProses";
 
@@ -22,7 +22,7 @@ import { PesanProses } from "../_komponen/PesanProses";
 export default function HalamanHasilNgobrol() {
   const router = useRouter();
   const [memuat, setMemuat] = useState(true);
-  const [daftar, setDaftar] = useState<TKartuKeahlian[]>([]);
+  const [daftar, setDaftar] = useState<KeahlianTampil[]>([]);
   const [menerbitkan, setMenerbitkan] = useState(false);
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export default function HalamanHasilNgobrol() {
         const json = await res.json();
         if (!res.ok) throw new Error(json.pesan || "Gagal mengambil keahlian.");
         setDaftar(
-          (json.data.keahlian as Omit<TKartuKeahlian, "lapis">[]).map((k) => ({
+          (json.data.keahlian as KeahlianTampil[]).map((k) => ({
             ...k,
             lapis: "diklaim" as const,
           })),
@@ -53,12 +53,12 @@ export default function HalamanHasilNgobrol() {
   const simpanPerbaikan = (
     id: string,
     nama: string,
-    level: TKartuKeahlian["level"],
+    level: KeahlianTampil["level"],
   ) =>
     setDaftar((d) =>
       d.map((k) =>
         k.id === id
-          ? { ...k, nama_diajukan: nama, level, dikonfirmasi_pekerja: true }
+          ? { ...k, nama_tampil: nama, level, dikonfirmasi_pekerja: true }
           : k,
       ),
     );
@@ -74,7 +74,7 @@ export default function HalamanHasilNgobrol() {
         body: JSON.stringify({
           items: dikonfirmasi.map((k) => ({
             id: k.id,
-            nama_diajukan: k.nama_diajukan ?? undefined,
+            nama_tampil: k.nama_tampil,
             level: k.level,
           })),
         }),

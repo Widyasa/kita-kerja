@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/server";
 import { createClient } from "@/lib/supabase/server-client";
+import { ambilKeahlianTampil } from "@/lib/data/keahlian";
 import { z } from "zod";
 
 async function ambilKartuSendiri(userId: string) {
@@ -27,22 +28,10 @@ export async function GET() {
   }
 
   const supabase = await createClient();
-  const { data: keahlian, error } = await supabase
-    .from("kartu_keahlian")
-    .select(
-      "id, kartu_id, keahlian_id, nama_diajukan, sebutan_pekerja, level, kutipan_bukti, keyakinan, sumber, dikonfirmasi_pekerja",
-    )
-    .eq("kartu_id", kartu.id)
-    .eq("dikonfirmasi_pekerja", false);
+  const keahlian = await ambilKeahlianTampil(supabase, kartu.id, userOrResponse.id);
+  const belum = keahlian.filter((k) => !k.dikonfirmasi_pekerja);
 
-  if (error) {
-    return NextResponse.json(
-      { ok: false, pesan: "Gagal mengambil keahlian." },
-      { status: 500 }
-    );
-  }
-
-  return NextResponse.json({ ok: true, data: { keahlian } });
+  return NextResponse.json({ ok: true, data: { keahlian: belum } });
 }
 
 const BodySchema = z.object({

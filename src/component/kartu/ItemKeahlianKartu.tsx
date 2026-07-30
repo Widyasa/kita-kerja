@@ -5,11 +5,8 @@ import { ChevronDown, Quote } from "lucide-react";
 
 import { BadgeLapis } from "@/component/bersama/BadgeLapis";
 import { cn } from "@/lib/utils";
-import {
-  keahlianBaku,
-  type KartuKeahlian,
-  type LevelKeahlian,
-} from "@/lib/mock";
+import type { KeahlianTampil } from "@/lib/data/types";
+import type { LevelKeahlian } from "@/lib/mock/types";
 
 const LABEL_LEVEL: Record<LevelKeahlian, string> = {
   pemula: "Pemula",
@@ -27,15 +24,11 @@ export function ItemKeahlianKartu({
   keahlian,
   className,
 }: {
-  keahlian: KartuKeahlian;
+  keahlian: KeahlianTampil;
   className?: string;
 }) {
   const [buka, setBuka] = useState(false);
-  const baku = keahlian.keahlian_id
-    ? keahlianBaku.find((k) => k.id === keahlian.keahlian_id)
-    : null;
-  const namaTampil =
-    baku?.nama_baku ?? keahlian.nama_diajukan ?? keahlian.sebutan_pekerja;
+  const namaTampil = keahlian.nama_tampil;
 
   return (
     <article

@@ -5,10 +5,9 @@ import {
   formatRupiah,
   kalimatMetodeAcuan,
   statusUpah,
-  type AcuanUpah,
   type StatusUpah,
-  type Wilayah,
 } from "@/lib/mock";
+import type { AcuanTampil } from "@/lib/data/types";
 
 /**
  * PenandaUpah — tiga keadaan Upah Terang (Bagian 4.5).
@@ -49,8 +48,8 @@ const GAYA: Record<
 interface PenandaUpahProps {
   /** upah yang ditawarkan (rupiah) */
   ditawarkan: number;
-  acuan: AcuanUpah;
-  wilayah: Wilayah;
+  acuan: AcuanTampil;
+  wilayahNama: string;
   /** ringkas: satu baris untuk KartuLowongan; penuh: dengan kalimat metode */
   ringkas?: boolean;
   className?: string;
@@ -59,7 +58,7 @@ interface PenandaUpahProps {
 export function PenandaUpah({
   ditawarkan,
   acuan,
-  wilayah,
+  wilayahNama,
   ringkas = false,
   className,
 }: PenandaUpahProps) {
@@ -95,7 +94,7 @@ export function PenandaUpah({
         {formatRupiah(acuan.acuan_harian)} / hari
       </p>
       <p className="mt-1 text-label text-tanah-600">
-        {kalimatMetodeAcuan(wilayah.nama)}
+        {kalimatMetodeAcuan(wilayahNama)}
         {acuan.metode === "umk_dan_lapangan"
           ? ` Ditambah ${acuan.jumlah_laporan} laporan upah nyata dari pekerja.`
           : ""}
