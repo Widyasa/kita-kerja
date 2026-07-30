@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/server";
 import { createClient } from "@/lib/supabase/server-client";
-import { callGemini } from "@/lib/ai/klien-gemini";
-import { SkemaWawancaraKeluaran } from "@/lib/ai/skema-keluaran";
-import { PROMPT_WAWANCARA_SYSTEM } from "@/lib/ai/prompt-wawancara";
+import { callGemini } from "@/lib/ai/gemini-client";
+import { SkemaWawancaraKeluaran } from "@/lib/ai/output-schemas";
+import { PROMPT_WAWANCARA_SYSTEM } from "@/lib/ai/prompt-interview";
 
 export async function POST() {
   const userOrResponse = await requireRole("pekerja");

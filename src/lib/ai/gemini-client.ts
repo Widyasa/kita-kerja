@@ -71,7 +71,7 @@ export async function callGemini<T>({
   }
 
   // 2. Cek kuota (lazy import agar tidak circular)
-  const { checkQuota } = await import("./kuota");
+  const { checkQuota } = await import("./quota");
   const kuota = await checkQuota(jenis, userId);
   if (!kuota.ok) {
     return { ok: false, kode: "kuota", pesan_pengguna: kuota.pesan };

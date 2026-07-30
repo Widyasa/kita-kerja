@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth/server";
-import { cocokkanPekerja, cocokkanLowongan } from "@/lib/mesin/pencocokan";
+import { cocokkanPekerja, cocokkanLowongan } from "@/lib/engine/matching";
 
 export async function GET(request: Request) {
   const userOrResponse = await requireSession();

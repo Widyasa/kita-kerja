@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/server";
 import { createClient } from "@/lib/supabase/server-client";
-import { callGemini } from "@/lib/ai/klien-gemini";
-import { SkemaWawancaraHasil } from "@/lib/ai/skema-keluaran";
-import { PROMPT_WAWANCARA_HASIL } from "@/lib/ai/prompt-wawancara";
-import { jagaKeahlian } from "@/lib/ai/penjaga";
+import { callGemini } from "@/lib/ai/gemini-client";
+import { SkemaWawancaraHasil } from "@/lib/ai/output-schemas";
+import { PROMPT_WAWANCARA_HASIL } from "@/lib/ai/prompt-interview";
+import { jagaKeahlian } from "@/lib/ai/guard";
 import { z } from "zod";
 
 const BodySchema = z.object({

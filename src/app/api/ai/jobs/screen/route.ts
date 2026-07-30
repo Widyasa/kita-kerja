@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/server";
-import { callGemini } from "@/lib/ai/klien-gemini";
-import { SkemaSaringan } from "@/lib/ai/skema-keluaran";
-import { PROMPT_SARINGAN } from "@/lib/ai/prompt-saringan";
-import { analisisRisikoAturan, tingkatRisiko } from "@/lib/mesin/risiko";
+import { callGemini } from "@/lib/ai/gemini-client";
+import { SkemaSaringan } from "@/lib/ai/output-schemas";
+import { PROMPT_SARINGAN } from "@/lib/ai/prompt-screening";
+import { analisisRisikoAturan, tingkatRisiko } from "@/lib/engine/risk";
 import { createServiceClient } from "@/lib/supabase/server-client";
 import { createClient } from "@/lib/supabase/server-client";
 import { z } from "zod";

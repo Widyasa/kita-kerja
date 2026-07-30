@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireSession } from "@/lib/auth/server";
-import { hitungAcuanUpah } from "@/lib/mesin/acuan-upah";
+import { hitungAcuanUpah } from "@/lib/engine/wage-benchmark";
 
 export async function GET(request: Request) {
   const userOrResponse = await requireSession();

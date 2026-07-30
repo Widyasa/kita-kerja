@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireSession, requireRole } from "@/lib/auth/server";
-import { callGemini } from "@/lib/ai/klien-gemini";
-import { SkemaEkstrakLowongan } from "@/lib/ai/skema-keluaran";
-import { PROMPT_EKSTRAK_LOWONGAN } from "@/lib/ai/prompt-ekstrak-lowongan";
-import { jagaEkstrakLowongan } from "@/lib/ai/penjaga";
+import { callGemini } from "@/lib/ai/gemini-client";
+import { SkemaEkstrakLowongan } from "@/lib/ai/output-schemas";
+import { PROMPT_EKSTRAK_LOWONGAN } from "@/lib/ai/prompt-job-extract";
+import { jagaEkstrakLowongan } from "@/lib/ai/guard";
 import { createClient } from "@/lib/supabase/server-client";
 import { z } from "zod";
 
