@@ -40,13 +40,15 @@ export function SkeletonList({ count = 5 }: { count?: number }) {
 export function SkeletonText({ lines = 3 }: { lines?: number }) {
   return (
     <div className="space-y-2">
-      {Array.from({ length: lines }).map((_, i) => (
-        <div
-          key={i}
-          className="animate-pulse h-3 rounded bg-gray-200"
-          style={{ width: `${85 + Math.random() * 15}%` }}
-        />
-      ))}
+      {Array.from({ length: lines }).map((_, i) => {
+        const widths = ["w-11/12", "w-full", "w-5/6", "w-3/4", "w-10/12"];
+        return (
+          <div
+            key={i}
+            className={`animate-pulse h-3 rounded bg-gray-200 ${widths[i % widths.length]}`}
+          />
+        );
+      })}
     </div>
   );
 }

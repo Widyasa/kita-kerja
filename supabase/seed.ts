@@ -23,6 +23,8 @@ const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
+const DEMO_PASSWORD = process.env.DEMO_FALLBACK_PASSWORD ?? "kitakerja-demo-2026";
+
 function uuid(): string {
   return crypto.randomUUID();
 }
@@ -145,6 +147,7 @@ async function seed() {
     const { data: authUser, error: authErr } = await supabase.auth.admin.createUser({
       email: u.email,
       phone: u.phone,
+      password: DEMO_PASSWORD,
       email_confirm: true,
       phone_confirm: true,
       user_metadata: { nama: u.nama },
@@ -157,6 +160,7 @@ async function seed() {
       const existing = list?.users?.find((x) => x.email === u.email);
       if (existing) {
         userMap.set(u.email, existing.id);
+        await supabase.auth.admin.updateUserById(existing.id, { password: DEMO_PASSWORD });
         console.log("  ⚠️  User exists:", u.nama);
       }
       continue;
