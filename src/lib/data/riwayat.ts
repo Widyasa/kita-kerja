@@ -36,7 +36,14 @@ interface Baris {
         lowongan: { judul_baku: string | null; wilayah: { nama: string } | { nama: string }[] | null } | null;
       }
     | null;
-  penilaian: { skor: number; catatan: string | null }[] | null;
+  penilaian:
+    | { skor: number; catatan: string | null }
+    | { skor: number; catatan: string | null }[]
+    | null;
+}
+
+function satu<T>(v: T | T[] | null): T | null {
+  return Array.isArray(v) ? (v[0] ?? null) : v;
 }
 
 const NAMA_BULAN = new Intl.DateTimeFormat("id-ID", { month: "short" });
@@ -62,7 +69,7 @@ export async function riwayatPekerja(pekerjaId: string) {
     if (!ks || !b.selesai_pada) return [];
     const lo = Array.isArray(ks.lowongan) ? ks.lowongan[0] : ks.lowongan;
     const wl = lo && (Array.isArray(lo.wilayah) ? lo.wilayah[0] : lo.wilayah);
-    const nilai = b.penilaian?.[0] ?? null;
+    const nilai = satu(b.penilaian);
     return [
       {
         id: b.id,
