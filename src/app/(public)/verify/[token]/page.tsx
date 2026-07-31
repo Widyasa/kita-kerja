@@ -71,6 +71,7 @@ interface KartuPublik {
     level: string;
     kutipan_bukti: string;
     keahlian_id: string | null;
+    dikonfirmasi_pekerja: boolean;
     keahlian: { nama_baku: string } | { nama_baku: string }[] | null;
   }[];
 }
@@ -114,7 +115,7 @@ export default async function VerifyPage({
       `aktif_publik, ringkasan, pengalaman_tahun, diterbitkan_pada,
        bidang_utama:bidang_utama_id(nama),
        pekerja:pekerja_id(id, nama, wilayah:wilayah_id(nama)),
-       keahlian:kartu_keahlian(sebutan_pekerja, nama_diajukan, level, kutipan_bukti, keahlian_id, keahlian:keahlian_id(nama_baku))`,
+       keahlian:kartu_keahlian(sebutan_pekerja, nama_diajukan, level, kutipan_bukti, keahlian_id, dikonfirmasi_pekerja, keahlian:keahlian_id(nama_baku))`,
     )
     .eq("token_publik", token)
     .maybeSingle<KartuPublik>();
@@ -164,7 +165,13 @@ export default async function VerifyPage({
     ]),
   );
 
-  const keahlian = kartuRow.keahlian.map((k, i) => {
+  // Hanya keahlian yang sudah DIKONFIRMASI pekerja boleh tampil di halaman
+  // verifikasi publik — sama seperti getDashboardPekerja dan
+  // calonUntukLowongan. Sebuah tebakan AI yang belum dikonfirmasi pekerja
+  // tidak pernah pantas dipajang di depan orang asing yang memindai QR.
+  const keahlianTerkonfirmasi = kartuRow.keahlian.filter((k) => k.dikonfirmasi_pekerja);
+
+  const keahlian = keahlianTerkonfirmasi.map((k, i) => {
     const baku = Array.isArray(k.keahlian) ? k.keahlian[0] : k.keahlian;
     return {
       id: `${i}`,
