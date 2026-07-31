@@ -9,7 +9,7 @@ import {
 } from "@/lib/mock";
 import type { KeahlianTampil } from "@/lib/data/types";
 
-import { namaPendekKeahlian } from "./format";
+import { formatPenilaian, namaPendekKeahlian } from "./format";
 
 /**
  * KartuSaku (Bagian 15.3) — kartu cetak 85 × 54 mm, sebesar KTP.
@@ -30,6 +30,7 @@ export async function KartuSaku({
   keahlian,
   jumlahPekerjaanSelesai,
   rataRataPenilaian,
+  jumlahPenilai = 0,
   bidangNama,
   wilayahNama,
   className,
@@ -39,6 +40,8 @@ export async function KartuSaku({
   keahlian: KeahlianTampil[];
   jumlahPekerjaanSelesai: number;
   rataRataPenilaian: number;
+  /** dipakai agar kartu tidak menulis "0,0" saat belum ada penilai (BUG-032) */
+  jumlahPenilai?: number;
   /** override lookup mock — pakai ini kalau kartu berasal dari data Supabase asli */
   bidangNama?: string | null;
   wilayahNama?: string | null;
@@ -99,8 +102,10 @@ export async function KartuSaku({
       {/* bukti angka + ajakan memindai */}
       <div className="mt-auto flex items-end justify-between gap-[2mm] pt-[2mm]">
         <p className="text-[10pt] leading-snug font-bold">
-          {jumlahPekerjaanSelesai} pekerjaan selesai · ★{" "}
-          {rataRataPenilaian.toFixed(1).replace(".", ",")}
+          {jumlahPekerjaanSelesai} pekerjaan selesai
+          {jumlahPenilai > 0
+            ? ` · ★ ${formatPenilaian(rataRataPenilaian, jumlahPenilai)}`
+            : ""}
         </p>
         <p className="text-right text-[9pt] leading-tight text-tanah-700">
           Pindai untuk memeriksa

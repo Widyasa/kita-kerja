@@ -14,7 +14,7 @@ import {
 import type { KeahlianTampil } from "@/lib/data/types";
 import type { RiwayatPekerjaanRingkas } from "@/lib/data/kartu-kerja";
 
-import { formatBulanTahun } from "./format";
+import { formatBulanTahun, formatPenilaian } from "./format";
 
 const URUTAN_LAPIS: { lapis: LapisKepercayaan; judul: string }[] = [
   { lapis: "terverifikasi", judul: "Terverifikasi" },
@@ -95,8 +95,9 @@ export async function LembarA5({
                   className="size-[4mm] fill-kuning-500 text-kuning-500"
                   aria-hidden
                 />
-                {rataRataPenilaian.toFixed(1).replace(".", ",")} dari{" "}
-                {jumlahPenilai} penilai
+                {jumlahPenilai > 0
+                  ? `${formatPenilaian(rataRataPenilaian, jumlahPenilai)} dari ${jumlahPenilai} penilai`
+                  : "Belum ada penilaian"}
               </p>
             </div>
           </div>

@@ -115,13 +115,26 @@ async function seed() {
   console.log("🌱 Seeding Kita Kerja...\n");
 
   // 1. Wilayah
+  // BUG-010 — sebelumnya memakai .insert() dengan uuid() baru tiap dijalankan,
+  // sehingga setiap seed menambah satu set wilayah baru. Dropdown sempat
+  // menampilkan tiap wilayah 6x (37 opsi untuk 6 wilayah).
+  // Sekarang upsert pada kunci alami (nama, provinsi) — lihat migrasi
+  // 20260731100000_dedup_wilayah_unique.sql yang memasang constraint-nya.
   const wilayahMap = new Map<string, string>();
   for (const w of wilayahData) {
-    const id = uuid();
-    wilayahMap.set(w.nama, id);
-    const { error } = await supabase.from("wilayah").insert({ id, ...w });
-    if (error) console.error("  wilayah error:", error.message);
-    else console.log("  ✅ Wilayah:", w.nama);
+    const { data, error } = await supabase
+      .from("wilayah")
+      .upsert({ id: uuid(), ...w }, { onConflict: "nama,provinsi", ignoreDuplicates: false })
+      .select("id")
+      .single();
+    if (error || !data) {
+      console.error("  wilayah error:", error?.message ?? "tidak ada baris kembali");
+      continue;
+    }
+    // id diambil dari baris hasil upsert, bukan uuid() lokal, supaya saat
+    // baris sudah ada seluruh relasi tetap menunjuk id kanonik yang sama.
+    wilayahMap.set(w.nama, data.id);
+    console.log("  ✅ Wilayah:", w.nama);
   }
 
   // 1b. Kecamatan

@@ -2,6 +2,7 @@ import { BriefcaseBusiness, Star, MapPin } from "lucide-react";
 
 import { BadgeLapis } from "@/component/bersama/BadgeLapis";
 import { QrSvg } from "@/component/bersama/QrSvg";
+import { formatPenilaian } from "./format";
 import { cn } from "@/lib/utils";
 import {
   bidangKerja,
@@ -112,9 +113,11 @@ export function KartuKerjaVisual({
           <div className="rounded-lg bg-tanah-50 p-3 text-center">
             <p className="flex items-center justify-center gap-1 text-h3">
               <Star className="size-5 fill-kuning-500 text-kuning-500" aria-hidden />
-              {rataRataPenilaian.toFixed(1).replace(".", ",")}
+              {formatPenilaian(rataRataPenilaian, jumlahPenilai)}
             </p>
-            <p className="text-label text-tanah-600">dari {jumlahPenilai} penilai</p>
+            <p className="text-label text-tanah-600">
+              {jumlahPenilai > 0 ? `dari ${jumlahPenilai} penilai` : "belum ada penilaian"}
+            </p>
           </div>
         </div>
 

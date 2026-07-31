@@ -58,6 +58,7 @@ export default async function HalamanCetakKartu() {
     keahlian: dashboard.keahlian,
     jumlahPekerjaanSelesai: dashboard.statistik.jumlahPekerjaanSelesai,
     rataRataPenilaian: dashboard.statistik.rataRataPenilaian,
+    jumlahPenilai: dashboard.statistik.jumlahPenilai,
     bidangNama: dashboard.bidangNama,
     wilayahNama: dashboard.wilayahNama,
   };

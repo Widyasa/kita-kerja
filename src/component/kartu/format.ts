@@ -35,3 +35,22 @@ export function namaPendekKeahlian(keahlian: KeahlianTampil): string {
     keahlian.sebutan_pekerja
   );
 }
+
+/**
+ * BUG-032 — nilai penilaian untuk ditampilkan.
+ *
+ * Sebelumnya kartu menulis "0,0" saat belum ada penilai, sedangkan blok
+ * ringkasan di halaman yang sama menulis "—". Selain tidak konsisten,
+ * "0,0" terbaca seperti nilai buruk padahal artinya belum dinilai — itu
+ * merugikan pekerja yang menunjukkan kartunya ke calon pemberi kerja.
+ *
+ * Satu sumber kebenaran supaya kartu, lembar A5, dan halaman verifikasi
+ * tidak lagi merender hal yang sama dengan cara berbeda.
+ */
+export function formatPenilaian(
+  rataRata: number,
+  jumlahPenilai: number,
+): string {
+  if (jumlahPenilai <= 0) return "—";
+  return rataRata.toFixed(1).replace(".", ",");
+}
