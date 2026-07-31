@@ -71,13 +71,15 @@ export default function RegisterPage() {
       const res = await fetch("/api/auth/otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, intent: "register" }),
+        body: JSON.stringify({
+          email,
+          intent: "register",
+          peran: peran.peran,
+          nama: nama.trim(),
+        }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.pesan || "Gagal mengirim email.");
-
-      localStorage.setItem("pendaftaran_peran", peran.peran);
-      localStorage.setItem("pendaftaran_nama", nama);
 
       setSent(true);
     } catch (err) {

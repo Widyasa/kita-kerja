@@ -2,10 +2,16 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server-client";
 import { z } from "zod";
 
-const BodySchema = z.object({
-  email: z.string().email(),
-  intent: z.enum(["signin", "register"]),
-});
+const BodySchema = z
+  .object({
+    email: z.string().email(),
+    intent: z.enum(["signin", "register"]),
+    peran: z.enum(["pekerja", "pemberi_kerja", "pendamping"]).optional(),
+    nama: z.string().trim().min(3).max(100).optional(),
+  })
+  .refine((b) => b.intent !== "register" || (b.peran && b.nama), {
+    message: "Peran dan nama wajib diisi untuk pendaftaran.",
+  });
 
 export async function POST(request: Request) {
   let body: z.infer<typeof BodySchema>;
@@ -22,10 +28,19 @@ export async function POST(request: Request) {
   const email = body.email;
   const supabase = await createClient();
 
+  // Peran & nama dibawa lewat query link konfirmasi, karena browser yang
+  // membuka link itu belum tentu tab yang sama dengan yang mengisi form —
+  // localStorage tidak bisa diandalkan lintas perangkat/klien email.
+  const redirect = new URL(`${process.env.NEXT_PUBLIC_APP_URL}/auth/confirm`);
+  if (body.intent === "register" && body.peran && body.nama) {
+    redirect.searchParams.set("peran", body.peran);
+    redirect.searchParams.set("nama", body.nama);
+  }
+
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/confirm`,
+      emailRedirectTo: redirect.toString(),
       shouldCreateUser: body.intent === "register",
     },
   });
