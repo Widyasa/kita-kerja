@@ -19,10 +19,36 @@ const jetBrainsMono = JetBrains_Mono({
   preload: true,
 });
 
+const JUDUL_UTAMA = "Kita Kerja — Bukti Pengalaman untuk Pekerja Informal";
+const DESKRIPSI_UTAMA =
+  "Ubah cerita kerja Anda menjadi Kartu Kerja yang bisa dibawa ke mana pun.";
+
+const BASE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : "https://kita-kerja.vercel.app");
+
 export const metadata: Metadata = {
-  title: "Kita Kerja — Bukti Pengalaman untuk Pekerja Informal",
-  description:
-    "Ubah cerita kerja Anda menjadi Kartu Kerja yang bisa dibawa ke mana pun.",
+  metadataBase: new URL(BASE_URL),
+  // `template` membuat tiap halaman cukup menulis judulnya sendiri (BUG-022).
+  title: { default: JUDUL_UTAMA, template: "%s — Kita Kerja" },
+  description: DESKRIPSI_UTAMA,
+  applicationName: "Kita Kerja",
+  // Tautan Kartu Kerja paling sering dibagikan lewat WhatsApp (BUG-023).
+  openGraph: {
+    type: "website",
+    siteName: "Kita Kerja",
+    locale: "id_ID",
+    url: BASE_URL,
+    title: JUDUL_UTAMA,
+    description: DESKRIPSI_UTAMA,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: JUDUL_UTAMA,
+    description: DESKRIPSI_UTAMA,
+  },
 };
 
 export const viewport: Viewport = {
