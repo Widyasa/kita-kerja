@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server-client";
 import { jalankanSaringan } from "@/lib/engine/screening-runner";
+import { demoSimulasiAktif } from "@/lib/ai/gemini-client";
 import { z } from "zod";
 
 const BodySchema = z.object({
@@ -45,7 +46,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const hasil = await jalankanSaringan(body.lowongan_id, lowongan.teks_asli, userOrResponse.id);
+  const { kuotaHabis, aiGagal } = await demoSimulasiAktif();
+  const hasil = await jalankanSaringan(body.lowongan_id, lowongan.teks_asli, userOrResponse.id, {
+    demoPaksaKuotaHabis: kuotaHabis,
+    demoPaksaAiGagal: aiGagal,
+  });
 
   if (hasil.tingkat === "berisiko_tinggi" && hasil.skor_risiko >= 60) {
     const service = await createServiceClient();

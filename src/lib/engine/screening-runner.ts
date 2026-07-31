@@ -23,6 +23,7 @@ export async function jalankanSaringan(
   lowonganId: string,
   teksAsli: string,
   userId: string,
+  demoOpsi?: { demoPaksaKuotaHabis?: boolean; demoPaksaAiGagal?: boolean },
 ): Promise<HasilSaringan> {
   const aturan = analisisRisikoAturan(teksAsli);
 
@@ -55,6 +56,8 @@ export async function jalankanSaringan(
     zodSchema: SkemaSaringan,
     temperature: 0.1,
     userId,
+    demoPaksaKuotaHabis: demoOpsi?.demoPaksaKuotaHabis,
+    demoPaksaAiGagal: demoOpsi?.demoPaksaAiGagal,
   });
 
   const skorAi = ai.ok ? ai.data.skor_ai : 0;

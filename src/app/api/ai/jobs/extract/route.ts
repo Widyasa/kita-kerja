@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireSession, requireRole } from "@/lib/auth/server";
-import { callGemini } from "@/lib/ai/gemini-client";
+import { callGemini, demoSimulasiAktif } from "@/lib/ai/gemini-client";
 import { SkemaEkstrakLowongan } from "@/lib/ai/output-schemas";
 import { PROMPT_EKSTRAK_LOWONGAN } from "@/lib/ai/prompt-job-extract";
 import { jagaEkstrakLowongan } from "@/lib/ai/guard";
@@ -26,6 +26,7 @@ export async function POST(request: Request) {
     );
   }
 
+  const { kuotaHabis, aiGagal } = await demoSimulasiAktif();
   const hasil = await callGemini({
     jenis: "baca_lowongan",
     promptParts: [
@@ -51,6 +52,8 @@ export async function POST(request: Request) {
     zodSchema: SkemaEkstrakLowongan,
     temperature: 0.3,
     userId: userOrResponse.id,
+    demoPaksaKuotaHabis: kuotaHabis,
+    demoPaksaAiGagal: aiGagal,
   });
 
   if (!hasil.ok) {
