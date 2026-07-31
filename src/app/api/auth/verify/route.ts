@@ -1,10 +1,18 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server-client";
+<<<<<<< HEAD
 import { normalisasiEmail, tujuanPeran, POLA_EMAIL } from "@/lib/auth/shared";
+=======
+import { tujuanPeran } from "@/lib/auth/shared";
+>>>>>>> feat/phone-otp-auth
 import { z } from "zod";
 
 const BodySchema = z.object({
+<<<<<<< HEAD
   email: z.string().regex(POLA_EMAIL),
+=======
+  email: z.string().email(),
+>>>>>>> feat/phone-otp-auth
   code: z.string().length(6),
   intent: z.enum(["signin", "register"]),
   role: z.enum(["pekerja", "pemberi_kerja", "pendamping"]).optional(),
@@ -67,7 +75,30 @@ export async function POST(request: Request) {
     );
   }
 
+<<<<<<< HEAD
   const userId = data.user.id;
+=======
+  const email = body.email;
+
+  const supabase = await createClient();
+
+  // Verify OTP code via Supabase
+  const { data, error } = await supabase.auth.verifyOtp({
+    email,
+    token: body.code,
+    type: "email",
+  });
+
+  if (error || !data.user) {
+    return NextResponse.json(
+      { ok: false, pesan: error?.message || "Verifikasi kode gagal." },
+      { status: 401 }
+    );
+  }
+
+  const userId = data.user.id;
+
+>>>>>>> feat/phone-otp-auth
   const service = await createServiceClient();
 
   const { data: existing } = await service
@@ -101,8 +132,13 @@ export async function POST(request: Request) {
 
   const { error: insertError } = await service.from("pengguna").insert({
     id: userId,
+<<<<<<< HEAD
     nama: body.nama?.trim() || email.split("@")[0],
     email,
+=======
+    nama: body.nama?.trim() || email,
+    no_hp: email,
+>>>>>>> feat/phone-otp-auth
     peran: body.role,
     status_verifikasi: "email_terverifikasi",
   });

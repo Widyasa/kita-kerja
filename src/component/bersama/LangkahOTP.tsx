@@ -125,7 +125,7 @@ export function LangkahOTP({
       </div>
 
       <p className="text-center text-label text-tanah-600">
-        Kode dikirim lewat SMS ke nomor Anda.{" "}
+        Kode dikirim ke email Anda.{" "}
         {sisaDetik > 0 ? (
           <>
             Kirim ulang dalam{" "}

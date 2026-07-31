@@ -1,12 +1,17 @@
 "use client";
 
+<<<<<<< HEAD
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+=======
+import { useState } from "react";
+>>>>>>> feat/phone-otp-auth
 import Link from "next/link";
 import { toast } from "sonner";
 import {
   ArrowLeft,
   ArrowRight,
+  CheckCircle,
   HandHeart,
   HardHat,
   Loader2,
@@ -17,12 +22,15 @@ import {
 
 import { Button } from "@/component/ui/button";
 import { Input } from "@/component/ui/input";
-import { LangkahOTP } from "@/component/bersama/LangkahOTP";
 import { cn } from "@/lib/utils";
 import { emailValid } from "@/lib/auth/shared";
 import type { Peran } from "@/lib/mock/types";
 
+<<<<<<< HEAD
 type Langkah = "peran" | "email" | "otp";
+=======
+type Langkah = "peran" | "email";
+>>>>>>> feat/phone-otp-auth
 
 const PILIHAN_PERAN: {
   peran: Peran;
@@ -54,6 +62,7 @@ const PILIHAN_PERAN: {
   },
 ];
 
+<<<<<<< HEAD
 const NOMOR_LANGKAH: Record<Langkah, number> = { peran: 1, email: 2, otp: 3 };
 
 function WizardDaftar() {
@@ -100,15 +109,31 @@ function WizardDaftar() {
   const [nama, setNama] = useState("");
   const [email, setEmail] = useState("");
   const [tersentuh, setTersentuh] = useState(false);
-  const [loading, setLoading] = useState(false);
+=======
+const NOMOR_LANGKAH: Record<Langkah, number> = { peran: 1, email: 2 };
 
+export default function RegisterPage() {
+  const [langkah, setLangkah] = useState<Langkah>("peran");
+  const [peran, setPeran] = useState<(typeof PILIHAN_PERAN)[number] | null>(null);
+  const [nama, setNama] = useState("");
+  const [email, setEmail] = useState("");
+>>>>>>> feat/phone-otp-auth
+  const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
+
+<<<<<<< HEAD
   const namaValid = nama.trim().length >= 3 && nama.trim().length <= 100;
   // BUG-001 — kunci akun kini email, bukan nomor HP.
   const emailOk = emailValid(email);
   const tampilkanGalatEmail = tersentuh && email.length > 0 && !emailOk;
+=======
+  const namaValid = nama.trim().length >= 3;
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+>>>>>>> feat/phone-otp-auth
 
-  async function kirimOTP(e: React.FormEvent) {
+  async function kirimLink(e: React.FormEvent) {
     e.preventDefault();
+<<<<<<< HEAD
     if (loading || !peran) return;
     // BUG-029 — jelaskan apa yang kurang, jangan matikan tombol diam-diam.
     if (!namaValid || !emailOk) {
@@ -121,16 +146,28 @@ function WizardDaftar() {
       document.getElementById(!namaValid ? "nama" : "email")?.focus();
       return;
     }
+=======
+    if (!namaValid || !emailValid || loading || !peran) return;
+>>>>>>> feat/phone-otp-auth
     setLoading(true);
     try {
       const res = await fetch("/api/auth/otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+<<<<<<< HEAD
         body: JSON.stringify({ email }),
+=======
+        body: JSON.stringify({ email, intent: "register" }),
+>>>>>>> feat/phone-otp-auth
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.pesan || "Gagal mengirim OTP.");
-      setLangkah("otp");
+      if (!res.ok) throw new Error(json.pesan || "Gagal mengirim email.");
+
+      // Store role + name for when user confirms email
+      localStorage.setItem("pendaftaran_peran", peran.peran);
+      localStorage.setItem("pendaftaran_nama", nama);
+
+      setSent(true);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Terjadi kesalahan.");
     } finally {
@@ -138,6 +175,7 @@ function WizardDaftar() {
     }
   }
 
+<<<<<<< HEAD
   async function verifikasiOTP(kode: string) {
     if (loading || !peran) return;
     setLoading(true);
@@ -161,12 +199,48 @@ function WizardDaftar() {
     } finally {
       setLoading(false);
     }
+=======
+  if (sent) {
+    return (
+      <div className="mx-auto flex w-full max-w-(--max-worker) flex-col gap-8 px-4 py-12 sm:py-16">
+        <header className="flex flex-col gap-3">
+          <div className="flex size-14 items-center justify-center rounded-full bg-hijau-50">
+            <CheckCircle className="size-8 text-hijau-600" aria-hidden />
+          </div>
+          <h1 className="text-h1">Cek email Anda</h1>
+          <p className="text-body-lg text-tanah-600">
+            Kami kirim link konfirmasi ke{" "}
+            <span className="font-semibold text-tanah-800">{email}</span>. Klik
+            link untuk menyelesaikan pendaftaran.
+          </p>
+        </header>
+
+        <div className="rounded-lg bg-biru-50 p-5">
+          <p className="text-body text-biru-900">
+            Link berlaku 24 jam. Periksa folder spam jika tidak melihat email.
+          </p>
+        </div>
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            setSent(false);
+            setEmail("");
+            setNama("");
+          }}
+        >
+          Gunakan email lain
+        </Button>
+      </div>
+    );
+>>>>>>> feat/phone-otp-auth
   }
 
   return (
     <div className="mx-auto flex w-full max-w-(--max-worker) flex-col gap-8 px-4 py-12 sm:py-16">
       <p className="mikro text-center text-tanah-500">
-        Langkah {NOMOR_LANGKAH[langkah]} dari 3
+        Langkah {NOMOR_LANGKAH[langkah]} dari 2
       </p>
 
       {langkah === "peran" && (
@@ -262,12 +336,17 @@ function WizardDaftar() {
             <h1 className="text-h1">Nama dan email Anda</h1>
             <p className="text-body-lg text-tanah-600">
               Sebagai <span className="font-semibold text-tanah-800">{peran?.judul}</span>,
+<<<<<<< HEAD
               email adalah kunci akun Anda. Kami kirim kode enam angka ke alamat
               itu — tidak perlu kata sandi.
+=======
+              email adalah satu-satunya kunci akun Anda. Kami kirim link
+              konfirmasi lewat email.
+>>>>>>> feat/phone-otp-auth
             </p>
           </header>
 
-          <form className="flex flex-col gap-6" onSubmit={kirimOTP}>
+          <form className="flex flex-col gap-6" onSubmit={kirimLink}>
             <div className="flex flex-col gap-2">
               <label htmlFor="nama" className="text-label text-tanah-800">
                 {peran?.peran === "pemberi_kerja" ? "Nama Anda atau nama usaha" : "Nama lengkap"}
@@ -293,19 +372,30 @@ function WizardDaftar() {
             </div>
             <div className="flex flex-col gap-2">
               <label htmlFor="email" className="text-label text-tanah-800">
+<<<<<<< HEAD
                 Alamat email
+=======
+                Email
+>>>>>>> feat/phone-otp-auth
               </label>
               <Input
                 id="email"
                 type="email"
                 inputMode="email"
                 autoComplete="email"
+<<<<<<< HEAD
                 maxLength={254}
                 placeholder="Contoh: nama@email.com"
                 className="h-14 text-body-lg"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 onBlur={() => setTersentuh(true)}
+=======
+                placeholder="nama@contoh.com"
+                className="h-14 text-body-lg"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+>>>>>>> feat/phone-otp-auth
                 disabled={loading}
                 aria-invalid={tampilkanGalatEmail || undefined}
                 aria-describedby="email-bantuan"
@@ -323,9 +413,19 @@ function WizardDaftar() {
                   : "Kode akan dikirim ke alamat ini. Periksa juga folder spam."}
               </p>
             </div>
+<<<<<<< HEAD
             <Button type="submit" variant="aksen" size="lg" disabled={loading}>
               {loading ? <Loader2 className="animate-spin" aria-hidden /> : <Mail aria-hidden />}
               Kirim kode ke email
+=======
+            <Button type="submit" variant="aksen" size="lg" disabled={!namaValid || !emailValid || loading}>
+              {loading ? (
+                <Loader2 className="animate-spin" aria-hidden />
+              ) : (
+                <Mail aria-hidden />
+              )}
+              Kirim link konfirmasi
+>>>>>>> feat/phone-otp-auth
             </Button>
           </form>
 
@@ -342,6 +442,7 @@ function WizardDaftar() {
         </>
       )}
 
+<<<<<<< HEAD
       {langkah === "otp" && (
         <>
           <header className="flex flex-col gap-3">
@@ -367,6 +468,8 @@ function WizardDaftar() {
           </Button>
         </>
       )}
+=======
+>>>>>>> feat/phone-otp-auth
     </div>
   );
 }

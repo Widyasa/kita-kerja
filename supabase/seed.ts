@@ -471,6 +471,89 @@ async function seed() {
     else console.log("  ✅ Acuan Upah:", a.keahlian);
   }
 
+  // 8. Lowongan sample untuk pemberi kerja test (Budi)
+  const budiId = userMap.get("budi@kitakerja.test");
+  if (budiId) {
+    const lowonganData = [
+      {
+        judul: "Tukang Batu Pemasangan Rumah",
+        bidang: "Konstruksi",
+        jenis: "harian",
+        upah: 150000,
+        satuan: "harian",
+        lokasi: "Sukun, Malang",
+        mulai: "2026-08-01",
+        teks: "Cari tukang batu untuk pemasangan bata expose rumah baru di Sukun. Harus berpengalaman minimum 5 tahun. Upah 150rb/hari, ada bonus kalau selesai cepat. Bawa waterpass dan trowel sendiri.",
+        keahlian: ["Tukang Batu"],
+      },
+      {
+        judul: "Sopir Pribadi Harian",
+        bidang: "Jasa Harian",
+        jenis: "harian",
+        upah: 200000,
+        satuan: "harian",
+        lokasi: "Malang Tengah",
+        mulai: "2026-08-05",
+        teks: "Butuh sopir pribadi untuk perjalanan sehari-hari. Punya SIM A & B, usia 25-50 tahun, bersih dan rapi. Gaji 200rb/hari. Mulai jam 7 pagi.",
+        keahlian: ["Sopir Pribadi"],
+      },
+      {
+        judul: "Asisten Rumah Tangga Tinggal",
+        bidang: "Rumah Tangga",
+        jenis: "menginap",
+        upah: 2500000,
+        satuan: "bulanan",
+        lokasi: "Batu, Malang",
+        mulai: "2026-08-10",
+        teks: "ART berpengalaman untuk keluarga kecil (2 anak). Tugas: memasak, membersihkan, menjaga anak. Tinggal di rumah, libur hari Jum'at-Sabtu. Gaji 2,5jt/bulan, ada asuransi & TPP.",
+        keahlian: ["Asisten Rumah Tangga"],
+      },
+    ];
+
+    const lowonganMap = new Map<string, string>(); // judul -> id
+    for (const lw of lowonganData) {
+      const bidang_id = bidangMap.get(lw.bidang);
+      const wilayah_id = wilayahMap.get("Kota Malang");
+      if (!bidang_id || !wilayah_id) continue;
+
+      const lowonganId = uuid();
+      lowonganMap.set(lw.judul, lowonganId);
+
+      const { error } = await supabase.from("lowongan").insert({
+        id: lowonganId,
+        pemberi_kerja_id: budiId,
+        wilayah_id,
+        teks_asli: lw.teks,
+        judul_baku: lw.judul,
+        bidang_id,
+        jenis_kerja: lw.jenis,
+        upah_ditawarkan: lw.upah,
+        satuan_upah: lw.satuan,
+        lokasi_teks: lw.lokasi,
+        mulai: lw.mulai,
+        status: "tayang",
+      });
+      if (error) console.error("  lowongan error:", error.message);
+      else console.log("  ✅ Lowongan:", lw.judul);
+
+      // Lowongan Keahlian links
+      for (const keahlianNama of lw.keahlian) {
+        const keahlian_id = keahlianMap.get(keahlianNama);
+        if (!keahlian_id) continue;
+        const { error: keahlianErr } = await supabase
+          .from("lowongan_keahlian")
+          .insert({
+            lowongan_id: lowonganId,
+            keahlian_id,
+            wajib: true,
+          });
+        if (keahlianErr)
+          console.error("  lowongan_keahlian error:", keahlianErr.message);
+        else console.log("    • Keahlian:", keahlianNama);
+      }
+    }
+  }
+
   console.log("\n🎉 Seeding selesai!");
 }
 

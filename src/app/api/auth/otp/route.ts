@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server-client";
+<<<<<<< HEAD
 import { normalisasiEmail, POLA_EMAIL } from "@/lib/auth/shared";
 import { z } from "zod";
 
@@ -14,6 +15,13 @@ import { z } from "zod";
  */
 const BodySchema = z.object({
   email: z.string().regex(POLA_EMAIL),
+=======
+import { z } from "zod";
+
+const BodySchema = z.object({
+  email: z.string().email(),
+  intent: z.enum(["signin", "register"]),
+>>>>>>> feat/phone-otp-auth
 });
 
 export async function POST(request: Request) {
@@ -28,6 +36,7 @@ export async function POST(request: Request) {
     );
   }
 
+<<<<<<< HEAD
   const email = normalisasiEmail(body.email);
   const supabase = await createClient();
 
@@ -36,6 +45,18 @@ export async function POST(request: Request) {
     // Akun auth dibuat saat verifikasi berhasil; baris `pengguna` menyusul
     // di /api/auth/verify sesuai peran yang dipilih.
     options: { shouldCreateUser: true },
+=======
+  const email = body.email;
+  const supabase = await createClient();
+
+  // Send magic link for email confirmation
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: {
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/confirm`,
+      shouldCreateUser: body.intent === "register",
+    },
+>>>>>>> feat/phone-otp-auth
   });
 
   if (error) {
@@ -47,5 +68,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, pesan }, { status: 400 });
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, pesan: "Cek email Anda untuk link konfirmasi." });
 }
