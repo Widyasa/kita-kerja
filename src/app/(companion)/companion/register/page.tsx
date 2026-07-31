@@ -264,11 +264,12 @@ export default function HalamanDaftarkanPekerja() {
       </div>
 
       <div className="flex flex-col gap-3">
-        <h1 className="text-h1">Sekarang giliran {namaTampil}</h1>
+        <h1 className="text-h1">Akun {namaTampil} akan dibuat</h1>
         <p className="text-body-lg text-tanah-700">
-          Yang menjawab pertanyaan nanti adalah {namaTampil}, bukan Anda.
-          Bacakan pertanyaannya, lalu biarkan ia menjawab dengan suaranya
-          sendiri. Boleh pakai bahasa daerah.
+          Ngobrol Kerja — sesi tanya jawab kira-kira 3 menit yang menyusun
+          Kartu Kerja {namaTampil} — dijalankan dari akun {namaTampil}{" "}
+          sendiri, bukan dari akun Anda. Ini perlu dilakukan {namaTampil}{" "}
+          sendiri saat ia sudah bisa masuk dengan nomor HP-nya.
         </p>
       </div>
 
@@ -278,10 +279,12 @@ export default function HalamanDaftarkanPekerja() {
         </span>
         <div>
           <p className="text-body font-semibold text-tanah-900">
-            Kira-kira 3 menit ngobrol
+            Setelah didaftarkan
           </p>
           <p className="mt-1 text-body text-tanah-600">
-            Jawaban {namaTampil} akan disusun menjadi Kartu Kerja atas namanya.
+            {noHp.trim()
+              ? `${namaTampil} bisa masuk sendiri kapan saja dengan nomor HP yang tadi diisi, lalu menjawab Ngobrol Kerja dengan suaranya sendiri.`
+              : `Karena belum ada nomor HP, ${namaTampil} belum bisa masuk sendiri untuk menjawab Ngobrol Kerja. Status kartunya akan terlihat di daftar Pekerja Saya begitu ia bisa melakukannya nanti.`}
           </p>
         </div>
       </div>
