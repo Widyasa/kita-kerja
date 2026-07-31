@@ -114,6 +114,21 @@ function IsiHasil() {
     }
     setMenayangkan(true);
     try {
+      let keahlianIds: string[] = [];
+      if (keahlianDisarankan.length > 0) {
+        try {
+          const resResolve = await fetch("/api/keahlian/resolve", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ nama: keahlianDisarankan }),
+          });
+          const jsonResolve = await resResolve.json();
+          if (resResolve.ok) keahlianIds = jsonResolve.data.keahlian_ids;
+        } catch {
+          // resolusi keahlian gagal → tetap lanjut publish tanpa keahlian_ids,
+          // jangan blokir penerbitan lowongan karena ini
+        }
+      }
       const res = await fetch("/api/jobs/publish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -131,7 +146,7 @@ function IsiHasil() {
           wilayah_id: bidang.wilayahId || null,
           mulai: bidang.mulai || null,
           syarat_tersirat: bidang.syaratTersirat,
-          keahlian_ids: bidang.keahlianIds,
+          keahlian_ids: keahlianIds,
           paksa_tayang: paksa,
         }),
       });
@@ -315,8 +330,9 @@ function IsiHasil() {
                 ))}
               </ul>
               <p className="mt-1 text-label text-tanah-600">
-                Sekadar informasi — belum tersambung ke daftar keahlian baku,
-                jadi belum dipakai untuk mencocokkan pekerja.
+                Akan dicocokkan otomatis ke daftar keahlian baku saat
+                lowongan ditayangkan. Nama yang tidak dikenali akan
+                dilewati.
               </p>
             </div>
           )}
