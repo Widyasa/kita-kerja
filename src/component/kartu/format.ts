@@ -3,7 +3,7 @@
  * Fungsi murni — aman di server maupun client.
  */
 
-import type { KartuKeahlian } from "@/lib/mock";
+import type { KeahlianTampil } from "@/lib/data/types";
 
 const formatterBulan = new Intl.DateTimeFormat("id-ID", {
   month: "short",
@@ -28,10 +28,10 @@ const NAMA_PENDEK: Record<string, string> = {
   "kb-cat": "Pengecatan",
 };
 
-export function namaPendekKeahlian(keahlian: KartuKeahlian): string {
+export function namaPendekKeahlian(keahlian: KeahlianTampil): string {
   return (
     (keahlian.keahlian_id && NAMA_PENDEK[keahlian.keahlian_id]) ||
-    keahlian.nama_diajukan ||
+    keahlian.nama_tampil ||
     keahlian.sebutan_pekerja
   );
 }

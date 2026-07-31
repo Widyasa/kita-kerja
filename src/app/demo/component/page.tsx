@@ -16,6 +16,7 @@ import { KartuLowongan } from "@/component/pekerja/KartuLowongan";
 import { KartuKerjaVisual } from "@/component/kartu/KartuKerjaVisual";
 import {
   acuanUntuk,
+  keahlianBaku,
   keahlianWarto,
   kartuWarto,
   lowongan,
@@ -24,13 +25,67 @@ import {
   saringanAman,
   statistikWarto,
   wilayah,
+  type Lowongan,
+  type KartuKeahlian as TKartuKeahlianMock,
 } from "@/lib/mock";
+import type { KeahlianTampil, LowonganTampil } from "@/lib/data/types";
 
 /**
  * Halaman katalog komponen — untuk juri dan pengembang.
  * Menampilkan SELURUH katalog Bagian 4.5 dengan data mock.
  * Hanya aktif bila DEMO_MODE=true; selain itu 404.
  */
+
+/**
+ * Adaptor lokal — halaman ini hanya menampilkan sampel data mock untuk QA
+ * visual (bukan data pengguna asli), jadi ia mengubah bentuk mock lama
+ * menjadi bentuk *Tampil yang diharapkan komponen bersama.
+ */
+function keahlianTampilDariMock(k: TKartuKeahlianMock): KeahlianTampil {
+  return {
+    id: k.id,
+    keahlian_id: k.keahlian_id,
+    nama_tampil:
+      keahlianBaku.find((kb) => kb.id === k.keahlian_id)?.nama_baku ??
+      k.nama_diajukan ??
+      k.sebutan_pekerja,
+    sebutan_pekerja: k.sebutan_pekerja,
+    level: k.level,
+    kutipan_bukti: k.kutipan_bukti,
+    sumber: k.sumber,
+    dikonfirmasi_pekerja: k.dikonfirmasi_pekerja,
+    lapis: k.lapis,
+  };
+}
+
+function lowonganTampilDariMock(l: Lowongan): LowonganTampil {
+  const wl = wilayah.find((w) => w.id === l.wilayah_id);
+  const sa = saringanAman.find((s) => s.lowongan_id === l.id) ?? null;
+  const keahlianId = l.keahlian_ids[0];
+  const acuan =
+    keahlianId && l.satuan_upah === "harian"
+      ? acuanUntuk(keahlianId, l.wilayah_id)
+      : null;
+  return {
+    id: l.id,
+    judul_baku: l.judul_baku,
+    teks_asli: l.teks_asli,
+    status: l.status,
+    jenis_kerja: l.jenis_kerja,
+    jumlah_pekerja: l.jumlah_pekerja,
+    upah_ditawarkan: l.upah_ditawarkan,
+    satuan_upah: l.satuan_upah,
+    lokasi_teks: l.lokasi_teks,
+    mulai: l.mulai,
+    syarat_tersirat: l.syarat_tersirat,
+    wilayah_id: l.wilayah_id,
+    wilayah_nama: wl?.nama ?? null,
+    pemberi_kerja_id: l.pemberi_kerja_id,
+    saringan: sa,
+    acuan,
+    alasan_cocok: l.alasan_cocok,
+  };
+}
 
 function Bagian({
   judul,
@@ -91,9 +146,9 @@ export default function HalamanKatalogKomponen() {
         judul="PenandaUpah — tiga keadaan"
         deskripsi="Selalu menampilkan nominal acuan dan satu kalimat metode. Angka dihitung deterministik dari UMK, bukan AI."
       >
-        <PenandaUpah ditawarkan={180000} acuan={acuanKeramik} wilayah={wlMalang} />
-        <PenandaUpah ditawarkan={155000} acuan={acuanKeramik} wilayah={wlMalang} />
-        <PenandaUpah ditawarkan={120000} acuan={acuanKeramik} wilayah={wlMalang} />
+        <PenandaUpah ditawarkan={180000} acuan={acuanKeramik} wilayahNama={wlMalang.nama} />
+        <PenandaUpah ditawarkan={155000} acuan={acuanKeramik} wilayahNama={wlMalang.nama} />
+        <PenandaUpah ditawarkan={120000} acuan={acuanKeramik} wilayahNama={wlMalang.nama} />
       </Bagian>
 
       <Bagian
@@ -130,9 +185,9 @@ export default function HalamanKatalogKomponen() {
         judul="KartuLowongan"
         deskripsi="Judul, wilayah, jarak, PenandaUpah ringkas, tingkat Saringan Aman, satu baris alasan — tanpa skor angka."
       >
-        <KartuLowongan lowongan={lwAman} href="/demo/component" />
-        <KartuLowongan lowongan={lwHati} href="/demo/component" />
-        <KartuLowongan lowongan={lwBahaya} href="/demo/component" />
+        <KartuLowongan lowongan={lowonganTampilDariMock(lwAman)} href="/demo/component" />
+        <KartuLowongan lowongan={lowonganTampilDariMock(lwHati)} href="/demo/component" />
+        <KartuLowongan lowongan={lowonganTampilDariMock(lwBahaya)} href="/demo/component" />
       </Bagian>
 
       <Bagian
@@ -151,7 +206,7 @@ export default function HalamanKatalogKomponen() {
         <KartuKerjaVisual
           kartu={kartuWarto}
           pekerja={pekerjaUtama}
-          keahlian={keahlianWarto}
+          keahlian={keahlianWarto.map(keahlianTampilDariMock)}
           jumlahPekerjaanSelesai={statistikWarto.jumlahPekerjaanSelesai}
           rataRataPenilaian={statistikWarto.rataRataPenilaian}
           jumlahPenilai={statistikWarto.jumlahPenilai}

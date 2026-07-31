@@ -1,9 +1,9 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   Quote,
   Sparkles,
@@ -13,67 +13,157 @@ import {
   CircleCheck,
   PencilLine,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/component/ui/button";
-import { PenandaUpah } from "@/component/bersama/PenandaUpah";
 import { RingkasanEkstraksi } from "@/component/pemberi/RingkasanEkstraksi";
 import {
-  CONTOH_TEKS_LOWONGAN,
   KUNCI_TEKS_LOWONGAN,
-  ekstrakLowongan,
-  hitungBelumJelas,
-  hitungKelengkapan,
-  saringTeks,
   type BidangLowongan,
 } from "@/component/pemberi/ekstraksi";
-import {
-  acuanUntuk,
-  formatRupiah,
-  statusUpah,
-  wilayah,
-} from "@/lib/mock";
+import type { TemuanSaringan } from "@/lib/mock/types";
 
 /**
  * /employer/post/result — Bagian 6.6 + 14:
  * - "Tulisan Anda:" sebagai konteks
- * - hasil ekstraksi sebagai bidang yang dapat diedit
+ * - hasil ekstraksi AI (POST /api/ai/jobs/extract) sebagai bidang yang dapat
+ *   diedit
  * - "Yang saya simpulkan" (syarat tersirat) dan "Yang belum jelas"
  *   (menggerakkan skor kelengkapan) — dua bagian yang MENONJOL
- * - PenandaUpah + nominal acuan SEBELUM tayang, bahasa tidak menghakimi
- * - ?moderasi=1 → keadaan MODERASI-TAHAN: apa yang perlu diperbaiki,
- *   dua jalan (perbaiki / tayangkan dengan penanda) — bukan penolakan mentah
+ * - tayangkan() memanggil POST /api/jobs/publish; bila hasilnya "moderasi",
+ *   tampilkan keadaan MODERASI-TAHAN dari `saringan` yang dikembalikan
+ *   server — dua jalan (perbaiki / tayangkan dengan penanda), bukan
+ *   penolakan mentah
  */
 
 type Keadaan = "sunting" | "tayang" | "tayang_dengan_penanda";
 
 function IsiHasil() {
   const router = useRouter();
-  const params = useSearchParams();
-  const moderasi = params.get("moderasi") === "1";
 
   const [keadaan, setKeadaan] = useState<Keadaan>("sunting");
-  // Komponen ini dirender hanya di klien (dynamic ssr:false), jadi aman
-  // membaca sessionStorage langsung di inisialisasi state — tanpa effect.
-  const [bidang, setBidang] = useState<BidangLowongan>(() => {
-    const tersimpan = sessionStorage.getItem(KUNCI_TEKS_LOWONGAN);
-    const teks = tersimpan && tersimpan.trim() ? tersimpan : CONTOH_TEKS_LOWONGAN;
-    return ekstrakLowongan(teks);
-  });
+  const [bidang, setBidang] = useState<BidangLowongan | null>(null);
+  const [memuat, setMemuat] = useState(true);
+  const [menayangkan, setMenayangkan] = useState(false);
+  const [saringan, setSaringan] = useState<{ tingkat: string; temuan: TemuanSaringan[] } | null>(
+    null,
+  );
+  /** id lowongan sesudah percobaan tayang pertama — dipakai supaya percobaan
+   * ulang (mis. sesudah moderasi) MEMPERBARUI baris yang sama, bukan
+   * membuat baris baru setiap kali "Tayangkan" ditekan */
+  const [lowonganId, setLowonganId] = useState<string | null>(null);
+  /** nama keahlian yang disarankan AI (belum di-resolve ke keahlian_baku.id
+   * — ditampilkan sebagai info, tidak dikirim sebagai keahlian_ids) */
+  const [keahlianDisarankan, setKeahlianDisarankan] = useState<string[]>([]);
 
-  const belumJelas = useMemo(() => hitungBelumJelas(bidang), [bidang]);
-  const kelengkapan = useMemo(() => hitungKelengkapan(bidang), [bidang]);
+  useEffect(() => {
+    (async () => {
+      const teks = sessionStorage.getItem(KUNCI_TEKS_LOWONGAN)?.trim();
+      if (!teks) {
+        router.replace("/employer/post");
+        return;
+      }
+      try {
+        const res = await fetch("/api/ai/jobs/extract", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ teks }),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.pesan || "Gagal membaca tulisan Anda.");
+        const d = json.data;
+        // "mulai" HARUS ISO yyyy-mm-dd untuk kolom `date` di Postgres — Gemini
+        // kadang mengembalikan teks bebas ("senin", "senin depan"). Tolak apa
+        // pun yang bukan ISO alih-alih mengirimnya mentah ke /api/jobs/publish
+        // (yang akan gagal insert dengan pesan tidak jelas bagi pemberi kerja).
+        const mulaiIsoValid = /^\d{4}-\d{2}-\d{2}$/.test(d.mulai ?? "");
+        const yangBelumJelas: string[] = d.yang_belum_jelas ?? [];
+        if (!mulaiIsoValid && d.mulai) {
+          yangBelumJelas.push("Tanggal mulai yang pasti");
+        }
+        setBidang({
+          judul: d.judul_baku ?? "",
+          jenisKerja: d.jenis_kerja ?? "",
+          jumlahPekerja: d.jumlah_pekerja ? String(d.jumlah_pekerja) : "",
+          lokasi: d.lokasi_teks ?? "",
+          wilayahId: "",
+          keahlianIds: [],
+          upah: d.upah_ditawarkan ? String(d.upah_ditawarkan) : "",
+          satuanUpah: d.satuan_upah ?? "harian",
+          mulai: mulaiIsoValid ? d.mulai : "",
+          syaratTersirat: d.syarat_tersirat ?? [],
+          yangBelumJelas,
+          kelengkapan: d.kelengkapan ?? 0,
+          teksAsli: teks,
+        });
+        setKeahlianDisarankan(d.keahlian_dibutuhkan ?? []);
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Terjadi kesalahan.");
+        router.replace("/employer/post");
+      } finally {
+        setMemuat(false);
+      }
+    })();
+  }, [router]);
 
-  const wl = wilayah.find((w) => w.id === bidang.wilayahId) ?? wilayah[0];
-  const acuan = acuanUntuk(bidang.keahlianId, bidang.wilayahId);
-  const upahAngka = Number(bidang.upah) || 0;
-  // upah bulanan dibandingkan sebagai ekuivalen harian
-  const upahHarian =
-    bidang.satuanUpah === "bulanan" ? Math.round(upahAngka / 26) : upahAngka;
-  const upahDiBawahAcuan =
-    upahAngka > 0 &&
-    bidang.satuanUpah !== "borongan" &&
-    statusUpah(upahHarian, acuan.acuan_harian) !== "sesuai_acuan";
-  const temuan = saringTeks(bidang.teksAsli);
+  async function tayangkan(paksa: boolean) {
+    if (!bidang || menayangkan) return;
+    if (!bidang.judul.trim()) {
+      toast.error("Judul lowongan perlu diisi dulu.");
+      return;
+    }
+    setMenayangkan(true);
+    try {
+      const res = await fetch("/api/jobs/publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          // hadir sesudah percobaan pertama supaya percobaan ulang
+          // MEMPERBARUI baris yang sama, bukan membuat baris baru
+          lowongan_id: lowonganId ?? undefined,
+          teks_asli: bidang.teksAsli,
+          judul_baku: bidang.judul,
+          jenis_kerja: bidang.jenisKerja || null,
+          jumlah_pekerja: Number(bidang.jumlahPekerja) || 1,
+          upah_ditawarkan: bidang.upah ? Number(bidang.upah) : null,
+          satuan_upah: bidang.satuanUpah,
+          lokasi_teks: bidang.lokasi || null,
+          wilayah_id: bidang.wilayahId || null,
+          mulai: bidang.mulai || null,
+          syarat_tersirat: bidang.syaratTersirat,
+          keahlian_ids: bidang.keahlianIds,
+          paksa_tayang: paksa,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.pesan || "Gagal menayangkan lowongan.");
+      setLowonganId(json.data.lowongan_id);
+      if (json.data.status === "moderasi") {
+        // JANGAN hapus sessionStorage di sini — bila pemberi kerja memuat
+        // ulang halaman saat memperbaiki temuan moderasi, teks aslinya
+        // harus tetap ada supaya useEffect di atas tidak mengalihkan ke
+        // /employer/post dan kehilangan tulisannya.
+        setSaringan(json.data.saringan);
+        setKeadaan("sunting");
+      } else {
+        // status "tayang" adalah keadaan akhir — aman menghapus sekarang
+        sessionStorage.removeItem(KUNCI_TEKS_LOWONGAN);
+        setKeadaan(paksa ? "tayang_dengan_penanda" : "tayang");
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Terjadi kesalahan.");
+    } finally {
+      setMenayangkan(false);
+    }
+  }
+
+  if (memuat || !bidang) {
+    return (
+      <p role="status" className="text-body text-tanah-600">
+        Membaca tulisan Anda…
+      </p>
+    );
+  }
 
   // ---------- keadaan sesudah tayang ----------
   if (keadaan === "tayang" || keadaan === "tayang_dengan_penanda") {
@@ -84,7 +174,7 @@ function IsiHasil() {
         </span>
         <h1 className="text-h1">Lowongan Anda sudah tayang</h1>
         <p className="max-w-md text-body-lg text-tanah-600">
-          Pekerja di sekitar {wl.nama} sekarang bisa melihat &ldquo;{bidang.judul}&rdquo;.
+          Pekerja di sekitar lokasi sekarang bisa melihat &ldquo;{bidang.judul}&rdquo;.
           Calon yang cocok akan muncul di dasbor Anda.
         </p>
         {keadaan === "tayang_dengan_penanda" && (
@@ -122,7 +212,7 @@ function IsiHasil() {
       </figure>
 
       {/* ---------- keadaan MODERASI-TAHAN ---------- */}
-      {moderasi && (
+      {saringan && (
         <section
           aria-labelledby="judul-moderasi"
           className="flex flex-col gap-5 rounded-2xl border border-bahaya-600/30 bg-bahaya-50 p-6"
@@ -146,7 +236,7 @@ function IsiHasil() {
               Yang perlu diperbaiki:
             </h3>
             <ul className="mt-2 flex flex-col gap-3">
-              {temuan.map((t, i) => (
+              {saringan.temuan.map((t, i) => (
                 <li key={i} className="rounded-lg bg-tanah-0 p-4 shadow-1">
                   <p className="text-body text-tanah-700 italic">&ldquo;{t.kutipan}&rdquo;</p>
                   <p className="mt-1 text-label text-tanah-600">{t.penjelasan}</p>
@@ -159,7 +249,7 @@ function IsiHasil() {
             <Button
               size="lg"
               className="flex-1"
-              onClick={() => router.replace("/employer/post/result")}
+              onClick={() => setSaringan(null)}
             >
               <PencilLine aria-hidden />
               Perbaiki lowongan
@@ -168,7 +258,8 @@ function IsiHasil() {
               size="lg"
               variant="outline"
               className="flex-1"
-              onClick={() => setKeadaan("tayang_dengan_penanda")}
+              disabled={menayangkan}
+              onClick={() => tayangkan(true)}
             >
               <Megaphone aria-hidden />
               Tayangkan dengan penanda
@@ -208,6 +299,27 @@ function IsiHasil() {
               Tidak ada syarat tersirat dari tulisan ini.
             </p>
           )}
+          {keahlianDisarankan.length > 0 && (
+            <div>
+              <h3 className="text-label font-semibold text-biru-900">
+                Keahlian yang disarankan
+              </h3>
+              <ul className="mt-2 flex flex-wrap gap-2">
+                {keahlianDisarankan.map((k, i) => (
+                  <li
+                    key={i}
+                    className="rounded-pill bg-tanah-0 px-3 py-1 text-label text-tanah-800 shadow-1"
+                  >
+                    {k}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-1 text-label text-tanah-600">
+                Sekadar informasi — belum tersambung ke daftar keahlian baku,
+                jadi belum dipakai untuk mencocokkan pekerja.
+              </p>
+            </div>
+          )}
         </section>
 
         {/* Yang belum jelas */}
@@ -222,14 +334,14 @@ function IsiHasil() {
           <p className="text-label text-tanah-600">
             Lengkapi lewat bidang di bawah — kelengkapan lowongan Anda{" "}
             <span className="font-bold text-tanah-900">
-              {Math.round(kelengkapan * 100)}%
+              {Math.round(bidang.kelengkapan * 100)}%
             </span>
             . Lowongan yang lengkap terisi rata-rata lebih cepat.
           </p>
           {/* bilah kelengkapan */}
           <div
             role="progressbar"
-            aria-valuenow={Math.round(kelengkapan * 100)}
+            aria-valuenow={Math.round(bidang.kelengkapan * 100)}
             aria-valuemin={0}
             aria-valuemax={100}
             aria-label="Kelengkapan lowongan"
@@ -237,12 +349,12 @@ function IsiHasil() {
           >
             <div
               className="h-full rounded-pill bg-kuning-600 transition-all motion-safe:duration-(--duration-medium)"
-              style={{ width: `${Math.max(8, kelengkapan * 100)}%` }}
+              style={{ width: `${Math.max(8, bidang.kelengkapan * 100)}%` }}
             />
           </div>
-          {belumJelas.length > 0 ? (
+          {bidang.yangBelumJelas.length > 0 ? (
             <ul className="flex flex-col gap-2">
-              {belumJelas.map((b, i) => (
+              {bidang.yangBelumJelas.map((b, i) => (
                 <li
                   key={i}
                   className="rounded-lg bg-tanah-0 px-4 py-3 text-body text-tanah-900 shadow-1"
@@ -270,26 +382,15 @@ function IsiHasil() {
         />
       </section>
 
-      {/* ---------- PenandaUpah sebelum tayang — tidak menghakimi ---------- */}
-      {upahDiBawahAcuan && (
-        <section aria-labelledby="judul-upah" className="flex flex-col gap-3">
-          <h2 id="judul-upah" className="sr-only">
-            Perbandingan upah dengan acuan
-          </h2>
-          <PenandaUpah ditawarkan={upahHarian} acuan={acuan} wilayah={wl} />
-          <p className="rounded-lg bg-hati-50 p-4 text-body text-tanah-900">
-            Acuan harian untuk pekerjaan ini di {wl.nama} sekitar{" "}
-            <span className="font-bold">{formatRupiah(acuan.acuan_harian)}</span>.
-            Lowongan di bawah acuan biasanya lebih lama terisi. Anda tetap bebas
-            menentukan upah.
-          </p>
-        </section>
-      )}
-
       {/* ---------- CTA ---------- */}
-      {!moderasi && (
+      {!saringan && (
         <div className="flex flex-col gap-3">
-          <Button size="lg" className="w-full" onClick={() => setKeadaan("tayang")}>
+          <Button
+            size="lg"
+            className="w-full"
+            disabled={menayangkan}
+            onClick={() => tayangkan(false)}
+          >
             <Megaphone aria-hidden />
             Tayangkan lowongan
           </Button>

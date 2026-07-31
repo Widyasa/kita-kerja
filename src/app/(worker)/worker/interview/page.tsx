@@ -3,147 +3,267 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, Mic, PencilLine } from "lucide-react";
 
 import { LabelSection } from "@/component/bersama/LabelSection";
 import { KartuPertanyaan } from "@/component/pekerja/KartuPertanyaan";
 import { TombolRekam } from "@/component/pekerja/TombolRekam";
 import { Button } from "@/component/ui/button";
-import { putaranWawancaraWarto } from "@/lib/mock";
 import { JawabanSebelumnya } from "./_komponen/JawabanSebelumnya";
 import { PesanProses } from "./_komponen/PesanProses";
 import {
   KUNCI_PROGRES_NGOBROL,
   type JawabanTersimpan,
+  type PertanyaanTersimpan,
   type ProgresNgobrol,
 } from "./_komponen/penyimpanan";
 
 /**
  * Ngobrol Kerja (Bagian 6.2) — layar terpenting di aplikasi.
- * Mesin keadaan sisi klien penuh (fase 2, tanpa backend):
+ * Rekaman suara ditranskrip via Groq Whisper, lalu Gemini (text-only)
+ * memutuskan pertanyaan berikutnya. Progres sesi (sesi_id + pertanyaan
+ * berjalan + riwayat pertanyaan) disimpan di sessionStorage agar tahan
+ * refresh; jawaban asli tersimpan di server.
  *
- *   pengantar ──"Mulai ngobrol"──► putaran ──rekam──► berpikir ──► putaran …
- *      │                            │  (batas keras 6 → menyusun)
- *      │ izin mic gagal             └──"Sudah cukup" (aktif setelah putaran 3)
- *      ▼                            ▼
- *    gagal (3 pilihan)          menyusun ──► /worker/interview/result
+ *   pengantar ──"Mulai ngobrol"──► mulai sesi (API) ──► putaran ──rekam──►
+ *   berpikir (transkrip+jawab via API) ──► putaran … (batas keras 6 → menyusun)
+ *      │ izin mic gagal                              └──"Sudah cukup" (aktif setelah putaran 3)
+ *      ▼
+ *    gagal (3 pilihan)                            menyusun ──► /worker/interview/result
  *
- * Progres disimpan di sessionStorage — tahan refresh di tengah wawancara.
- *
- * Bahasa visual "dossier": desktop dua kolom — percakapan di kiri, jawaban
- * terekam sebagai panel ledger di kanan (dibatasi garis vertikal). Di bawah
- * 1024px runtuh ke satu kolom: pertanyaan → rekam → jawaban sebelumnya.
+ * "Ulangi pertanyaan ini" ada di tiap item panel Jawaban sebelumnya (bukan
+ * cuma jawaban terakhir) — mengulang pertanyaan N membuang jawaban N dan
+ * semua sesudahnya, karena pertanyaan-pertanyaan itu di-generate AI
+ * berdasarkan jawaban lama yang sekarang dibatalkan. Maks 1x per nomor.
  */
 
 type Tahap = "pengantar" | "putaran" | "berpikir" | "gagal" | "menyusun";
 
-const TOTAL = putaranWawancaraWarto.length; // 6
-const LAMA_BERPIKIR_MS = 1500;
-const LAMA_MENYUSUN_MS = 2200;
+const TOTAL_MAKS = 6;
+const LAMA_BERPIKIR_MIN_MS = 900;
+
+async function blobKeBase64(blob: Blob): Promise<string> {
+  const buffer = await blob.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  let biner = "";
+  for (let i = 0; i < bytes.length; i++) biner += String.fromCharCode(bytes[i]);
+  return btoa(biner);
+}
 
 export default function HalamanNgobrolKerja() {
   const router = useRouter();
   const [tahap, setTahap] = useState<Tahap>("pengantar");
+  const [memuatAwal, setMemuatAwal] = useState(true);
+  const [sesiId, setSesiId] = useState<string | null>(null);
+  const [pertanyaan, setPertanyaan] = useState("");
+  const [putaran, setPutaran] = useState(0);
   const [jawaban, setJawaban] = useState<JawabanTersimpan[]>([]);
-  const [tersimpanDimuat, setTersimpanDimuat] = useState(false);
+  const [riwayatPertanyaan, setRiwayatPertanyaan] = useState<PertanyaanTersimpan[]>([]);
+  const [mengirim, setMengirim] = useState(false);
+  // Nomor pertanyaan yang sudah pernah diulang — maks 1x per nomor.
+  const [sudahDiulang, setSudahDiulang] = useState<Set<number>>(new Set());
 
-  // Pulihkan progres dari sessionStorage (tahan refresh) — baca sistem
-  // eksternal lalu setState dari callback, bukan sinkron di badan effect.
+  // Pulihkan progres sesi dari sessionStorage (tahan refresh).
   useEffect(() => {
     const id = setTimeout(() => {
       try {
         const mentah = sessionStorage.getItem(KUNCI_PROGRES_NGOBROL);
         if (mentah) {
           const progres = JSON.parse(mentah) as ProgresNgobrol;
-          if (Array.isArray(progres.jawaban) && progres.jawaban.length > 0) {
-            const terjawab = progres.jawaban.slice(0, TOTAL);
-            setJawaban(terjawab);
-            setTahap(terjawab.length >= TOTAL ? "menyusun" : "putaran");
+          if (progres.sesiId) {
+            setSesiId(progres.sesiId);
+            setPertanyaan(progres.pertanyaan);
+            setPutaran(progres.putaran);
+            setJawaban(progres.jawaban ?? []);
+            setRiwayatPertanyaan(progres.riwayatPertanyaan ?? []);
+            setSudahDiulang(new Set(progres.sudahDiulang ?? []));
+            setTahap("putaran");
           }
         }
       } catch {
         // penyimpanan rusak / tidak tersedia → mulai dari awal
       }
-      setTersimpanDimuat(true);
+      setMemuatAwal(false);
     }, 0);
     return () => clearTimeout(id);
   }, []);
 
   // Simpan progres setiap berubah
   useEffect(() => {
-    if (!tersimpanDimuat || tahap === "menyusun") return;
+    if (memuatAwal || !sesiId || tahap === "menyusun") return;
     try {
-      if (jawaban.length > 0) {
-        sessionStorage.setItem(
-          KUNCI_PROGRES_NGOBROL,
-          JSON.stringify({ jawaban } satisfies ProgresNgobrol),
-        );
-      } else {
-        sessionStorage.removeItem(KUNCI_PROGRES_NGOBROL);
-      }
+      sessionStorage.setItem(
+        KUNCI_PROGRES_NGOBROL,
+        JSON.stringify({
+          sesiId,
+          pertanyaan,
+          putaran,
+          jawaban,
+          riwayatPertanyaan,
+          sudahDiulang: Array.from(sudahDiulang),
+        } satisfies ProgresNgobrol),
+      );
     } catch {
       // sessionStorage penuh / diblokir — alur tetap jalan tanpa simpan
     }
-  }, [jawaban, tahap, tersimpanDimuat]);
+  }, [sesiId, pertanyaan, putaran, jawaban, riwayatPertanyaan, sudahDiulang, tahap, memuatAwal]);
 
-  // Minta izin mikrofon lebih dulu, lalu masuk putaran.
-  // Gagal total → keadaan GAGAL (tiga pilihan, tanpa galat teknis).
+  const bersihkanProgres = () => {
+    try {
+      sessionStorage.removeItem(KUNCI_PROGRES_NGOBROL);
+    } catch {
+      // abaikan
+    }
+  };
+
+  // Minta izin mikrofon, lalu mulai sesi wawancara di server.
   const mintaIzinLaluMulai = useCallback(async () => {
     try {
       if (!navigator.mediaDevices?.getUserMedia) throw new Error("mic tidak ada");
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       stream.getTracks().forEach((t) => t.stop());
-      setTahap("putaran");
     } catch {
       setTahap("gagal");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/ai/interview/start", { method: "POST" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.pesan || "Gagal memulai wawancara.");
+      setSesiId(json.data.sesi_id);
+      setPertanyaan(json.data.pertanyaan);
+      // 0 jawaban terjawab — ini pertanyaan pertama (beda makna dari
+      // `putaran` di respons /answer, yang berarti jumlah jawaban terjawab).
+      setPutaran(0);
+      setJawaban([]);
+      setRiwayatPertanyaan([{ nomor: 1, teks: json.data.pertanyaan }]);
+      setSudahDiulang(new Set());
+      setTahap("putaran");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Terjadi kesalahan.");
     }
   }, []);
 
-  // Rekaman selesai (mic asli atau simulasi) → simpan transkrip mock putaran
-  // ini, lalu tampilkan keadaan berpikir.
-  const rekamSelesai = useCallback(
-    (_blob: Blob | null, _detik: number) => {
-      const putaran = putaranWawancaraWarto[jawaban.length];
-      if (!putaran) return;
-      setJawaban((j) => [...j, { nomor: putaran.nomor, transkrip: putaran.transkrip }]);
-      setTahap("berpikir");
-    },
-    [jawaban.length],
-  );
-
-  // Berpikir ~1,5 dtk → transkrip muncul di "jawaban sebelumnya" dan maju ke
-  // pertanyaan berikutnya. Putaran ke-6 selesai → batas keras → menyusun.
-  useEffect(() => {
-    if (tahap !== "berpikir") return;
-    const t = setTimeout(() => {
-      setTahap(jawaban.length >= TOTAL ? "menyusun" : "putaran");
-    }, LAMA_BERPIKIR_MS);
-    return () => clearTimeout(t);
-  }, [tahap, jawaban.length]);
-
-  // Menyusun → terbit ke halaman hasil, progres wawancara dibersihkan.
-  useEffect(() => {
-    if (tahap !== "menyusun") return;
-    const t = setTimeout(() => {
+  const selesaikanWawancara = useCallback(
+    async (idSesi: string) => {
+      setTahap("menyusun");
       try {
-        sessionStorage.removeItem(KUNCI_PROGRES_NGOBROL);
-      } catch {
-        // abaikan
+        const res = await fetch("/api/ai/interview/finish", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sesi_id: idSesi }),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.pesan || "Gagal menyusun Kartu Kerja.");
+        bersihkanProgres();
+        router.push("/worker/interview/result");
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Terjadi kesalahan.");
+        setTahap("putaran");
       }
-      router.push("/worker/interview/result");
-    }, LAMA_MENYUSUN_MS);
-    return () => clearTimeout(t);
-  }, [tahap, router]);
-
-  const nomorTampil = Math.min(
-    jawaban.length + (tahap === "berpikir" ? 0 : 1),
-    TOTAL,
+    },
+    [router],
   );
-  const putaranTampil = putaranWawancaraWarto[nomorTampil - 1];
-  // Saat berpikir, transkrip terbaru sengaja BELUM ditampilkan — ia muncul
-  // tepat saat pertanyaan berikutnya tampil.
-  const jawabanTampil = tahap === "berpikir" ? jawaban.slice(0, -1) : jawaban;
-  const bolehSudahCukup = jawaban.length >= 3;
+
+  // Rekaman selesai → kirim audio ke server untuk ditranskrip + dijawab.
+  const rekamSelesai = useCallback(
+    async (blob: Blob | null, _detik: number) => {
+      if (!sesiId || mengirim) return;
+      if (!blob) {
+        toast.error("Rekaman tidak tersedia di perangkat ini. Coba lagi atau pakai jalur isi manual.");
+        return;
+      }
+
+      setMengirim(true);
+      setTahap("berpikir");
+      const mulai = Date.now();
+      try {
+        const audio_base64 = await blobKeBase64(blob);
+        const res = await fetch("/api/ai/interview/answer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sesi_id: sesiId,
+            audio_base64,
+            mime_type: blob.type || "audio/webm",
+          }),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.pesan || "Gagal mengirim jawaban.");
+
+        const data = json.data as {
+          transkrip: string;
+          pertanyaan: string;
+          putaran: number;
+          sudah_cukup: boolean;
+        };
+
+        setJawaban((j) => [...j, { nomor: data.putaran, transkrip: data.transkrip }]);
+        setRiwayatPertanyaan((r) => [
+          ...r.filter((p) => p.nomor !== data.putaran + 1),
+          { nomor: data.putaran + 1, teks: data.pertanyaan },
+        ]);
+        setPertanyaan(data.pertanyaan);
+        setPutaran(data.putaran);
+
+        // jaga jeda "berpikir" minimal supaya tidak terasa berkedip
+        const sisa = LAMA_BERPIKIR_MIN_MS - (Date.now() - mulai);
+        if (sisa > 0) await new Promise((r) => setTimeout(r, sisa));
+
+        if (data.sudah_cukup || data.putaran >= TOTAL_MAKS) {
+          await selesaikanWawancara(sesiId);
+        } else {
+          setTahap("putaran");
+        }
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Terjadi kesalahan.");
+        setTahap("putaran");
+      } finally {
+        setMengirim(false);
+      }
+    },
+    [sesiId, mengirim, selesaikanWawancara],
+  );
+
+  // "Ulangi pertanyaan ini" — bisa dipilih dari pertanyaan mana pun yang
+  // sudah dijawab, bukan cuma yang terakhir. Membuang jawaban nomor itu dan
+  // semua sesudahnya (pertanyaan-pertanyaan itu di-generate dari jawaban
+  // lama yang sekarang dibatalkan), lalu kembali merekam dari situ.
+  // Maks 1x per nomor (dilacak di klien via `sudahDiulang`).
+  const ulangiPertanyaanNomor = useCallback(
+    async (nomor: number) => {
+      if (!sesiId || mengirim || sudahDiulang.has(nomor)) return;
+      const teksPertanyaan = riwayatPertanyaan.find((p) => p.nomor === nomor)?.teks;
+      if (!teksPertanyaan) return;
+
+      setMengirim(true);
+      try {
+        const res = await fetch("/api/ai/interview/undo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sesi_id: sesiId, target_nomor: nomor }),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.pesan || "Gagal mengulang pertanyaan.");
+
+        setJawaban((j) => j.filter((x) => x.nomor < nomor));
+        setRiwayatPertanyaan((r) => r.filter((p) => p.nomor <= nomor));
+        setPertanyaan(teksPertanyaan);
+        setPutaran(nomor - 1);
+        setSudahDiulang((s) => new Set(s).add(nomor));
+        setTahap("putaran");
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Terjadi kesalahan.");
+      } finally {
+        setMengirim(false);
+      }
+    },
+    [sesiId, mengirim, sudahDiulang, riwayatPertanyaan],
+  );
+
+  const bolehSudahCukup = putaran >= 3 && !mengirim;
 
   // ============ MENYUSUN ============
   if (tahap === "menyusun") {
@@ -233,15 +353,6 @@ export default function HalamanNgobrolKerja() {
             <Mic aria-hidden />
             Coba rekam lagi
           </Button>
-          <Button
-            size="lg"
-            variant="outline"
-            className="w-full"
-            onClick={() => setTahap("putaran")}
-          >
-            <ArrowRight aria-hidden />
-            Lanjut ke pertanyaan berikutnya
-          </Button>
           <Button size="lg" variant="ghost" className="w-full" asChild>
             <Link href="/worker/interview/manual">
               <PencilLine aria-hidden />
@@ -266,9 +377,9 @@ export default function HalamanNgobrolKerja() {
       <div className="grid grid-cols-[1.1fr_0.9fr] items-start gap-14 max-lg:grid-cols-1 max-lg:gap-8">
         <div className="flex flex-col gap-6">
           <KartuPertanyaan
-            nomor={nomorTampil}
-            total={TOTAL}
-            pertanyaan={putaranTampil.pertanyaan}
+            nomor={Math.min(putaran + 1, TOTAL_MAKS)}
+            total={TOTAL_MAKS}
+            pertanyaan={pertanyaan}
           />
 
           {tahap === "berpikir" ? (
@@ -281,12 +392,12 @@ export default function HalamanNgobrolKerja() {
             <Button
               variant="ghost"
               disabled={!bolehSudahCukup}
-              onClick={() => setTahap("menyusun")}
+              onClick={() => sesiId && selesaikanWawancara(sesiId)}
             >
               Sudah cukup, buat kartu saya
               <ArrowRight aria-hidden />
             </Button>
-            {!bolehSudahCukup && (
+            {putaran < 3 && (
               <p className="text-label text-tanah-500">
                 Bisa dipakai setelah 3 pertanyaan terjawab.
               </p>
@@ -295,10 +406,15 @@ export default function HalamanNgobrolKerja() {
         </div>
 
         {/* jawaban terekam — panel ledger di kolom kanan (desktop),
-            mengalir di bawah tombol rekam (HP) */}
-        {jawabanTampil.length > 0 && (
+            mengalir di bawah tombol rekam (HP); tiap item bisa "Ulangi" */}
+        {jawaban.length > 0 && (
           <aside className="lg:border-l lg:border-tanah-200 lg:pl-14">
-            <JawabanSebelumnya jawaban={jawabanTampil} />
+            <JawabanSebelumnya
+              jawaban={jawaban}
+              nomorSudahDiulang={sudahDiulang}
+              onUlangi={tahap === "putaran" ? ulangiPertanyaanNomor : undefined}
+              ulangiNonaktif={mengirim}
+            />
           </aside>
         )}
       </div>

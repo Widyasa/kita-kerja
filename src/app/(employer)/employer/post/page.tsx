@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/component/ui/button";
 import { Textarea } from "@/component/ui/textarea";
@@ -25,10 +26,38 @@ export default function HalamanPasangLowongan() {
   const router = useRouter();
   const [teks, setTeks] = useState("");
   const [dariSuara, setDariSuara] = useState(false);
+  const [transkrip, setTranskrip] = useState(false);
 
   function lanjut() {
     sessionStorage.setItem(KUNCI_TEKS_LOWONGAN, teks.trim());
     router.push("/employer/post/result");
+  }
+
+  async function rekamSelesai(blob: Blob | null) {
+    if (!blob) {
+      toast.error("Rekaman tidak tersedia di perangkat ini. Silakan ketik saja.");
+      return;
+    }
+    setTranskrip(true);
+    try {
+      const buffer = await blob.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      let biner = "";
+      for (let i = 0; i < bytes.length; i++) biner += String.fromCharCode(bytes[i]);
+      const res = await fetch("/api/transcribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ audio_base64: btoa(biner), mime_type: blob.type || "audio/webm" }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.pesan || "Gagal menuliskan rekaman.");
+      setTeks(json.data.teks);
+      setDariSuara(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Terjadi kesalahan.");
+    } finally {
+      setTranskrip(false);
+    }
   }
 
   return (
@@ -67,17 +96,12 @@ export default function HalamanPasangLowongan() {
       {/* alternatif rekam suara */}
       <div className="flex flex-col items-center gap-3 rounded-2xl border border-tanah-200 bg-tanah-0 p-6 shadow-1">
         <p className="text-body-lg font-semibold">Atau rekam suara saja</p>
-        <TombolRekam
-          mode="ketuk"
-          onSelesai={() => {
-            // Mock fase 2: belum ada transkripsi sungguhan — isi contoh
-            // agar alur bisa dicoba ujung ke ujung.
-            if (!teks.trim()) {
-              setTeks(CONTOH[0]);
-              setDariSuara(true);
-            }
-          }}
-        />
+        <TombolRekam mode="ketuk" onSelesai={rekamSelesai} />
+        {transkrip && (
+          <p role="status" className="text-label text-tanah-600">
+            Menuliskan rekaman Anda…
+          </p>
+        )}
       </div>
 
       {/* contoh yang bisa ditiru */}

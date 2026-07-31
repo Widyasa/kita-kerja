@@ -1,8 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import { Input } from "@/component/ui/input";
 import { cn } from "@/lib/utils";
 import type { JenisKerja, SatuanUpah } from "@/lib/mock";
+import type { PilihanWilayah } from "@/lib/data/profil";
 import {
   LABEL_JENIS_KERJA,
   LABEL_SATUAN_UPAH,
@@ -49,6 +52,24 @@ export function RingkasanEkstraksi({
   onUbah: (patch: Partial<BidangLowongan>) => void;
   className?: string;
 }) {
+  const [daftarWilayah, setDaftarWilayah] = useState<PilihanWilayah[]>([]);
+
+  useEffect(() => {
+    let dibatalkan = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/wilayah");
+        const json = await res.json();
+        if (!dibatalkan && res.ok) setDaftarWilayah(json.data.wilayah as PilihanWilayah[]);
+      } catch {
+        // gagal diam-diam — select tetap tampil kosong
+      }
+    })();
+    return () => {
+      dibatalkan = true;
+    };
+  }, []);
+
   return (
     <div
       className={cn(
@@ -103,6 +124,24 @@ export function RingkasanEkstraksi({
             onChange={(e) => onUbah({ lokasi: e.target.value })}
             placeholder="mis. Sukun, Kota Malang"
           />
+        </Bidang>
+      </div>
+
+      <div className="sm:col-span-2">
+        <Bidang label="Wilayah" htmlFor="re-wilayah">
+          <select
+            id="re-wilayah"
+            value={bidang.wilayahId}
+            onChange={(e) => onUbah({ wilayahId: e.target.value })}
+            className={kelasSelect}
+          >
+            <option value="">Belum dipilih</option>
+            {daftarWilayah.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.nama}
+              </option>
+            ))}
+          </select>
         </Bidang>
       </div>
 

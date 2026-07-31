@@ -8,6 +8,7 @@ import {
   MessageCircleQuestion,
   Send,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/component/ui/button";
 import {
@@ -29,10 +30,12 @@ import type { TingkatRisiko } from "@/lib/mock";
  * - Setelah terkirim: umpan balik "Lamaran terkirim" + langkah berikutnya.
  */
 export function TombolLamar({
+  lowonganId,
   tingkat,
   pertanyaan,
   sudahMelamar,
 }: {
+  lowonganId: string;
   tingkat: TingkatRisiko;
   pertanyaan: string[];
   /** bila pekerja sudah pernah melamar lowongan ini */
@@ -40,6 +43,26 @@ export function TombolLamar({
 }) {
   const [terkirim, setTerkirim] = useState(false);
   const [dialogTerbuka, setDialogTerbuka] = useState(false);
+  const [mengirim, setMengirim] = useState(false);
+
+  async function kirimLamaran() {
+    if (mengirim) return;
+    setMengirim(true);
+    try {
+      const res = await fetch("/api/applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lowongan_id: lowonganId }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.pesan || "Gagal mengirim lamaran.");
+      setTerkirim(true);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Terjadi kesalahan.");
+    } finally {
+      setMengirim(false);
+    }
+  }
 
   if (sudahMelamar) {
     return (
@@ -88,11 +111,12 @@ export function TombolLamar({
       <Button
         size="lg"
         className="w-full"
+        disabled={mengirim}
         onClick={() => {
           if (tingkat === "berisiko_tinggi") {
             setDialogTerbuka(true);
           } else {
-            setTerkirim(true);
+            void kirimLamaran();
           }
         }}
       >
@@ -135,7 +159,7 @@ export function TombolLamar({
               className="w-full"
               onClick={() => {
                 setDialogTerbuka(false);
-                setTerkirim(true);
+                void kirimLamaran();
               }}
             >
               <Send aria-hidden />

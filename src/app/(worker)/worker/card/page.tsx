@@ -4,12 +4,14 @@ import {
   BriefcaseBusiness,
   CalendarClock,
   Eye,
+  IdCard,
   Printer,
   ShieldCheck,
   Star,
 } from "lucide-react";
 
 import { BadgeLapis } from "@/component/bersama/BadgeLapis";
+import { KeadaanKosong } from "@/component/bersama/KeadaanKosong";
 import { LabelSection } from "@/component/bersama/LabelSection";
 import { KartuKerjaVisual } from "@/component/kartu/KartuKerjaVisual";
 import { ItemKeahlianKartu } from "@/component/kartu/ItemKeahlianKartu";
@@ -17,16 +19,9 @@ import { SakelarPublik } from "@/component/kartu/SakelarPublik";
 import { TombolBagikan } from "@/component/kartu/TombolBagikan";
 import { formatBulanTahun } from "@/component/kartu/format";
 import { Button } from "@/component/ui/button";
-import {
-  formatTanggal,
-  kartuWarto,
-  keahlianWarto,
-  pekerjaUtama,
-  riwayatWarto,
-  statistikWarto,
-  wilayah,
-  type LapisKepercayaan,
-} from "@/lib/mock";
+import { createClient } from "@/lib/supabase/server-client";
+import { getDashboardPekerja } from "@/lib/data/kartu-kerja";
+import { formatTanggal, upahTeks, type LapisKepercayaan } from "@/lib/mock";
 
 export const metadata: Metadata = {
   title: "Kartu Kerja Anda — Kita Kerja",
@@ -60,24 +55,36 @@ const URUTAN_LAPIS: {
  * /worker/card (Bagian 6.4) — puncak emosional produk.
  * Terasa seperti menerima sesuatu yang bernilai, bukan membuka profil.
  *
- * Bahasa visual "dossier" (selaras landing): desktop dua kolom — narasi
- * pembuka + aksi di kiri, kartu diselipkan miring di kanan seperti artefak
- * fisik; angka ringkasan sebagai strip ledger rata kiri; keahlian per lapis
- * dan riwayat sebagai baris ledger. Di bawah 1024px runtuh ke satu kolom
- * dengan urutan baca yang sama: pembuka → kartu → aksi → angka → keahlian →
- * riwayat → sakelar publik.
+ * Data asli dari Supabase (pengguna + kartu_kerja yang login). Pekerja baru
+ * belum punya kartu yang terbit — ditangani sebagai halaman kosong yang
+ * mengarahkan ke Ngobrol Kerja, bukan menampilkan kartu artefak kosong.
  */
-export default function HalamanKartuKerja() {
-  const kartu = kartuWarto;
-  const pekerja = pekerjaUtama;
+export default async function HalamanKartuKerja() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const dashboard = await getDashboardPekerja(user!.id);
+  const { kartu, pengguna: pekerja } = dashboard;
+
+  if (!kartu || !kartu.diterbitkan_pada) {
+    return (
+      <KeadaanKosong
+        className="mt-6"
+        ikon={IdCard}
+        judul="Anda belum punya Kartu Kerja"
+        penjelasan="Ceritakan pengalaman kerja Anda lewat Ngobrol Kerja — kira-kira 3 menit — dan Kartu Kerja Anda langsung terbit di sini."
+        labelAksi="Mulai Ngobrol Kerja"
+        hrefAksi="/worker/interview"
+      />
+    );
+  }
+
   const token = kartu.token_publik;
   const urlVerifikasi = `https://kita-kerja.example/verify/${token}`;
   const namaPanggilan = pekerja.nama.split(" ")[0];
 
-  const riwayatTerverifikasi = [...riwayatWarto]
-    .filter((p) => p.dikonfirmasi_selesai_pekerja && p.dikonfirmasi_selesai_pemberi)
-    .sort((a, b) => b.selesai_pada.localeCompare(a.selesai_pada))
-    .slice(0, 5);
+  const riwayatTerverifikasi = dashboard.riwayat;
 
   return (
     <div className="flex flex-col gap-16">
@@ -85,12 +92,10 @@ export default function HalamanKartuKerja() {
       <section className="grid grid-cols-[0.9fr_1.1fr] items-center gap-14 max-lg:grid-cols-1 max-lg:gap-10">
         <div>
           <LabelSection
-            label={`Diterbitkan ${
-              kartu.diterbitkan_pada ? formatTanggal(kartu.diterbitkan_pada) : "—"
-            }`}
+            label={`Diterbitkan ${formatTanggal(kartu.diterbitkan_pada)}`}
           />
           <h1 className="mt-5 text-[clamp(2rem,3.6vw,3.25rem)] leading-[1.04] font-extrabold tracking-[-0.025em] text-balance">
-            Ini Kartu Kerja Anda, Pak {namaPanggilan}
+            Ini Kartu Kerja Anda, {namaPanggilan}
           </h1>
           <p className="mt-4 max-w-[40ch] text-body-lg text-balance text-tanah-600">
             Semua kerja keras Anda selama {kartu.pengalaman_tahun} tahun
@@ -103,7 +108,7 @@ export default function HalamanKartuKerja() {
             <Button
               asChild
               size="lg"
-              className="h-auto min-h-14 w-full px-4 py-2 text-label whitespace-normal"
+              className="h-auto min-h-14 w-full px-4 py-2 text-label text-white whitespace-normal"
             >
               <Link href="/worker/card/print">
                 <Printer aria-hidden />
@@ -134,10 +139,12 @@ export default function HalamanKartuKerja() {
           <KartuKerjaVisual
             kartu={kartu}
             pekerja={pekerja}
-            keahlian={keahlianWarto}
-            jumlahPekerjaanSelesai={statistikWarto.jumlahPekerjaanSelesai}
-            rataRataPenilaian={statistikWarto.rataRataPenilaian}
-            jumlahPenilai={statistikWarto.jumlahPenilai}
+            keahlian={dashboard.keahlian}
+            jumlahPekerjaanSelesai={dashboard.statistik.jumlahPekerjaanSelesai}
+            rataRataPenilaian={dashboard.statistik.rataRataPenilaian}
+            jumlahPenilai={dashboard.statistik.jumlahPenilai}
+            bidangNama={dashboard.bidangNama}
+            wilayahNama={dashboard.wilayahNama}
             className="w-full"
           />
         </div>
@@ -148,7 +155,7 @@ export default function HalamanKartuKerja() {
         <div className="grid grid-cols-3 divide-x-2 divide-tanah-200 border-y-2 border-tanah-200 py-8 max-lg:py-6">
           <div className="px-8 first:pl-0 max-lg:px-3">
             <p className="text-[3.5rem] leading-none font-extrabold tracking-[-0.03em] text-biru-600 tabular-nums max-lg:text-[2.75rem]">
-              {statistikWarto.jumlahPekerjaanSelesai}
+              {dashboard.statistik.jumlahPekerjaanSelesai}
             </p>
             <p className="mt-3 flex items-center gap-1.5 text-label text-tanah-600">
               <BriefcaseBusiness className="size-4" aria-hidden />
@@ -157,11 +164,13 @@ export default function HalamanKartuKerja() {
           </div>
           <div className="px-8 max-lg:px-3">
             <p className="text-[3.5rem] leading-none font-extrabold tracking-[-0.03em] text-kuning-800 tabular-nums max-lg:text-[2.75rem]">
-              {statistikWarto.rataRataPenilaian.toFixed(1).replace(".", ",")}
+              {dashboard.statistik.jumlahPenilai > 0
+                ? dashboard.statistik.rataRataPenilaian.toFixed(1).replace(".", ",")
+                : "—"}
             </p>
             <p className="mt-3 flex items-center gap-1.5 text-label text-tanah-600">
               <Star className="size-4 fill-kuning-500 text-kuning-500" aria-hidden />
-              dari {statistikWarto.jumlahPenilai} penilai
+              dari {dashboard.statistik.jumlahPenilai} penilai
             </p>
           </div>
           <div className="px-8 max-lg:px-3">
@@ -187,7 +196,7 @@ export default function HalamanKartuKerja() {
         </p>
         <div className="mt-10 flex flex-col divide-y-2 divide-tanah-200 border-y-2 border-tanah-200">
           {URUTAN_LAPIS.map(({ lapis, judul, penjelasan }) => {
-            const daftar = keahlianWarto.filter((k) => k.lapis === lapis);
+            const daftar = dashboard.keahlian.filter((k) => k.lapis === lapis);
             if (daftar.length === 0) return null;
             return (
               <div
@@ -223,10 +232,9 @@ export default function HalamanKartuKerja() {
         <p className="mt-2 text-body text-tanah-600">
           Diselesaikan dan dikonfirmasi oleh kedua pihak.
         </p>
-        <ul className="mt-6 flex flex-col divide-y divide-tanah-200 border-y border-tanah-200">
-          {riwayatTerverifikasi.map((p) => {
-            const wl = wilayah.find((w) => w.id === p.wilayah_id);
-            return (
+        {riwayatTerverifikasi.length > 0 ? (
+          <ul className="mt-6 flex flex-col divide-y divide-tanah-200 border-y border-tanah-200">
+            {riwayatTerverifikasi.map((p) => (
               <li
                 key={p.id}
                 className="grid grid-cols-[10rem_1fr] items-baseline gap-6 py-4 max-lg:grid-cols-1 max-lg:gap-0.5"
@@ -235,15 +243,20 @@ export default function HalamanKartuKerja() {
                   {formatBulanTahun(p.selesai_pada)}
                 </span>
                 <span className="text-body">
-                  {p.judul}
-                  {wl ? (
-                    <span className="text-tanah-600"> · {wl.nama}</span>
-                  ) : null}
+                  {p.lingkup}
+                  <span className="text-tanah-600">
+                    {" "}
+                    · {upahTeks(p.upah_disepakati, p.satuan as "harian" | "bulanan" | "borongan" | "per_jam")}
+                  </span>
                 </span>
               </li>
-            );
-          })}
-        </ul>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-6 text-body text-tanah-600">
+            Belum ada pekerjaan yang selesai lewat aplikasi.
+          </p>
+        )}
       </section>
 
       {/* sakelar publik */}

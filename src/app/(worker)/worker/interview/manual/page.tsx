@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/component/ui/button";
 import { Input } from "@/component/ui/input";
@@ -46,6 +47,7 @@ export default function HalamanIsiManual() {
   const router = useRouter();
   const [daftar, setDaftar] = useState<KeahlianManualTersimpan[]>([]);
   const [dimuat, setDimuat] = useState(false);
+  const [mengirim, setMengirim] = useState(false);
 
   const {
     register,
@@ -92,6 +94,32 @@ export default function HalamanIsiManual() {
   };
 
   const hapus = (id: string) => setDaftar((d) => d.filter((k) => k.id !== id));
+
+  const terbitkan = async () => {
+    if (daftar.length === 0 || mengirim) return;
+    setMengirim(true);
+    try {
+      const res = await fetch("/api/cards/keahlian", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: daftar.map((d) => ({ nama: d.nama, level: d.level, cerita: d.cerita })),
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.pesan || "Gagal menyimpan keahlian.");
+      try {
+        sessionStorage.removeItem(KUNCI_KEAHLIAN_MANUAL);
+      } catch {
+        // abaikan
+      }
+      router.push("/worker/interview/result");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Terjadi kesalahan.");
+    } finally {
+      setMengirim(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6">
@@ -240,9 +268,10 @@ export default function HalamanIsiManual() {
           size="lg"
           variant="aksen"
           className="w-full"
-          disabled={daftar.length === 0}
-          onClick={() => router.push("/worker/interview/result")}
+          disabled={daftar.length === 0 || mengirim}
+          onClick={terbitkan}
         >
+          {mengirim ? <Loader2 className="animate-spin" aria-hidden /> : null}
           Terbitkan Kartu Kerja saya
         </Button>
         {daftar.length === 0 && (

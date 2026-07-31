@@ -1,17 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { redirect } from "next/navigation";
 
 import { KartuSaku } from "@/component/kartu/KartuSaku";
 import { LembarA5 } from "@/component/kartu/LembarA5";
 import { PanelCetak } from "@/component/kartu/PanelCetak";
-import {
-  kartuWarto,
-  keahlianWarto,
-  pekerjaUtama,
-  riwayatWarto,
-  statistikWarto,
-} from "@/lib/mock";
+import { createClient } from "@/lib/supabase/server-client";
+import { getDashboardPekerja } from "@/lib/data/kartu-kerja";
 
 export const metadata: Metadata = {
   title: "Cetak Kartu Kerja — Kita Kerja",
@@ -45,13 +41,25 @@ const CSS_CETAK = `
  * lembar A5 (riwayat lengkap). Layar menampilkan instruksi sederhana,
  * tombol cetak, dan pratinjau; media print menyembunyikan semua navigasi.
  */
-export default function HalamanCetakKartu() {
+export default async function HalamanCetakKartu() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const dashboard = await getDashboardPekerja(user!.id);
+
+  if (!dashboard.kartu || !dashboard.kartu.diterbitkan_pada) {
+    redirect("/worker/card");
+  }
+
   const propertiKartu = {
-    kartu: kartuWarto,
-    pekerja: pekerjaUtama,
-    keahlian: keahlianWarto,
-    jumlahPekerjaanSelesai: statistikWarto.jumlahPekerjaanSelesai,
-    rataRataPenilaian: statistikWarto.rataRataPenilaian,
+    kartu: dashboard.kartu,
+    pekerja: dashboard.pengguna,
+    keahlian: dashboard.keahlian,
+    jumlahPekerjaanSelesai: dashboard.statistik.jumlahPekerjaanSelesai,
+    rataRataPenilaian: dashboard.statistik.rataRataPenilaian,
+    bidangNama: dashboard.bidangNama,
+    wilayahNama: dashboard.wilayahNama,
   };
 
   return (
@@ -86,8 +94,8 @@ export default function HalamanCetakKartu() {
         lembarA5={
           <LembarA5
             {...propertiKartu}
-            riwayat={riwayatWarto}
-            jumlahPenilai={statistikWarto.jumlahPenilai}
+            riwayat={dashboard.riwayat}
+            jumlahPenilai={dashboard.statistik.jumlahPenilai}
           />
         }
       />

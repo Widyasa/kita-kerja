@@ -2,14 +2,9 @@ import Link from "next/link";
 import { ArrowRight, Inbox, MapPin } from "lucide-react";
 
 import { KeadaanKosong } from "@/component/bersama/KeadaanKosong";
-import {
-  jarakTeks,
-  lamaran,
-  lowongan,
-  pekerjaUtama,
-  upahTeks,
-  wilayah,
-} from "@/lib/mock";
+import { createClient } from "@/lib/supabase/server-client";
+import { lamaranPekerja } from "@/lib/data/lamaran";
+import { upahTeks } from "@/lib/mock/utils";
 
 import { INFO_STATUS_LAMARAN } from "../status-lamaran";
 
@@ -18,8 +13,12 @@ import { INFO_STATUS_LAMARAN } from "../status-lamaran";
  * tiap butir menjelaskan arti status DAN langkah berikutnya
  * dalam satu kalimat. KeadaanKosong informatif bila kosong.
  */
-export default function HalamanLamaran() {
-  const milik = lamaran.filter((l) => l.pekerja_id === pekerjaUtama.id);
+export default async function HalamanLamaran() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const milik = await lamaranPekerja(user!.id);
 
   return (
     <div className="flex flex-col gap-6">
@@ -41,9 +40,6 @@ export default function HalamanLamaran() {
       ) : (
         <ul className="flex flex-col gap-4">
           {milik.map((lm) => {
-            const lw = lowongan.find((l) => l.id === lm.lowongan_id);
-            if (!lw) return null;
-            const wl = wilayah.find((w) => w.id === lw.wilayah_id)!;
             const info = INFO_STATUS_LAMARAN[lm.status];
             return (
               <li
@@ -51,7 +47,7 @@ export default function HalamanLamaran() {
                 className="rounded-2xl border border-tanah-200 bg-tanah-0 p-5 shadow-1"
               >
                 <div className="flex flex-wrap items-start justify-between gap-2">
-                  <h2 className="text-h3 text-tanah-900">{lw.judul_baku}</h2>
+                  <h2 className="text-h3 text-tanah-900">{lm.judul_baku}</h2>
                   <span
                     className={`inline-flex items-center rounded-pill px-3 py-1 text-label font-semibold ${info.kelas}`}
                   >
@@ -60,17 +56,15 @@ export default function HalamanLamaran() {
                 </div>
                 <p className="mt-2 flex items-center gap-2 text-body text-tanah-600">
                   <MapPin className="size-5 shrink-0" aria-hidden />
-                  {wl.nama} · {jarakTeks(lw.jarak_km)}
+                  {lm.lokasi_teks ?? lm.wilayah_nama ?? "Lokasi belum diisi"}
                 </p>
-                <p className="mt-1 text-body font-semibold text-tanah-900">
-                  {upahTeks(lw.upah_ditawarkan, lw.satuan_upah)}
-                </p>
+                {lm.upah_ditawarkan !== null && lm.satuan_upah && (<p className="mt-1 text-body font-semibold text-tanah-900">{upahTeks(lm.upah_ditawarkan, lm.satuan_upah)}</p>)}
                 {/* Arti status + langkah berikutnya dalam satu kalimat */}
                 <p className="mt-3 rounded-lg bg-tanah-50 p-3 text-body text-tanah-800">
                   {info.penjelasan}
                 </p>
                 <Link
-                  href={`/worker/jobs/${lw.id}`}
+                  href={`/worker/jobs/${lm.lowongan_id}`}
                   className="mt-2 inline-flex min-h-12 items-center gap-2 rounded-md px-2 text-body font-bold text-biru-600 underline underline-offset-4 focus-visible:ring-[3px] focus-visible:ring-biru-600/40 focus-visible:outline-none"
                 >
                   Lihat lowongan

@@ -7,11 +7,8 @@ import { BadgeLapis } from "@/component/bersama/BadgeLapis";
 import { Button } from "@/component/ui/button";
 import { Input } from "@/component/ui/input";
 import { cn } from "@/lib/utils";
-import {
-  keahlianBaku,
-  type KartuKeahlian,
-  type LevelKeahlian,
-} from "@/lib/mock";
+import type { KeahlianTampil } from "@/lib/data/types";
+import type { LevelKeahlian } from "@/lib/mock/types";
 import { LABEL_LEVEL, PILIHAN_LEVEL } from "./penyimpanan";
 
 /**
@@ -25,11 +22,8 @@ import { LABEL_LEVEL, PILIHAN_LEVEL } from "./penyimpanan";
  * Pengalaman: pekerja merasa MEMERIKSA, bukan menandatangani.
  */
 
-export function namaTampilKeahlian(k: KartuKeahlian): string {
-  const baku = k.keahlian_id
-    ? keahlianBaku.find((b) => b.id === k.keahlian_id)
-    : null;
-  return baku?.nama_baku ?? k.nama_diajukan ?? k.sebutan_pekerja;
+export function namaTampilKeahlian(k: KeahlianTampil): string {
+  return k.nama_tampil;
 }
 
 export function KartuKonfirmasi({
@@ -38,7 +32,7 @@ export function KartuKonfirmasi({
   onUbahLagi,
   onSimpan,
 }: {
-  keahlian: KartuKeahlian;
+  keahlian: KeahlianTampil;
   onBetul: () => void;
   onUbahLagi: () => void;
   onSimpan: (nama: string, level: LevelKeahlian) => void;

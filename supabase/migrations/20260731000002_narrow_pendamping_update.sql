@@ -1,0 +1,14 @@
+-- Drop the overly broad pendamping UPDATE policy on pengguna.
+--
+-- pengguna_update_dampingan (FOR UPDATE USING (didampingi_oleh = auth.uid()))
+-- had no column restriction and no WITH CHECK, letting a pendamping write
+-- ANY column of their assisted worker's pengguna row via direct PostgREST —
+-- including status_verifikasi (self-award identity verification, shown
+-- publicly on the Kartu Kerja) and peran (escalate role).
+--
+-- Nothing in the app uses this policy: /api/companion/register writes via
+-- the service role, and the companion pages only read. Postgres RLS cannot
+-- restrict by column directly (that would need a trigger or a narrower
+-- approach, out of scope here), so the simplest correct fix is to remove
+-- this unnecessary attack surface entirely.
+DROP POLICY IF EXISTS "pengguna_update_dampingan" ON pengguna;

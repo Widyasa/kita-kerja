@@ -1,9 +1,10 @@
 import type { LevelKeahlian } from "@/lib/mock";
 
 /**
- * Penyimpanan sisi klien untuk alur Ngobrol Kerja (fase 2, tanpa backend).
- * - Progres putaran disimpan di sessionStorage agar tahan refresh.
- * - Keahlian jalur manual disimpan agar halaman hasil bisa menampilkannya.
+ * Penyimpanan sisi klien untuk alur Ngobrol Kerja.
+ * - Progres sesi wawancara (server-side) disimpan di sessionStorage agar
+ *   tahan refresh — sesi_id tetap sama, backend yang menyimpan jawaban asli.
+ * - Draf keahlian jalur manual disimpan sampai dikirim ke server.
  */
 
 export const KUNCI_PROGRES_NGOBROL = "kk-ngobrol-progres";
@@ -14,8 +15,20 @@ export interface JawabanTersimpan {
   transkrip: string;
 }
 
+export interface PertanyaanTersimpan {
+  nomor: number;
+  teks: string;
+}
+
 export interface ProgresNgobrol {
+  sesiId: string;
+  pertanyaan: string;
+  putaran: number;
   jawaban: JawabanTersimpan[];
+  /** semua pertanyaan yang pernah ditampilkan — dipakai untuk "Ulangi" per nomor */
+  riwayatPertanyaan: PertanyaanTersimpan[];
+  /** nomor pertanyaan yang sudah pernah diulang (maks 1x per nomor) */
+  sudahDiulang: number[];
 }
 
 export interface KeahlianManualTersimpan {

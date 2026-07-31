@@ -7,10 +7,35 @@ import { Button } from "@/component/ui/button";
 import { KartuKerjaVisual } from "@/component/kartu/KartuKerjaVisual";
 import {
   kartuWarto,
+  keahlianBaku,
   keahlianWarto,
   pekerjaUtama,
   statistikWarto,
+  type KartuKeahlian,
 } from "@/lib/mock";
+import type { KeahlianTampil } from "@/lib/data/types";
+
+/**
+ * Adaptor lokal — halaman ini hanya menampilkan Kartu Kerja CONTOH
+ * (bukan data pengguna asli), jadi ia mengubah bentuk mock lama
+ * KartuKeahlian menjadi KeahlianTampil yang diharapkan KartuKerjaVisual.
+ */
+function keahlianTampilDariMock(k: KartuKeahlian): KeahlianTampil {
+  return {
+    id: k.id,
+    keahlian_id: k.keahlian_id,
+    nama_tampil:
+      keahlianBaku.find((kb) => kb.id === k.keahlian_id)?.nama_baku ??
+      k.nama_diajukan ??
+      k.sebutan_pekerja,
+    sebutan_pekerja: k.sebutan_pekerja,
+    level: k.level,
+    kutipan_bukti: k.kutipan_bukti,
+    sumber: k.sumber,
+    dikonfirmasi_pekerja: k.dikonfirmasi_pekerja,
+    lapis: k.lapis,
+  };
+}
 
 /**
  * Foto arsip — dicetak seperti foto fisik: bingkai kertas tanah-0,
@@ -313,7 +338,7 @@ export default function LandingPage() {
               <KartuKerjaVisual
                 kartu={kartuWarto}
                 pekerja={pekerjaUtama}
-                keahlian={keahlianWarto}
+                keahlian={keahlianWarto.map(keahlianTampilDariMock)}
                 jumlahPekerjaanSelesai={statistikWarto.jumlahPekerjaanSelesai}
                 rataRataPenilaian={statistikWarto.rataRataPenilaian}
                 jumlahPenilai={statistikWarto.jumlahPenilai}

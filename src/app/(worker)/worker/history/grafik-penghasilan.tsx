@@ -10,14 +10,10 @@ import {
   YAxis,
 } from "recharts";
 
-import { formatRupiah } from "@/lib/mock";
+import { formatRupiah } from "@/lib/mock/utils";
+import type { TitikBulan } from "@/lib/data/riwayat";
 
-export interface TitikBulan {
-  /** label bulan singkat, mis. "Jan" */
-  bulan: string;
-  /** total penghasilan bulan itu (rupiah) */
-  total: number;
-}
+export type { TitikBulan };
 
 /**
  * Grafik penghasilan per bulan — batang sederhana, warna token biru-600,

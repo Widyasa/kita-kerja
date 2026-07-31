@@ -61,14 +61,16 @@ export default function RegisterPage() {
   const router = useRouter();
   const [langkah, setLangkah] = useState<Langkah>("peran");
   const [peran, setPeran] = useState<(typeof PILIHAN_PERAN)[number] | null>(null);
+  const [nama, setNama] = useState("");
   const [noHp, setNoHp] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const namaValid = nama.trim().length >= 3;
   const hpValid = noHp.replace(/\D/g, "").length >= 9;
 
   async function kirimOTP(e: React.FormEvent) {
     e.preventDefault();
-    if (!hpValid || loading || !peran) return;
+    if (!namaValid || !hpValid || loading || !peran) return;
     setLoading(true);
     try {
       const res = await fetch("/api/auth/otp", {
@@ -98,6 +100,7 @@ export default function RegisterPage() {
           code: kode,
           intent: "register",
           role: peran.peran,
+          nama,
         }),
       });
       const json = await res.json();
@@ -187,7 +190,7 @@ export default function RegisterPage() {
       {langkah === "hp" && (
         <>
           <header className="flex flex-col gap-3">
-            <h1 className="text-h1">Nomor HP Anda</h1>
+            <h1 className="text-h1">Nama dan nomor HP Anda</h1>
             <p className="text-body-lg text-tanah-600">
               Sebagai <span className="font-semibold text-tanah-800">{peran?.judul}</span>,
               nomor HP adalah satu-satunya kunci akun Anda. Kami kirim kode
@@ -196,6 +199,21 @@ export default function RegisterPage() {
           </header>
 
           <form className="flex flex-col gap-6" onSubmit={kirimOTP}>
+            <div className="flex flex-col gap-2">
+              <label htmlFor="nama" className="text-label text-tanah-800">
+                Nama lengkap
+              </label>
+              <Input
+                id="nama"
+                type="text"
+                autoComplete="name"
+                placeholder="Contoh: Warto Sugianto"
+                className="h-14 text-body-lg"
+                value={nama}
+                onChange={(e) => setNama(e.target.value)}
+                disabled={loading}
+              />
+            </div>
             <div className="flex flex-col gap-2">
               <label htmlFor="no-hp" className="text-label text-tanah-800">
                 Nomor HP
@@ -212,7 +230,7 @@ export default function RegisterPage() {
                 disabled={loading}
               />
             </div>
-            <Button type="submit" variant="aksen" size="lg" disabled={!hpValid || loading}>
+            <Button type="submit" variant="aksen" size="lg" disabled={!namaValid || !hpValid || loading}>
               {loading ? (
                 <Loader2 className="animate-spin" aria-hidden />
               ) : (

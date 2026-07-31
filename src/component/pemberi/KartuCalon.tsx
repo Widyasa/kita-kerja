@@ -2,14 +2,16 @@ import { MapPin, ClipboardList, MessageCircleHeart } from "lucide-react";
 
 import { BadgeLapis } from "@/component/bersama/BadgeLapis";
 import { cn } from "@/lib/utils";
-import {
-  bidangKerja,
-  inisialkanNamaBelakang,
-  inisialNama,
-  keahlianBaku,
-  wilayah,
-} from "@/lib/mock";
-import { LABEL_STATUS_LAMARAN, type CalonPemberi } from "./mockPemberi";
+import { inisialkanNamaBelakang, inisialNama } from "@/lib/mock/utils";
+import type { StatusLamaran } from "@/lib/mock/types";
+import type { CalonTampil } from "@/lib/data/types";
+
+const LABEL_STATUS_LAMARAN: Record<StatusLamaran, string> = {
+  dilamar: "Melamar",
+  diundang: "Diundang",
+  ditolak: "Tidak diteruskan",
+  disepakati: "Disepakati",
+};
 
 /**
  * KartuCalon — pratinjau Kartu Kerja calon untuk pemberi kerja.
@@ -24,17 +26,13 @@ export function KartuCalon({
   aksi,
   className,
 }: {
-  calon: CalonPemberi;
+  calon: CalonTampil;
   aksi?: React.ReactNode;
   className?: string;
 }) {
-  const { pekerja, kartu, keahlian, lamaran, rekamJejak } = calon;
-  const bidang = bidangKerja.find((b) => b.id === kartu?.bidang_utama_id);
-  const wl = wilayah.find((w) => w.id === pekerja.wilayah_id);
-
   return (
     <article
-      aria-label={`Calon pekerja ${pekerja.nama}`}
+      aria-label={`Calon pekerja ${calon.nama}`}
       className={cn(
         "flex flex-col gap-5 rounded-2xl border border-tanah-200 bg-tanah-0 p-5 shadow-1",
         className,
@@ -46,45 +44,40 @@ export function KartuCalon({
           aria-hidden
           className="flex size-16 shrink-0 items-center justify-center rounded-full bg-kuning-100 text-h2 font-bold text-kuning-800"
         >
-          {inisialNama(pekerja.nama)}
+          {inisialNama(calon.nama)}
         </span>
         <div className="min-w-0">
-          <h3 className="text-h3">{inisialkanNamaBelakang(pekerja.nama)}</h3>
+          <h3 className="text-h3">{inisialkanNamaBelakang(calon.nama)}</h3>
           <p className="text-body text-tanah-600">
-            {bidang?.nama ?? "Kartu Kerja belum diterbitkan"}
-            {kartu ? ` · pengalaman ${kartu.pengalaman_tahun} tahun` : ""}
+            {calon.bidang_nama ?? "Kartu Kerja belum diterbitkan"}
+            {calon.pengalaman_tahun ? ` · pengalaman ${calon.pengalaman_tahun} tahun` : ""}
           </p>
-          {wl && (
+          {calon.wilayah_nama && (
             <p className="flex items-center gap-1 text-label text-tanah-500">
               <MapPin className="size-4" aria-hidden />
-              {wl.nama}
+              {calon.wilayah_nama}
             </p>
           )}
         </div>
         <span className="ml-auto inline-flex w-fit items-center rounded-pill bg-tanah-100 px-3 py-1 text-label font-semibold text-tanah-600">
-          {LABEL_STATUS_LAMARAN[lamaran.status]}
+          {LABEL_STATUS_LAMARAN[calon.status]}
         </span>
       </div>
 
       {/* keahlian per lapis kepercayaan */}
-      {keahlian.length > 0 && (
+      {calon.keahlian.length > 0 && (
         <div>
           <p className="mikro text-tanah-500">Keahlian</p>
           <ul className="mt-2 flex flex-col gap-2">
-            {keahlian.slice(0, 3).map((k) => {
-              const baku = keahlianBaku.find((b) => b.id === k.keahlian_id);
-              return (
-                <li
-                  key={k.id}
-                  className="flex items-center justify-between gap-2 rounded-lg bg-tanah-50 px-3 py-2"
-                >
-                  <span className="text-body font-semibold">
-                    {baku?.nama_baku ?? k.nama_diajukan ?? k.sebutan_pekerja}
-                  </span>
-                  <BadgeLapis lapis={k.lapis} />
-                </li>
-              );
-            })}
+            {calon.keahlian.slice(0, 3).map((k) => (
+              <li
+                key={k.id}
+                className="flex items-center justify-between gap-2 rounded-lg bg-tanah-50 px-3 py-2"
+              >
+                <span className="text-body font-semibold">{k.nama_tampil}</span>
+                <BadgeLapis lapis={k.lapis} />
+              </li>
+            ))}
           </ul>
         </div>
       )}
@@ -96,7 +89,7 @@ export function KartuCalon({
           Cocok karena…
         </p>
         <ul className="mt-2 flex flex-col gap-1">
-          {lamaran.alasan_cocok.map((alasan, i) => (
+          {calon.alasan_cocok.map((alasan, i) => (
             <li key={i} className="text-body text-tanah-900">
               · {alasan}
             </li>
@@ -111,11 +104,15 @@ export function KartuCalon({
           Rekam jejak
         </p>
         <ul className="mt-1 flex flex-col gap-1">
-          {rekamJejak.map((r, i) => (
-            <li key={i} className="text-body text-tanah-700">
-              · {r}
-            </li>
-          ))}
+          <li className="text-body text-tanah-700">
+            · {calon.rekam_jejak.pekerjaan_selesai} pekerjaan selesai dikonfirmasi dua pihak.
+          </li>
+          <li className="text-body text-tanah-700">
+            ·{" "}
+            {calon.rekam_jejak.jumlah_penilai > 0
+              ? `Rata-rata penilaian ${calon.rekam_jejak.rata_penilaian.toFixed(1).replace(".", ",")} dari ${calon.rekam_jejak.jumlah_penilai} penilai.`
+              : "Belum ada penilaian dari pemberi kerja."}
+          </li>
         </ul>
       </div>
 

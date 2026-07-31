@@ -1,14 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { ArrowLeft, ArrowRight, HandHeart, Mic, PhoneOff } from "lucide-react";
 
 import { Button } from "@/component/ui/button";
 import { Input } from "@/component/ui/input";
-import { wilayah } from "@/lib/mock";
 import { cn } from "@/lib/utils";
+
+interface PilihanWilayah {
+  id: string;
+  nama: string;
+  provinsi: string;
+}
 
 /**
  * /companion/register — mendaftarkan pekerja TANPA HP (CONTEXT.md).
@@ -17,9 +23,10 @@ import { cn } from "@/lib/utils";
  *   1. Nama + wilayah (+ nomor HP OPSIONAL — tidak pernah wajib)
  *   2. Persetujuan berbahasa polos — akun milik pekerja
  *   3. Penjelasan wawancara — yang menjawab adalah pekerja, bukan pendamping
- *      → lanjut ke /worker/interview
+ *      → mendaftarkan akun pekerja lewat POST /api/companion/register.
+ *      Wawancara sendiri harus dijalankan dari login pekerja, bukan dari sini.
  *
- * State client-side penuh (fase 2, tanpa backend).
+ * Wilayah diambil dari GET /api/wilayah saat halaman dimuat.
  */
 
 type Langkah = 1 | 2 | 3;
@@ -57,8 +64,41 @@ export default function HalamanDaftarkanPekerja() {
   const [wilayahId, setWilayahId] = useState("");
   const [noHp, setNoHp] = useState("");
   const [pekerjaSetuju, setPekerjaSetuju] = useState(false);
+  const [wilayah, setWilayah] = useState<PilihanWilayah[]>([]);
+  const [sibuk, setSibuk] = useState(false);
 
   const namaTampil = nama.trim() || "pekerja ini";
+
+  useEffect(() => {
+    fetch("/api/wilayah")
+      .then((res) => res.json())
+      .then((json) => setWilayah(json?.data?.wilayah ?? []))
+      .catch(() => setWilayah([]));
+  }, []);
+
+  async function daftarkan() {
+    if (sibuk) return;
+    setSibuk(true);
+    try {
+      const res = await fetch("/api/companion/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nama: nama.trim(),
+          wilayah_id: wilayahId,
+          no_hp: noHp.trim() || undefined,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.pesan || "Gagal mendaftarkan pekerja.");
+      toast.success(`${nama.trim()} berhasil didaftarkan.`);
+      router.push("/companion");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Terjadi kesalahan.");
+    } finally {
+      setSibuk(false);
+    }
+  }
 
   // ============ LANGKAH 1 — Nama + wilayah (HP opsional) ============
   if (langkah === 1) {
@@ -224,11 +264,12 @@ export default function HalamanDaftarkanPekerja() {
       </div>
 
       <div className="flex flex-col gap-3">
-        <h1 className="text-h1">Sekarang giliran {namaTampil}</h1>
+        <h1 className="text-h1">Akun {namaTampil} akan dibuat</h1>
         <p className="text-body-lg text-tanah-700">
-          Yang menjawab pertanyaan nanti adalah {namaTampil}, bukan Anda.
-          Bacakan pertanyaannya, lalu biarkan ia menjawab dengan suaranya
-          sendiri. Boleh pakai bahasa daerah.
+          Ngobrol Kerja — sesi tanya jawab kira-kira 3 menit yang menyusun
+          Kartu Kerja {namaTampil} — dijalankan dari akun {namaTampil}{" "}
+          sendiri, bukan dari akun Anda. Ini perlu dilakukan {namaTampil}{" "}
+          sendiri saat ia sudah bisa masuk dengan nomor HP-nya.
         </p>
       </div>
 
@@ -238,19 +279,23 @@ export default function HalamanDaftarkanPekerja() {
         </span>
         <div>
           <p className="text-body font-semibold text-tanah-900">
-            Kira-kira 3 menit ngobrol
+            Setelah didaftarkan
           </p>
           <p className="mt-1 text-body text-tanah-600">
-            Jawaban {namaTampil} akan disusun menjadi Kartu Kerja atas namanya.
+            {noHp.trim()
+              ? `${namaTampil} bisa masuk sendiri kapan saja dengan nomor HP yang tadi diisi, lalu menjawab Ngobrol Kerja dengan suaranya sendiri.`
+              : `Karena belum ada nomor HP, ${namaTampil} belum bisa masuk sendiri untuk menjawab Ngobrol Kerja. Status kartunya akan terlihat di daftar Pekerja Saya begitu ia bisa melakukannya nanti.`}
           </p>
         </div>
       </div>
 
-      <Button asChild size="lg" className="w-full">
-        <Link href="/worker/interview">
-          <Mic aria-hidden />
-          Mulai wawancara bersama {namaTampil}
-        </Link>
+      <Button
+        size="lg"
+        className="w-full"
+        disabled={sibuk}
+        onClick={daftarkan}
+      >
+        Daftarkan {namaTampil}
       </Button>
 
       <Button variant="link" asChild className="min-h-12 w-full">

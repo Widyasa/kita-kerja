@@ -7,12 +7,11 @@ import {
   bidangKerja,
   inisialkanNamaBelakang,
   inisialNama,
-  keahlianBaku,
   wilayah,
-  type KartuKeahlian,
   type KartuKerja,
   type Pengguna,
 } from "@/lib/mock";
+import type { KeahlianTampil } from "@/lib/data/types";
 
 /**
  * KartuKerjaVisual (Bagian 4.5) — representasi digital Kartu Kerja.
@@ -29,19 +28,24 @@ export function KartuKerjaVisual({
   jumlahPekerjaanSelesai,
   rataRataPenilaian,
   jumlahPenilai,
+  bidangNama,
+  wilayahNama,
   className,
 }: {
   kartu: KartuKerja;
   pekerja: Pengguna;
   /** sudah diurut, 3 teratas yang ditampilkan */
-  keahlian: KartuKeahlian[];
+  keahlian: KeahlianTampil[];
   jumlahPekerjaanSelesai: number;
   rataRataPenilaian: number;
   jumlahPenilai: number;
+  /** override lookup mock — pakai ini kalau kartu berasal dari data Supabase asli */
+  bidangNama?: string | null;
+  wilayahNama?: string | null;
   className?: string;
 }) {
-  const bidang = bidangKerja.find((b) => b.id === kartu.bidang_utama_id);
-  const wl = wilayah.find((w) => w.id === pekerja.wilayah_id);
+  const namaBidang = bidangNama ?? bidangKerja.find((b) => b.id === kartu.bidang_utama_id)?.nama ?? null;
+  const namaWilayah = wilayahNama ?? wilayah.find((w) => w.id === pekerja.wilayah_id)?.nama ?? null;
   const urlVerifikasi = `https://kita-kerja.example/verify/${kartu.token_publik}`;
 
   return (
@@ -70,11 +74,11 @@ export function KartuKerjaVisual({
           </span>
           <div>
             <h3 className="text-h2">{inisialkanNamaBelakang(pekerja.nama)}</h3>
-            <p className="text-body text-tanah-600">{bidang?.nama ?? "—"}</p>
-            {wl && (
+            <p className="text-body text-tanah-600">{namaBidang ?? "—"}</p>
+            {namaWilayah && (
               <p className="flex items-center gap-1 text-label text-tanah-500">
                 <MapPin className="size-4" aria-hidden />
-                {wl.nama} · pengalaman {kartu.pengalaman_tahun} tahun
+                {namaWilayah} · pengalaman {kartu.pengalaman_tahun} tahun
               </p>
             )}
           </div>
@@ -84,20 +88,15 @@ export function KartuKerjaVisual({
         <div className="mt-5">
           <p className="mikro text-tanah-500">Keahlian utama</p>
           <ul className="mt-2 flex flex-col gap-2">
-            {keahlian.slice(0, 3).map((k) => {
-              const baku = keahlianBaku.find((b) => b.id === k.keahlian_id);
-              return (
-                <li
-                  key={k.id}
-                  className="flex items-center justify-between gap-2 rounded-lg bg-tanah-50 px-3 py-2"
-                >
-                  <span className="text-body font-semibold">
-                    {baku?.nama_baku ?? k.nama_diajukan ?? k.sebutan_pekerja}
-                  </span>
-                  <BadgeLapis lapis={k.lapis} />
-                </li>
-              );
-            })}
+            {keahlian.slice(0, 3).map((k) => (
+              <li
+                key={k.id}
+                className="flex items-center justify-between gap-2 rounded-lg bg-tanah-50 px-3 py-2"
+              >
+                <span className="text-body font-semibold">{k.nama_tampil}</span>
+                <BadgeLapis lapis={k.lapis} />
+              </li>
+            ))}
           </ul>
         </div>
 

@@ -6,14 +6,13 @@ import { cn } from "@/lib/utils";
 import {
   bidangKerja,
   inisialNama,
-  keahlianBaku,
   wilayah,
-  type KartuKeahlian,
   type KartuKerja,
   type LapisKepercayaan,
-  type Pekerjaan,
   type Pengguna,
 } from "@/lib/mock";
+import type { KeahlianTampil } from "@/lib/data/types";
+import type { RiwayatPekerjaanRingkas } from "@/lib/data/kartu-kerja";
 
 import { formatBulanTahun } from "./format";
 
@@ -37,19 +36,24 @@ export async function LembarA5({
   jumlahPekerjaanSelesai,
   rataRataPenilaian,
   jumlahPenilai,
+  bidangNama,
+  wilayahNama,
   className,
 }: {
   kartu: KartuKerja;
   pekerja: Pengguna;
-  keahlian: KartuKeahlian[];
-  riwayat: Pekerjaan[];
+  keahlian: KeahlianTampil[];
+  riwayat: RiwayatPekerjaanRingkas[];
   jumlahPekerjaanSelesai: number;
   rataRataPenilaian: number;
   jumlahPenilai: number;
+  /** override lookup mock — pakai ini kalau kartu berasal dari data Supabase asli */
+  bidangNama?: string | null;
+  wilayahNama?: string | null;
   className?: string;
 }) {
-  const bidang = bidangKerja.find((b) => b.id === kartu.bidang_utama_id);
-  const wl = wilayah.find((w) => w.id === pekerja.wilayah_id);
+  const bidang = bidangNama ?? bidangKerja.find((b) => b.id === kartu.bidang_utama_id)?.nama ?? null;
+  const wl = wilayahNama ?? wilayah.find((w) => w.id === pekerja.wilayah_id)?.nama ?? null;
   const urlVerifikasi = `https://kita-kerja.example/verify/${kartu.token_publik}`;
   const urlPendek = `kk.id/v/${kartu.token_publik.slice(0, 6)}`;
   const sepuluhTerakhir = [...riwayat]
@@ -82,7 +86,7 @@ export async function LembarA5({
                 {pekerja.nama}
               </h2>
               <p className="text-[11pt] text-tanah-700">
-                {bidang?.nama ?? "—"} · {wl?.nama ?? "—"} · pengalaman{" "}
+                {bidang ?? "—"} · {wl ?? "—"} · pengalaman{" "}
                 {kartu.pengalaman_tahun} tahun
               </p>
               <p className="mt-[1mm] flex items-center gap-[1.5mm] text-[11pt] font-bold">
@@ -120,26 +124,17 @@ export async function LembarA5({
                   </span>
                 </div>
                 <ul className="mt-[1.5mm] flex flex-col gap-[1mm]">
-                  {daftar.map((k) => {
-                    const baku = keahlianBaku.find(
-                      (b) => b.id === k.keahlian_id,
-                    );
-                    return (
-                      <li
-                        key={k.id}
-                        className="flex items-baseline justify-between gap-[3mm] text-[11pt]"
-                      >
-                        <span className="font-semibold">
-                          {baku?.nama_baku ??
-                            k.nama_diajukan ??
-                            k.sebutan_pekerja}
-                        </span>
-                        <span className="text-[10pt] text-tanah-600 italic">
-                          &ldquo;{k.sebutan_pekerja}&rdquo;
-                        </span>
-                      </li>
-                    );
-                  })}
+                  {daftar.map((k) => (
+                    <li
+                      key={k.id}
+                      className="flex items-baseline justify-between gap-[3mm] text-[11pt]"
+                    >
+                      <span className="font-semibold">{k.nama_tampil}</span>
+                      <span className="text-[10pt] text-tanah-600 italic">
+                        &ldquo;{k.sebutan_pekerja}&rdquo;
+                      </span>
+                    </li>
+                  ))}
                 </ul>
               </div>
             );
@@ -159,7 +154,7 @@ export async function LembarA5({
               <span className="w-[16mm] shrink-0 font-semibold text-tanah-600">
                 {formatBulanTahun(p.selesai_pada)}
               </span>
-              <span>{p.judul}</span>
+              <span>{p.lingkup}</span>
             </li>
           ))}
         </ul>

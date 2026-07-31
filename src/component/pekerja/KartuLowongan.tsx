@@ -4,14 +4,8 @@ import { MapPin, Sparkles } from "lucide-react";
 import { PenandaUpah } from "@/component/bersama/PenandaUpah";
 import { PenandaRisiko } from "@/component/bersama/PanelSaringanAman";
 import { cn } from "@/lib/utils";
-import {
-  acuanUntuk,
-  jarakTeks,
-  saringanAman,
-  upahTeks,
-  wilayah,
-  type Lowongan,
-} from "@/lib/mock";
+import type { LowonganTampil } from "@/lib/data/types";
+import { upahTeks } from "@/lib/mock/utils";
 
 /**
  * KartuLowongan (Bagian 4.5):
@@ -24,45 +18,45 @@ export function KartuLowongan({
   href,
   className,
 }: {
-  lowongan: Lowongan;
+  lowongan: LowonganTampil;
   /** bila diisi, seluruh kartu menjadi tautan */
   href?: string;
   className?: string;
 }) {
-  const wl = wilayah.find((w) => w.id === lw.wilayah_id)!;
-  const acuan = acuanUntuk(lw.keahlian_ids[0], lw.wilayah_id);
-  const saringan = saringanAman.find((s) => s.lowongan_id === lw.id)!;
-
   const isi = (
     <>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <h3 className="text-h3 text-tanah-900">{lw.judul_baku}</h3>
-        <PenandaRisiko tingkat={saringan.tingkat} />
+        {lw.saringan && <PenandaRisiko tingkat={lw.saringan.tingkat} />}
       </div>
 
       <p className="mt-2 flex items-center gap-2 text-body text-tanah-600">
         <MapPin className="size-5 shrink-0" aria-hidden />
-        {wl.nama} · {jarakTeks(lw.jarak_km)}
+        {lw.lokasi_teks ?? lw.wilayah_nama ?? "Lokasi belum diisi"}
       </p>
 
-      <p className="mt-2 text-body font-semibold text-tanah-900">
-        {upahTeks(lw.upah_ditawarkan, lw.satuan_upah)}
-      </p>
+      {lw.upah_ditawarkan !== null && lw.satuan_upah && (
+        <p className="mt-2 text-body font-semibold text-tanah-900">
+          {upahTeks(lw.upah_ditawarkan, lw.satuan_upah)}
+        </p>
+      )}
 
-      {lw.satuan_upah === "harian" && (
+      {lw.satuan_upah === "harian" && lw.acuan && lw.upah_ditawarkan !== null && (
         <PenandaUpah
           ringkas
           className="mt-3"
           ditawarkan={lw.upah_ditawarkan}
-          acuan={acuan}
-          wilayah={wl}
+          acuan={lw.acuan}
+          wilayahNama={lw.wilayah_nama ?? "wilayah ini"}
         />
       )}
 
-      <p className="mt-3 flex items-start gap-2 rounded-lg bg-kuning-50 p-3 text-label text-tanah-800">
-        <Sparkles className="mt-0.5 size-4 shrink-0 text-kuning-600" aria-hidden />
-        {lw.alasan_cocok}
-      </p>
+      {lw.alasan_cocok && (
+        <p className="mt-3 flex items-start gap-2 rounded-lg bg-kuning-50 p-3 text-label text-tanah-800">
+          <Sparkles className="mt-0.5 size-4 shrink-0 text-kuning-600" aria-hidden />
+          {lw.alasan_cocok}
+        </p>
+      )}
     </>
   );
 
