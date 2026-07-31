@@ -3,18 +3,12 @@ import { Star } from "lucide-react";
 import { BadgeLapis } from "@/component/bersama/BadgeLapis";
 import { QrSvg } from "@/component/bersama/QrSvg";
 import { cn } from "@/lib/utils";
-import {
-  bidangKerja,
-  inisialNama,
-  wilayah,
-  type KartuKerja,
-  type LapisKepercayaan,
-  type Pengguna,
-} from "@/lib/mock";
 import type { KeahlianTampil } from "@/lib/data/types";
+import type { KartuKerja, LapisKepercayaan, Pengguna } from "@/lib/mock/types";
+import { inisialNama } from "@/lib/mock/utils";
 import type { RiwayatPekerjaanRingkas } from "@/lib/data/kartu-kerja";
 
-import { formatBulanTahun } from "./format";
+import { formatBulanTahun, formatPenilaian } from "./format";
 
 const URUTAN_LAPIS: { lapis: LapisKepercayaan; judul: string }[] = [
   { lapis: "terverifikasi", judul: "Terverifikasi" },
@@ -52,8 +46,10 @@ export async function LembarA5({
   wilayahNama?: string | null;
   className?: string;
 }) {
-  const bidang = bidangNama ?? bidangKerja.find((b) => b.id === kartu.bidang_utama_id)?.nama ?? null;
-  const wl = wilayahNama ?? wilayah.find((w) => w.id === pekerja.wilayah_id)?.nama ?? null;
+  // BUG-043/044 — pencarian nama dipindah ke pemanggil supaya komponen ini
+  // tidak lagi menyeret src/lib/mock/data.ts (47 KB) ke bundle klien.
+  const bidang = bidangNama ?? null;
+  const wl = wilayahNama ?? null;
   const urlVerifikasi = `https://kita-kerja.example/verify/${kartu.token_publik}`;
   const urlPendek = `kk.id/v/${kartu.token_publik.slice(0, 6)}`;
   const sepuluhTerakhir = [...riwayat]
@@ -95,8 +91,9 @@ export async function LembarA5({
                   className="size-[4mm] fill-kuning-500 text-kuning-500"
                   aria-hidden
                 />
-                {rataRataPenilaian.toFixed(1).replace(".", ",")} dari{" "}
-                {jumlahPenilai} penilai
+                {jumlahPenilai > 0
+                  ? `${formatPenilaian(rataRataPenilaian, jumlahPenilai)} dari ${jumlahPenilai} penilai`
+                  : "Belum ada penilaian"}
               </p>
             </div>
           </div>

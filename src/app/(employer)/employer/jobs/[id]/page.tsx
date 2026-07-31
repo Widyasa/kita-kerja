@@ -173,7 +173,14 @@ export default async function HalamanKelolaLowongan({
           {detail.map((d) => (
             <div key={d.label}>
               <dt className="text-label text-tanah-600">{d.label}</dt>
-              <dd className="text-body font-semibold capitalize">{d.nilai}</dd>
+              {/* BUG-033 — `capitalize` sebelumnya mengubah tiap kata jadi
+                  huruf besar, termasuk teks bebas dari pemberi kerja:
+                  "daerah Sukun" jadi "Daerah Sukun", "2 orang" jadi "2 Orang",
+                  "belum disebutkan" jadi "Belum Disebutkan". Dalam bahasa
+                  Indonesia kata seperti "daerah" dan "orang" tidak
+                  dikapitalisasi di tengah frasa. Teks ditampilkan apa adanya;
+                  huruf pertama saja yang dinaikkan lewat first-letter. */}
+              <dd className="text-body font-semibold first-letter:uppercase">{d.nilai}</dd>
             </div>
           ))}
         </dl>

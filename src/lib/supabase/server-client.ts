@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { opsiCookieAman } from "./cookie-options";
 
 /** Client RLS-aware untuk server (route handlers, server actions, middleware). */
 export async function createClient() {
@@ -14,8 +15,9 @@ export async function createClient() {
         },
         setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
           try {
+            // BUG-006 — paksa HttpOnly/Secure/SameSite pada cookie sesi.
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+              cookieStore.set(name, value, opsiCookieAman(options))
             );
           } catch {
             // ignored when called from a Server Component

@@ -1,15 +1,10 @@
 import { QrSvg } from "@/component/bersama/QrSvg";
 import { cn } from "@/lib/utils";
-import {
-  bidangKerja,
-  inisialNama,
-  wilayah,
-  type KartuKerja,
-  type Pengguna,
-} from "@/lib/mock";
 import type { KeahlianTampil } from "@/lib/data/types";
+import type { KartuKerja, Pengguna } from "@/lib/mock/types";
+import { inisialNama } from "@/lib/mock/utils";
 
-import { namaPendekKeahlian } from "./format";
+import { formatPenilaian, namaPendekKeahlian } from "./format";
 
 /**
  * KartuSaku (Bagian 15.3) — kartu cetak 85 × 54 mm, sebesar KTP.
@@ -30,6 +25,7 @@ export async function KartuSaku({
   keahlian,
   jumlahPekerjaanSelesai,
   rataRataPenilaian,
+  jumlahPenilai = 0,
   bidangNama,
   wilayahNama,
   className,
@@ -39,13 +35,17 @@ export async function KartuSaku({
   keahlian: KeahlianTampil[];
   jumlahPekerjaanSelesai: number;
   rataRataPenilaian: number;
+  /** dipakai agar kartu tidak menulis "0,0" saat belum ada penilai (BUG-032) */
+  jumlahPenilai?: number;
   /** override lookup mock — pakai ini kalau kartu berasal dari data Supabase asli */
   bidangNama?: string | null;
   wilayahNama?: string | null;
   className?: string;
 }) {
-  const bidang = bidangNama ?? bidangKerja.find((b) => b.id === kartu.bidang_utama_id)?.nama ?? null;
-  const wl = wilayahNama ?? wilayah.find((w) => w.id === pekerja.wilayah_id)?.nama ?? null;
+  // BUG-043/044 — pencarian nama dipindah ke pemanggil supaya komponen ini
+  // tidak lagi menyeret src/lib/mock/data.ts (47 KB) ke bundle klien.
+  const bidang = bidangNama ?? null;
+  const wl = wilayahNama ?? null;
   const urlVerifikasi = `https://kita-kerja.example/verify/${kartu.token_publik}`;
   const urlPendek = `kk.id/v/${kartu.token_publik.slice(0, 6)}`;
   const tigaKeahlian = keahlian.slice(0, 3).map(namaPendekKeahlian).join(" · ");
@@ -99,8 +99,10 @@ export async function KartuSaku({
       {/* bukti angka + ajakan memindai */}
       <div className="mt-auto flex items-end justify-between gap-[2mm] pt-[2mm]">
         <p className="text-[10pt] leading-snug font-bold">
-          {jumlahPekerjaanSelesai} pekerjaan selesai · ★{" "}
-          {rataRataPenilaian.toFixed(1).replace(".", ",")}
+          {jumlahPekerjaanSelesai} pekerjaan selesai
+          {jumlahPenilai > 0
+            ? ` · ★ ${formatPenilaian(rataRataPenilaian, jumlahPenilai)}`
+            : ""}
         </p>
         <p className="text-right text-[9pt] leading-tight text-tanah-700">
           Pindai untuk memeriksa

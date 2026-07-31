@@ -21,7 +21,8 @@ import { formatBulanTahun } from "@/component/kartu/format";
 import { Button } from "@/component/ui/button";
 import { createClient } from "@/lib/supabase/server-client";
 import { getDashboardPekerja } from "@/lib/data/kartu-kerja";
-import { formatTanggal, upahTeks, type LapisKepercayaan } from "@/lib/mock";
+import { formatTanggal, upahTeks } from "@/lib/mock/utils";
+import type { LapisKepercayaan } from "@/lib/mock/types";
 
 export const metadata: Metadata = {
   title: "Kartu Kerja Anda — Kita Kerja",
@@ -72,6 +73,7 @@ export default async function HalamanKartuKerja() {
       <KeadaanKosong
         className="mt-6"
         ikon={IdCard}
+        sebagaiJudulHalaman
         judul="Anda belum punya Kartu Kerja"
         penjelasan="Ceritakan pengalaman kerja Anda lewat Ngobrol Kerja — kira-kira 3 menit — dan Kartu Kerja Anda langsung terbit di sini."
         labelAksi="Mulai Ngobrol Kerja"

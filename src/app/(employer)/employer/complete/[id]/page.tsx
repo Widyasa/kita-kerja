@@ -5,7 +5,7 @@ import { Button } from "@/component/ui/button";
 import { KeadaanKosong } from "@/component/bersama/KeadaanKosong";
 import { createClient } from "@/lib/supabase/server-client";
 import { kesepakatanUntukPihak } from "@/lib/data/kesepakatan";
-import { formatRupiah, formatTanggal } from "@/lib/mock";
+import { formatRupiah, formatTanggal } from "@/lib/mock/utils";
 
 import { FormPenilaian } from "./form-penilaian";
 

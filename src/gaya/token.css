@@ -35,7 +35,11 @@
   --tanah-200: #e6e2da;
   --tanah-300: #d1cbc0;
   --tanah-400: #a69f92;
-  --tanah-500: #7d766a;
+  /* BUG-026 — sebelumnya #7d766a: 4,50:1 di atas putih (gagal ambang 4,5:1
+     karena nilai persisnya 4,4954), dan lebih buruk lagi di latar bertingkat —
+     4,27:1 di atas tanah-50 dan 3,99:1 di atas tanah-100.
+     #706a5e lolos di ketiganya: 5,37:1 / 5,10:1 / 4,76:1. */
+  --tanah-500: #706a5e;
   --tanah-600: #5c5649;
   --tanah-700: #423e34;
   --tanah-800: #2b2822;

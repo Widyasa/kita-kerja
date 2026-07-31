@@ -12,12 +12,8 @@ import {
 import { BadgeLapis } from "@/component/bersama/BadgeLapis";
 import { LabelSection } from "@/component/bersama/LabelSection";
 import { createServiceClient } from "@/lib/supabase/server-client";
-import {
-  formatTanggal,
-  inisialkanNamaBelakang,
-  inisialNama,
-  type LapisKepercayaan,
-} from "@/lib/mock";
+import { formatTanggal, inisialkanNamaBelakang, inisialNama } from "@/lib/mock/utils";
+import type { LapisKepercayaan } from "@/lib/mock/types";
 
 /**
  * Verifikasi publik `/verify/[token]` (Bagian 6.5).
@@ -38,6 +34,20 @@ import {
  * dengan route tersebut: jangan pernah expose ID internal, nomor HP, atau
  * alamat lengkap.
  */
+/**
+ * BUG-042 — halaman ini publik dan dipindai lewat QR di lokasi kerja, tapi
+ * responsnya bertanda `private, no-cache, no-store` sehingga x-vercel-cache
+ * selalu MISS dan tiap pemindaian menempuh perjalanan penuh ke server asal
+ * (TTFB rata-rata 412ms, puncak 550ms) — dibanding 131ms untuk beranda yang
+ * ter-cache.
+ *
+ * Isi kartu jarang berubah, jadi cukup di-cache singkat di CDN dengan
+ * revalidasi latar. Saat pemilik mematikan "Tampilkan kartu saya untuk
+ * publik", jendela 60 detik ini batas paparannya — kalau perlu instan,
+ * panggil revalidatePath("/verify/" + token) dari handler sakelar itu.
+ */
+export const revalidate = 60;
+
 export const metadata: Metadata = {
   title: "Verifikasi Kartu Kerja — Kita Kerja",
   robots: { index: false, follow: false },
@@ -192,7 +202,18 @@ export default async function VerifyPage({
             {inisialNama(pekerja.nama)}
           </span>
           <div>
-            <LabelSection label="Kartu Kerja terverifikasi" />
+            {/* BUG-024 — sebelumnya selalu "Kartu Kerja terverifikasi",
+                termasuk pada kartu yang riwayat kerjanya nol dan seluruh
+                keahliannya masih berlabel "Diklaim". Yang terverifikasi
+                sebenarnya cuma keaslian kartunya, bukan isinya — dan bagi
+                pemberi kerja yang membaca sekilas itu mudah disalahartikan. */}
+            <LabelSection
+              label={
+                statistik.pekerjaan_selesai > 0
+                  ? "Kartu Kerja terverifikasi"
+                  : "Kartu asli · belum ada riwayat terverifikasi"
+              }
+            />
             <h1 className="mt-3 text-[clamp(2rem,3.6vw,3.25rem)] leading-[1.04] font-extrabold tracking-[-0.025em] text-balance">
               {inisialkanNamaBelakang(pekerja.nama)}
             </h1>

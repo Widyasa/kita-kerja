@@ -6,12 +6,14 @@ import { LabelSection } from "@/component/bersama/LabelSection";
 import { Button } from "@/component/ui/button";
 import { KartuKerjaVisual } from "@/component/kartu/KartuKerjaVisual";
 import {
+  bidangKerja,
   kartuWarto,
   keahlianBaku,
   keahlianWarto,
   pekerjaUtama,
   statistikWarto,
   type KartuKeahlian,
+  wilayah,
 } from "@/lib/mock";
 import type { KeahlianTampil } from "@/lib/data/types";
 
@@ -122,12 +124,20 @@ export default function LandingPage() {
     { label: "Saya butuh pekerja", href: "/register" },
   ];
 
+  /**
+   * BUG-017 — keempat tautan ini sebelumnya `href="#"` sehingga diklik hanya
+   * melompat ke atas halaman. Pada produk yang menjual kepercayaan, tautan
+   * mati membuat situs terasa belum jadi.
+   *
+   * Sekarang hanya ditampilkan yang URL-nya benar-benar disetel lewat env.
+   * Selama belum ada, seluruh bagian "Media sosial" disembunyikan.
+   */
   const tautanSosial = [
-    { label: "Instagram", href: "#" },
-    { label: "TikTok", href: "#" },
-    { label: "WhatsApp", href: "#" },
-    { label: "YouTube", href: "#" },
-  ];
+    { label: "Instagram", href: process.env.NEXT_PUBLIC_URL_INSTAGRAM },
+    { label: "TikTok", href: process.env.NEXT_PUBLIC_URL_TIKTOK },
+    { label: "WhatsApp", href: process.env.NEXT_PUBLIC_URL_WHATSAPP },
+    { label: "YouTube", href: process.env.NEXT_PUBLIC_URL_YOUTUBE },
+  ].filter((t): t is { label: string; href: string } => Boolean(t.href));
 
   return (
     <div className="bg-tanah-50">
@@ -336,6 +346,8 @@ export default function LandingPage() {
 
             <div className="lg:-translate-y-2 lg:translate-x-2 lg:rotate-[-1.25deg]">
               <KartuKerjaVisual
+                bidangNama={bidangKerja.find((b) => b.id === kartuWarto.bidang_utama_id)?.nama ?? null}
+                wilayahNama={wilayah.find((w) => w.id === pekerjaUtama.wilayah_id)?.nama ?? null}
                 kartu={kartuWarto}
                 pekerja={pekerjaUtama}
                 keahlian={keahlianWarto.map(keahlianTampilDariMock)}
@@ -365,7 +377,7 @@ export default function LandingPage() {
                   <li key={t.label}>
                     <Link
                       href={t.href}
-                      className="text-body text-tanah-600 underline-offset-4 hover:text-biru-600 hover:underline focus-visible:ring-[3px] focus-visible:ring-biru-600/40"
+                      className="inline-flex min-h-11 items-center text-body text-tanah-600 underline-offset-4 hover:text-biru-600 hover:underline focus-visible:ring-[3px] focus-visible:ring-biru-600/40"
                     >
                       {t.label}
                     </Link>
@@ -381,7 +393,7 @@ export default function LandingPage() {
                   <li key={t.label}>
                     <Link
                       href={t.href}
-                      className="text-body text-tanah-600 underline-offset-4 hover:text-biru-600 hover:underline focus-visible:ring-[3px] focus-visible:ring-biru-600/40"
+                      className="inline-flex min-h-11 items-center text-body text-tanah-600 underline-offset-4 hover:text-biru-600 hover:underline focus-visible:ring-[3px] focus-visible:ring-biru-600/40"
                     >
                       {t.label}
                     </Link>
@@ -390,21 +402,25 @@ export default function LandingPage() {
               </ul>
             </nav>
 
-            <nav aria-label="Media sosial">
-              <p className="mikro text-tanah-500">Media sosial</p>
-              <ul className="mt-4 space-y-2">
-                {tautanSosial.map((t) => (
-                  <li key={t.label}>
-                    <a
-                      href={t.href}
-                      className="text-body text-tanah-600 underline-offset-4 hover:text-biru-600 hover:underline focus-visible:ring-[3px] focus-visible:ring-biru-600/40"
-                    >
-                      {t.label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </nav>
+            {tautanSosial.length > 0 && (
+              <nav aria-label="Media sosial">
+                <p className="mikro text-tanah-500">Media sosial</p>
+                <ul className="mt-4 space-y-2">
+                  {tautanSosial.map((t) => (
+                    <li key={t.label}>
+                      <a
+                        href={t.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex min-h-11 items-center text-body text-tanah-600 underline-offset-4 hover:text-biru-600 hover:underline focus-visible:ring-[3px] focus-visible:ring-biru-600/40"
+                      >
+                        {t.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            )}
           </div>
 
           <div className="mt-14 flex items-baseline justify-between gap-4 border-t border-tanah-200 pt-6 max-lg:flex-col max-lg:gap-2">

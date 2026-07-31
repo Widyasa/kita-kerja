@@ -19,7 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/component/ui/dialog";
-import type { TingkatRisiko } from "@/lib/mock";
+import type { TingkatRisiko } from "@/lib/mock/types";
 
 /**
  * Tombol lamar (CTA 56px).
@@ -34,12 +34,15 @@ export function TombolLamar({
   tingkat,
   pertanyaan,
   sudahMelamar,
+  punyaKartu,
 }: {
   lowonganId: string;
   tingkat: TingkatRisiko;
   pertanyaan: string[];
   /** bila pekerja sudah pernah melamar lowongan ini */
   sudahMelamar: boolean;
+  /** bila Kartu Kerja pekerja sudah terbit — menentukan pesan sesudah kirim */
+  punyaKartu: boolean;
 }) {
   const [terkirim, setTerkirim] = useState(false);
   const [dialogTerbuka, setDialogTerbuka] = useState(false);
@@ -92,16 +95,27 @@ export function TombolLamar({
           <CircleCheck className="size-6 shrink-0 text-aman-600" aria-hidden />
           Lamaran terkirim
         </p>
+        {/* BUG-041 — jangan menjanjikan pemeriksaan Kartu Kerja pada pekerja
+            yang kartunya belum terbit. */}
         <p className="mt-2 text-body text-tanah-700">
-          Pemberi kerja akan memeriksa Kartu Kerja Anda. Anda bisa memantau
-          statusnya di halaman Lamaran.
+          {punyaKartu
+            ? "Pemberi kerja akan memeriksa Kartu Kerja Anda. Anda bisa memantau statusnya di halaman Lamaran."
+            : "Anda belum punya Kartu Kerja, jadi pemberi kerja belum bisa melihat bukti pengalaman Anda. Selesaikan Ngobrol Kerja agar peluang diterima lebih besar."}
         </p>
         <Button asChild size="lg" className="mt-4 w-full">
-          <Link href="/worker/applications">
-            Lihat status lamaran
+          <Link href={punyaKartu ? "/worker/applications" : "/worker/interview"}>
+            {punyaKartu ? "Lihat status lamaran" : "Mulai Ngobrol Kerja"}
             <ArrowRight aria-hidden />
           </Link>
         </Button>
+        {!punyaKartu && (
+          <Link
+            href="/worker/applications"
+            className="mt-3 inline-flex min-h-11 items-center text-body font-semibold text-biru-600 underline underline-offset-4 focus-visible:ring-[3px] focus-visible:ring-biru-600/40 focus-visible:outline-none"
+          >
+            Lihat status lamaran
+          </Link>
+        )}
       </div>
     );
   }

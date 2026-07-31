@@ -12,6 +12,7 @@ import {
 import { Button } from "@/component/ui/button";
 import { PenandaUpah } from "@/component/bersama/PenandaUpah";
 import { KeadaanKosong } from "@/component/bersama/KeadaanKosong";
+import { SapaanWaktu } from "@/component/bersama/SapaanWaktu";
 import { BadgeStatusLowongan } from "@/component/pemberi/BadgeStatusLowongan";
 import { createClient } from "@/lib/supabase/server-client";
 import { dasborPemberi, type RingkasLowongan } from "@/lib/data/pemberi";
@@ -76,7 +77,7 @@ export default async function HalamanDasborPemberi() {
       {/* sapaan */}
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-h1">Halo, {profil.nama}</h1>
+          <SapaanWaktu nama={profil.nama} />
           <p className="text-body-lg text-tanah-600">
             Ini kabar lowongan dan pekerja Anda hari ini.
           </p>

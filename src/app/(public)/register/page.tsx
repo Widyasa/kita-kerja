@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
@@ -10,7 +10,7 @@ import {
   HandHeart,
   HardHat,
   Loader2,
-  MessageSquareText,
+  Mail,
   UsersRound,
   type LucideIcon,
 } from "lucide-react";
@@ -19,11 +19,10 @@ import { Button } from "@/component/ui/button";
 import { Input } from "@/component/ui/input";
 import { LangkahOTP } from "@/component/bersama/LangkahOTP";
 import { cn } from "@/lib/utils";
-import type { Peran } from "@/lib/mock";
+import { emailValid } from "@/lib/auth/shared";
+import type { Peran } from "@/lib/mock/types";
 
-const KODE_DEMO = "123456";
-
-type Langkah = "peran" | "hp" | "otp";
+type Langkah = "peran" | "email" | "otp";
 
 const PILIHAN_PERAN: {
   peran: Peran;
@@ -55,28 +54,79 @@ const PILIHAN_PERAN: {
   },
 ];
 
-const NOMOR_LANGKAH: Record<Langkah, number> = { peran: 1, hp: 2, otp: 3 };
+const NOMOR_LANGKAH: Record<Langkah, number> = { peran: 1, email: 2, otp: 3 };
 
-export default function RegisterPage() {
+function WizardDaftar() {
   const router = useRouter();
-  const [langkah, setLangkah] = useState<Langkah>("peran");
+  const params = useSearchParams();
+
+  /**
+   * BUG-016 — wizard ini tidak punya state URL: memuat ulang di langkah 2
+   * mengembalikan pengguna ke langkah 1 dengan isian hilang, dan tombol
+   * Back browser keluar total dari pendaftaran ke halaman sebelumnya.
+   * Di Android, Back adalah gestur refleks.
+   *
+   * Langkah kini tersimpan di query string, jadi refresh mempertahankan
+   * posisi dan Back memundurkan satu langkah. Isian tidak ikut disimpan
+   * ke URL — email dan nama tidak pantas tertinggal di riwayat browser.
+   */
+  const langkahDariUrl = (params.get("langkah") ?? "peran") as Langkah;
+  const [langkah, setLangkahState] = useState<Langkah>(
+    ["peran", "email", "otp"].includes(langkahDariUrl) ? langkahDariUrl : "peran",
+  );
+
+  // Sinkronkan saat pengguna menekan Back/Forward browser.
+  // Ditunda satu tick mengikuti pola SapaanWaktu, agar bukan setState
+  // sinkron di dalam effect (aturan react-hooks/set-state-in-effect).
+  useEffect(() => {
+    if (!["peran", "email", "otp"].includes(langkahDariUrl)) return;
+    if (langkahDariUrl === langkah) return;
+    const timer = setTimeout(() => setLangkahState(langkahDariUrl), 0);
+    return () => clearTimeout(timer);
+  }, [langkahDariUrl, langkah]);
+
+  function setLangkah(l: Langkah) {
+    setLangkahState(l);
+    // Langkah OTP tidak didorong ke history: mundur ke sana setelah kode
+    // kedaluwarsa hanya menampilkan layar yang tidak bisa dipakai lagi.
+    if (l === "otp") {
+      window.history.replaceState(null, "", `/register?langkah=${l}`);
+    } else {
+      window.history.pushState(null, "", `/register?langkah=${l}`);
+    }
+  }
+
   const [peran, setPeran] = useState<(typeof PILIHAN_PERAN)[number] | null>(null);
   const [nama, setNama] = useState("");
-  const [noHp, setNoHp] = useState("");
+  const [email, setEmail] = useState("");
+  const [tersentuh, setTersentuh] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const namaValid = nama.trim().length >= 3;
-  const hpValid = noHp.replace(/\D/g, "").length >= 9;
+  const namaValid = nama.trim().length >= 3 && nama.trim().length <= 100;
+  // BUG-001 — kunci akun kini email, bukan nomor HP.
+  const emailOk = emailValid(email);
+  const tampilkanGalatEmail = tersentuh && email.length > 0 && !emailOk;
 
   async function kirimOTP(e: React.FormEvent) {
     e.preventDefault();
-    if (!namaValid || !hpValid || loading || !peran) return;
+    if (loading || !peran) return;
+    // BUG-029 — jelaskan apa yang kurang, jangan matikan tombol diam-diam.
+    if (!namaValid || !emailOk) {
+      setTersentuh(true);
+      toast.error(
+        !namaValid
+          ? "Nama minimal 3 karakter, maksimal 100."
+          : "Alamat email belum benar. Contoh: nama@email.com",
+      );
+      document.getElementById(!namaValid ? "nama" : "email")?.focus();
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch("/api/auth/otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: noHp }),
+        body: JSON.stringify({ email }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.pesan || "Gagal mengirim OTP.");
@@ -96,7 +146,7 @@ export default function RegisterPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          phone: noHp,
+          email,
           code: kode,
           intent: "register",
           role: peran.peran,
@@ -129,16 +179,35 @@ export default function RegisterPage() {
           </header>
 
           <div className="flex flex-col gap-4" role="radiogroup" aria-label="Pilih peran">
-            {PILIHAN_PERAN.map((p) => {
+            {PILIHAN_PERAN.map((p, i) => {
               const Ikon = p.ikon;
               const dipilih = peran?.peran === p.peran;
+              // BUG-025 — radiogroup sebelumnya tidak merespons tombol panah
+              // dan ketiga opsi sama-sama masuk urutan Tab. Pola ARIA
+              // mensyaratkan satu perhentian Tab lalu berpindah dengan panah
+              // (roving tabindex).
+              const indeksTerfokus = peran
+                ? PILIHAN_PERAN.findIndex((x) => x.peran === peran.peran)
+                : 0;
               return (
                 <button
                   key={p.peran}
                   type="button"
                   role="radio"
                   aria-checked={dipilih}
+                  tabIndex={i === indeksTerfokus ? 0 : -1}
                   onClick={() => setPeran(p)}
+                  onKeyDown={(e) => {
+                    const maju = e.key === "ArrowDown" || e.key === "ArrowRight";
+                    const mundur = e.key === "ArrowUp" || e.key === "ArrowLeft";
+                    if (!maju && !mundur) return;
+                    e.preventDefault();
+                    const berikut =
+                      (i + (maju ? 1 : -1) + PILIHAN_PERAN.length) % PILIHAN_PERAN.length;
+                    setPeran(PILIHAN_PERAN[berikut]);
+                    const grup = e.currentTarget.parentElement;
+                    (grup?.children[berikut] as HTMLElement | undefined)?.focus();
+                  }}
                   className={cn(
                     "flex min-h-12 w-full items-center gap-4 rounded-xl border-2 bg-tanah-0 p-5 text-left shadow-1 outline-none",
                     "motion-safe:transition-shadow hover:shadow-2",
@@ -169,7 +238,7 @@ export default function RegisterPage() {
             variant="aksen"
             size="lg"
             disabled={!peran}
-            onClick={() => setLangkah("hp")}
+            onClick={() => setLangkah("email")}
           >
             Lanjut
             <ArrowRight aria-hidden />
@@ -187,27 +256,35 @@ export default function RegisterPage() {
         </>
       )}
 
-      {langkah === "hp" && (
+      {langkah === "email" && (
         <>
           <header className="flex flex-col gap-3">
-            <h1 className="text-h1">Nama dan nomor HP Anda</h1>
+            <h1 className="text-h1">Nama dan email Anda</h1>
             <p className="text-body-lg text-tanah-600">
               Sebagai <span className="font-semibold text-tanah-800">{peran?.judul}</span>,
-              nomor HP adalah satu-satunya kunci akun Anda. Kami kirim kode
-              lewat SMS.
+              email adalah kunci akun Anda. Kami kirim kode enam angka ke alamat
+              itu — tidak perlu kata sandi.
             </p>
           </header>
 
           <form className="flex flex-col gap-6" onSubmit={kirimOTP}>
             <div className="flex flex-col gap-2">
               <label htmlFor="nama" className="text-label text-tanah-800">
-                Nama lengkap
+                {peran?.peran === "pemberi_kerja" ? "Nama Anda atau nama usaha" : "Nama lengkap"}
               </label>
               <Input
                 id="nama"
                 type="text"
                 autoComplete="name"
-                placeholder="Contoh: Warto Sugianto"
+                maxLength={100}
+                /* BUG-034 — placeholder sebelumnya selalu "Contoh: Warto
+                   Sugianto" (nama pekerja di kartu demo), termasuk saat
+                   mendaftar sebagai Pemberi Kerja. */
+                placeholder={
+                  peran?.peran === "pemberi_kerja"
+                    ? "Contoh: CV Karya Mandiri"
+                    : "Contoh: Warto Sugianto"
+                }
                 className="h-14 text-body-lg"
                 value={nama}
                 onChange={(e) => setNama(e.target.value)}
@@ -215,28 +292,40 @@ export default function RegisterPage() {
               />
             </div>
             <div className="flex flex-col gap-2">
-              <label htmlFor="no-hp" className="text-label text-tanah-800">
-                Nomor HP
+              <label htmlFor="email" className="text-label text-tanah-800">
+                Alamat email
               </label>
               <Input
-                id="no-hp"
-                type="tel"
-                inputMode="tel"
-                autoComplete="tel"
-                placeholder="Contoh: 0812 3456 0001"
+                id="email"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                maxLength={254}
+                placeholder="Contoh: nama@email.com"
                 className="h-14 text-body-lg"
-                value={noHp}
-                onChange={(e) => setNoHp(e.target.value)}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onBlur={() => setTersentuh(true)}
                 disabled={loading}
+                aria-invalid={tampilkanGalatEmail || undefined}
+                aria-describedby="email-bantuan"
               />
+              <p
+                id="email-bantuan"
+                className={
+                  tampilkanGalatEmail
+                    ? "text-label text-bahaya-600"
+                    : "text-label text-tanah-600"
+                }
+              >
+                {tampilkanGalatEmail
+                  ? "Alamat email belum benar. Contoh: nama@email.com"
+                  : "Kode akan dikirim ke alamat ini. Periksa juga folder spam."}
+              </p>
             </div>
-            <Button type="submit" variant="aksen" size="lg" disabled={!namaValid || !hpValid || loading}>
-              {loading ? (
-                <Loader2 className="animate-spin" aria-hidden />
-              ) : (
-                <MessageSquareText aria-hidden />
-              )}
-              Kirim kode SMS
+            <Button type="submit" variant="aksen" size="lg" disabled={loading}>
+              {loading ? <Loader2 className="animate-spin" aria-hidden /> : <Mail aria-hidden />}
+              Kirim kode ke email
             </Button>
           </form>
 
@@ -256,17 +345,13 @@ export default function RegisterPage() {
       {langkah === "otp" && (
         <>
           <header className="flex flex-col gap-3">
-            <h1 className="text-h1">Masukkan kode SMS</h1>
+            <h1 className="text-h1">Masukkan kode dari email</h1>
             <p className="text-body-lg text-tanah-600">
               Enam angka yang kami kirim ke{" "}
-              <span className="font-semibold text-tanah-800">{noHp}</span>.
+              <span className="font-semibold text-tanah-800">{email}</span>. Bila
+              belum terlihat, periksa folder spam.
             </p>
           </header>
-
-          <p className="rounded-xl bg-kuning-50 px-4 py-3 text-center text-body font-semibold text-kuning-800">
-            Kode demo: <span className="font-mono tracking-widest">{KODE_DEMO}</span>{" "}
-            — di versi demo, kode apa pun yang lengkap diterima.
-          </p>
 
           <LangkahOTP onSelesai={verifikasiOTP} />
 
@@ -274,14 +359,29 @@ export default function RegisterPage() {
             type="button"
             variant="ghost"
             className="self-start"
-            onClick={() => setLangkah("hp")}
+            onClick={() => setLangkah("email")}
             disabled={loading}
           >
             <ArrowLeft aria-hidden />
-            Ganti nomor HP
+            Ganti alamat email
           </Button>
         </>
       )}
     </div>
+  );
+}
+
+/** useSearchParams wajib dibungkus Suspense pada App Router. */
+export default function RegisterPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="mx-auto w-full max-w-(--max-worker) px-4 py-12 sm:py-16">
+          <p className="text-body text-tanah-600">Memuat…</p>
+        </div>
+      }
+    >
+      <WizardDaftar />
+    </Suspense>
   );
 }

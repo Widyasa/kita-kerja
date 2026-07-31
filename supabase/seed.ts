@@ -31,6 +31,80 @@ function uuid(): string {
 
 // ============ DATA SEED ============
 
+/**
+ * BUG-003 / BUG-036 — kartu contoh Pak Warto.
+ *
+ * Token ini dipakai beranda pada tautan "Lihat seperti yang dilihat pemindai
+ * QR", teks di bawah kode QR, dan tautan footer. Sebelumnya seed mengacak
+ * token setiap dijalankan sehingga ketiganya selalu berujung "Kartu tidak
+ * ditemukan". Nilainya kini tetap dan sama dengan yang dirujuk beranda.
+ */
+export const TOKEN_KARTU_DEMO = "9f3c1a7b2e4d48f6a1c5e7b9d2f4a6c8";
+
+/**
+ * Riwayat kerja Warto yang benar-benar tercatat di database, bukan angka
+ * hias di beranda. Tiap baris menghasilkan rantai lengkap
+ * lowongan -> lamaran -> kesepakatan -> pekerjaan -> penilaian, sehingga
+ * statistik kartu dihitung dari data nyata.
+ */
+const riwayatWarto: {
+  lingkup: string;
+  upah: number;
+  satuan: string;
+  mulai: string;
+  selesai: string;
+  skor: number;
+  catatan: string | null;
+}[] = [
+  { lingkup: "Pasang keramik lantai teras, Lowokwaru", upah: 165000, satuan: "harian", mulai: "2025-11-03", selesai: "2025-11-06", skor: 5, catatan: "Rapi dan cepat selesai." },
+  { lingkup: "Perbaikan dinding retak, Blimbing", upah: 150000, satuan: "harian", mulai: "2025-11-10", selesai: "2025-11-13", skor: 5, catatan: "Datang tepat waktu, kerja bagus." },
+  { lingkup: "Plester kamar tambahan, Dinoyo", upah: 155000, satuan: "harian", mulai: "2025-11-17", selesai: "2025-11-20", skor: 4, catatan: "Hasil rata, lumayan cepat." },
+  { lingkup: "Keramik kamar mandi, Kedungkandang", upah: 170000, satuan: "harian", mulai: "2025-11-24", selesai: "2025-11-27", skor: 5, catatan: "Rapi sekali, terima kasih." },
+  { lingkup: "Cor dak lantai dua, Pakis", upah: 160000, satuan: "harian", mulai: "2025-12-02", selesai: "2025-12-05", skor: 5, catatan: "Kuat dan rajin." },
+  { lingkup: "Plester fasad rumah, Karangploso", upah: 155000, satuan: "harian", mulai: "2025-12-08", selesai: "2025-12-11", skor: 5, catatan: null },
+  { lingkup: "Pasang tegel ruang tamu, Wagir", upah: 170000, satuan: "harian", mulai: "2025-12-12", selesai: "2025-12-15", skor: 5, catatan: "Hasil halus, mau pesan lagi." },
+  { lingkup: "Renovasi pagar dan kanopi, Klojen", upah: 150000, satuan: "harian", mulai: "2025-12-19", selesai: "2025-12-22", skor: 5, catatan: null },
+  { lingkup: "Pasang bata dinding gudang, Singosari", upah: 150000, satuan: "harian", mulai: "2025-12-27", selesai: "2025-12-30", skor: 0, catatan: null },
+  { lingkup: "Keramik lantai dua rumah Pak Yono, Dau", upah: 175000, satuan: "harian", mulai: "2026-01-05", selesai: "2026-01-08", skor: 5, catatan: "Kerjanya cekatan." },
+  { lingkup: "Aci dinding rumah baru, Tumpang", upah: 158000, satuan: "harian", mulai: "2026-01-12", selesai: "2026-01-15", skor: 0, catatan: null },
+  { lingkup: "Pengecatan kamar anak, Sukun", upah: 150000, satuan: "harian", mulai: "2026-01-17", selesai: "2026-01-20", skor: 5, catatan: "Rapi, tidak beleber." },
+  { lingkup: "Bongkar pasang dapur, Blimbing", upah: 150000, satuan: "harian", mulai: "2026-01-21", selesai: "2026-01-24", skor: 0, catatan: null },
+  { lingkup: "Cor jalan masuk gang, Pakisaji", upah: 160000, satuan: "harian", mulai: "2026-01-26", selesai: "2026-01-29", skor: 5, catatan: null },
+  { lingkup: "Keramik selasar kantor desa, Pakis", upah: 172000, satuan: "harian", mulai: "2026-01-30", selesai: "2026-02-02", skor: 5, catatan: "Tepat janji." },
+  { lingkup: "Pasang keramik musala, Kepanjen", upah: 170000, satuan: "harian", mulai: "2026-02-02", selesai: "2026-02-05", skor: 5, catatan: "Hasil bagus, jamaah senang." },
+  { lingkup: "Plester tangga dan selasar, Lowokwaru", upah: 155000, satuan: "harian", mulai: "2026-02-07", selesai: "2026-02-10", skor: 0, catatan: null },
+  { lingkup: "Dinding kamar belakang, Wagir", upah: 150000, satuan: "harian", mulai: "2026-02-11", selesai: "2026-02-14", skor: 4, catatan: null },
+  { lingkup: "Cat ulang ruang tamu, Dau", upah: 150000, satuan: "harian", mulai: "2026-02-16", selesai: "2026-02-19", skor: 0, catatan: null },
+  { lingkup: "Cor tiang teras, Singosari", upah: 160000, satuan: "harian", mulai: "2026-02-21", selesai: "2026-02-24", skor: 5, catatan: null },
+  { lingkup: "Keramik teras warung, Pakis", upah: 168000, satuan: "harian", mulai: "2026-02-26", selesai: "2026-03-01", skor: 0, catatan: null },
+  { lingkup: "Plester rumah dua lantai, Karangploso", upah: 160000, satuan: "harian", mulai: "2026-03-03", selesai: "2026-03-06", skor: 5, catatan: "Rapi sekali, hasil halus." },
+  { lingkup: "Perbaikan atap bocor, Sukun", upah: 150000, satuan: "harian", mulai: "2026-03-09", selesai: "2026-03-12", skor: 5, catatan: "Sigap dan jujur." },
+  { lingkup: "Keramik dapur, Blimbing", upah: 172000, satuan: "harian", mulai: "2026-03-14", selesai: "2026-03-17", skor: 5, catatan: null },
+  { lingkup: "Pagar belakang rumah, Dau", upah: 152000, satuan: "harian", mulai: "2026-03-19", selesai: "2026-03-22", skor: 0, catatan: null },
+  { lingkup: "Aci plafon dan lis, Lowokwaru", upah: 158000, satuan: "harian", mulai: "2026-03-24", selesai: "2026-03-27", skor: 0, catatan: null },
+  { lingkup: "Pengecatan pagar besi, Klojen", upah: 150000, satuan: "harian", mulai: "2026-03-28", selesai: "2026-03-31", skor: 4, catatan: "Bersih kerjanya." },
+  { lingkup: "Pasang granit ruang keluarga, Dinoyo", upah: 180000, satuan: "harian", mulai: "2026-04-02", selesai: "2026-04-05", skor: 5, catatan: "Granit rapi, sambungan halus." },
+  { lingkup: "Cor lantai gudang, Pakisaji", upah: 162000, satuan: "harian", mulai: "2026-04-07", selesai: "2026-04-10", skor: 0, catatan: null },
+  { lingkup: "Plester kamar mandi atas, Wagir", upah: 158000, satuan: "harian", mulai: "2026-04-11", selesai: "2026-04-14", skor: 5, catatan: null },
+  { lingkup: "Renovasi kios pasar, Kepanjen", upah: 155000, satuan: "harian", mulai: "2026-04-15", selesai: "2026-04-18", skor: 5, catatan: "Bisa dipercaya, lanjutkan." },
+  { lingkup: "Keramik kamar tidur, Singosari", upah: 170000, satuan: "harian", mulai: "2026-04-20", selesai: "2026-04-23", skor: 4, catatan: null },
+  { lingkup: "Aci dinding luar, Blimbing", upah: 160000, satuan: "harian", mulai: "2026-04-25", selesai: "2026-04-28", skor: 5, catatan: "Hasil bagus." },
+  { lingkup: "Genteng dan rangka baja ringan, Dau", upah: 155000, satuan: "harian", mulai: "2026-05-05", selesai: "2026-05-08", skor: 5, catatan: "Berani tinggi, rapi." },
+  { lingkup: "Keramik teras masjid, Pakis", upah: 172000, satuan: "harian", mulai: "2026-05-09", selesai: "2026-05-12", skor: 5, catatan: "Alhamdulillah rapi." },
+  { lingkup: "Plester dinding sumur, Sukun", upah: 158000, satuan: "harian", mulai: "2026-05-14", selesai: "2026-05-17", skor: 0, catatan: null },
+  { lingkup: "Cor lantai bengkel, Karangploso", upah: 162000, satuan: "harian", mulai: "2026-05-19", selesai: "2026-05-22", skor: 0, catatan: null },
+  { lingkup: "Pasang tegel kamar mandi, Lowokwaru", upah: 175000, satuan: "harian", mulai: "2026-05-24", selesai: "2026-05-27", skor: 5, catatan: "Presisi, air mengalir lancar." },
+  { lingkup: "Perbaikan plafon ruang tamu, Klojen", upah: 152000, satuan: "harian", mulai: "2026-05-28", selesai: "2026-05-31", skor: 0, catatan: null },
+  { lingkup: "Plester rumah petak tiga unit, Kepanjen", upah: 160000, satuan: "harian", mulai: "2026-06-02", selesai: "2026-06-05", skor: 5, catatan: "Cepat dan rapi." },
+  { lingkup: "Perbaikan lantai ambles, Blimbing", upah: 150000, satuan: "harian", mulai: "2026-06-08", selesai: "2026-06-11", skor: 4, catatan: null },
+  { lingkup: "Keramik ruang tamu Pak Hadi, Blimbing", upah: 180000, satuan: "harian", mulai: "2026-06-13", selesai: "2026-06-16", skor: 5, catatan: "Keramik mulus, puas." },
+  { lingkup: "Tembok pembatas kebun, Wagir", upah: 152000, satuan: "harian", mulai: "2026-06-20", selesai: "2026-06-23", skor: 0, catatan: null },
+  { lingkup: "Plester kamar kos, Dinoyo", upah: 160000, satuan: "harian", mulai: "2026-06-27", selesai: "2026-06-30", skor: 0, catatan: null },
+  { lingkup: "Aci ulang dapur, Dinoyo", upah: 160000, satuan: "harian", mulai: "2026-07-06", selesai: "2026-07-09", skor: 5, catatan: "Rapi, bersih." },
+  { lingkup: "Keramik garasi, Pakisaji", upah: 172000, satuan: "harian", mulai: "2026-07-14", selesai: "2026-07-17", skor: 0, catatan: null },
+  { lingkup: "Cor dak musala, Singosari", upah: 165000, satuan: "harian", mulai: "2026-07-22", selesai: "2026-07-25", skor: 5, catatan: "Amanah, hasil kuat." },
+];
+
 const wilayahData = [
   { nama: "Kota Malang", jenis: "kota", provinsi: "Jawa Timur", umk: 3338547, tahun_umk: 2026 },
   { nama: "Kabupaten Malang", jenis: "kabupaten", provinsi: "Jawa Timur", umk: 3368275, tahun_umk: 2026 },
@@ -55,6 +129,8 @@ const keahlianData = [
   { nama_baku: "Tukang Kayu", bidang_nama: "Konstruksi", alias: ["carpenter", "tukang pintu"], pengali_upah: 1.10 },
   { nama_baku: "Tukang Besi", bidang_nama: "Konstruksi", alias: ["tukang las", "welder"], pengali_upah: 1.20 },
   { nama_baku: "Tukang Cat", bidang_nama: "Konstruksi", alias: ["painter", "tukang tembok"], pengali_upah: 1.05 },
+  { nama_baku: "Pemasangan Keramik", bidang_nama: "Konstruksi", alias: ["tukang keramik", "pasang keramik"], pengali_upah: 1.15 },
+  { nama_baku: "Plesteran", bidang_nama: "Konstruksi", alias: ["plester", "aci"], pengali_upah: 1.10 },
   // Rumah Tangga
   { nama_baku: "Asisten Rumah Tangga", bidang_nama: "Rumah Tangga", alias: ["ART", "pembantu"], pengali_upah: 1.00 },
   { nama_baku: "Pengasuh Anak", bidang_nama: "Rumah Tangga", alias: ["nanny", "suster"], pengali_upah: 1.05 },
@@ -115,13 +191,26 @@ async function seed() {
   console.log("🌱 Seeding Kita Kerja...\n");
 
   // 1. Wilayah
+  // BUG-010 — sebelumnya memakai .insert() dengan uuid() baru tiap dijalankan,
+  // sehingga setiap seed menambah satu set wilayah baru. Dropdown sempat
+  // menampilkan tiap wilayah 6x (37 opsi untuk 6 wilayah).
+  // Sekarang upsert pada kunci alami (nama, provinsi) — lihat migrasi
+  // 20260731100000_dedup_wilayah_unique.sql yang memasang constraint-nya.
   const wilayahMap = new Map<string, string>();
   for (const w of wilayahData) {
-    const id = uuid();
-    wilayahMap.set(w.nama, id);
-    const { error } = await supabase.from("wilayah").insert({ id, ...w });
-    if (error) console.error("  wilayah error:", error.message);
-    else console.log("  ✅ Wilayah:", w.nama);
+    const { data, error } = await supabase
+      .from("wilayah")
+      .upsert({ id: uuid(), ...w }, { onConflict: "nama,provinsi", ignoreDuplicates: false })
+      .select("id")
+      .single();
+    if (error || !data) {
+      console.error("  wilayah error:", error?.message ?? "tidak ada baris kembali");
+      continue;
+    }
+    // id diambil dari baris hasil upsert, bukan uuid() lokal, supaya saat
+    // baris sudah ada seluruh relasi tetap menunjuk id kanonik yang sama.
+    wilayahMap.set(w.nama, data.id);
+    console.log("  ✅ Wilayah:", w.nama);
   }
 
   // 1b. Kecamatan
@@ -236,7 +325,10 @@ async function seed() {
     const { error } = await supabase.from("kartu_kerja").insert({
       id: kartuId,
       pekerja_id: wartoId,
-      token_publik: crypto.randomUUID().replace(/-/g, ""),
+      // BUG-003 — token dibuat tetap agar cocok dengan tautan "Contoh
+      // verifikasi kartu" di beranda. Sebelumnya token diacak tiap seed,
+      // sehingga /verify/9f3c1a7b… selalu membalas "Kartu tidak ditemukan".
+      token_publik: TOKEN_KARTU_DEMO,
       aktif_publik: true,
       ringkasan: "Tukang batu berpengalaman 12 tahun di Kota Malang. Ahli pemasangan bata expose dan plester dekoratif.",
       bidang_utama_id: bidangMap.get("Konstruksi")!,
@@ -251,9 +343,12 @@ async function seed() {
     else console.log("  ✅ Kartu Kerja: Warto");
 
     // Kartu Keahlian untuk Warto
+    // BUG-036 — tiga keahlian ini sama dengan yang ditampilkan kartu contoh
+    // di beranda, supaya kartu asli dan kartu demo tidak saling bertentangan.
     const wartoKeahlian = [
-      { keahlian: "Tukang Batu", level: "ahli", kutipan: "Saya sudah 12 tahun pasang bata expose di rumah-rumah di Malang. Paling senang kalau pasang bata merah tanpa plester karena harus rata semua.", keyakinan: 0.95, sumber: "manual" },
-      { keahlian: "Tukang Plester", level: "terampil", kutipan: "Plester dekoratif tekstur kasar juga pernah saya kerjakan di rumah Pak Darmo di Sukun.", keyakinan: 0.80, sumber: "manual" },
+      { keahlian: "Pemasangan Keramik", level: "ahli", kutipan: "Saya sudah 12 tahun pasang keramik di rumah-rumah di Malang. Paling teliti di bagian nat supaya lurus semua.", keyakinan: 0.95, sumber: "manual" },
+      { keahlian: "Plesteran", level: "ahli", kutipan: "Plester dekoratif tekstur kasar juga pernah saya kerjakan di rumah Pak Darmo di Sukun.", keyakinan: 0.90, sumber: "manual" },
+      { keahlian: "Tukang Batu", level: "terampil", kutipan: "Pasang bata expose tanpa plester, harus rata semua dari awal.", keyakinan: 0.80, sumber: "manual" },
     ];
     for (const k of wartoKeahlian) {
       const keahlian_id = keahlianMap.get(k.keahlian);
@@ -271,6 +366,84 @@ async function seed() {
       });
       if (error) console.error("  kartu_keahlian error:", error.message);
       else console.log("  ✅ Keahlian:", k.keahlian);
+    }
+
+    // BUG-036 — riwayat kerja nyata untuk Warto.
+    // Sebelumnya kartu contoh di beranda mengklaim 47 pekerjaan selesai dan
+    // 4,8 dari 32 penilai, sementara akun Warto yang sebenarnya kosong
+    // (0 pekerjaan, 0 penilai, keahlian masih "Diklaim"). Sekarang tiap
+    // pekerjaan ditulis sebagai rantai lengkap sehingga statistik kartu
+    // dihitung dari data yang benar-benar ada.
+    const dhikaId = userMap.get("dhika@kitakerja.test");
+    const wilayahMalang = wilayahMap.get("Kota Malang");
+    if (dhikaId) {
+      for (const r of riwayatWarto) {
+        const lowonganId = uuid();
+        const { error: eLow } = await supabase.from("lowongan").insert({
+          id: lowonganId,
+          pemberi_kerja_id: dhikaId,
+          wilayah_id: wilayahMalang,
+          teks_asli: r.lingkup,
+          judul_baku: r.lingkup,
+          bidang_id: bidangMap.get("Konstruksi"),
+          jenis_kerja: r.satuan === "harian" ? "harian" : "borongan",
+          jumlah_pekerja: 1,
+          upah_ditawarkan: r.upah,
+          satuan_upah: r.satuan,
+          lokasi_teks: "Sukun, Kota Malang",
+          mulai: r.mulai,
+          status: "terisi",
+        });
+        if (eLow) { console.error("  lowongan riwayat error:", eLow.message); continue; }
+
+        await supabase.from("lamaran").insert({
+          id: uuid(), lowongan_id: lowonganId, pekerja_id: wartoId, status: "disepakati",
+        });
+
+        const kesepakatanId = uuid();
+        const { error: eKes } = await supabase.from("kesepakatan_kerja").insert({
+          id: kesepakatanId,
+          lowongan_id: lowonganId,
+          pekerja_id: wartoId,
+          pemberi_kerja_id: dhikaId,
+          lingkup: r.lingkup,
+          upah_disepakati: r.upah,
+          satuan: r.satuan,
+          mulai: r.mulai,
+          selesai: r.selesai,
+          tanggal_bayar_dijanjikan: r.selesai,
+          otp_pekerja_pada: new Date(r.selesai).toISOString(),
+          otp_pemberi_pada: new Date(r.selesai).toISOString(),
+          status: "selesai",
+        });
+        if (eKes) { console.error("  kesepakatan riwayat error:", eKes.message); continue; }
+
+        const pekerjaanId = uuid();
+        const { error: ePek } = await supabase.from("pekerjaan").insert({
+          id: pekerjaanId,
+          kesepakatan_id: kesepakatanId,
+          pekerja_id: wartoId,
+          pemberi_kerja_id: dhikaId,
+          dikonfirmasi_selesai_pekerja: true,
+          dikonfirmasi_selesai_pemberi: true,
+          selesai_pada: new Date(r.selesai).toISOString(),
+        });
+        if (ePek) { console.error("  pekerjaan riwayat error:", ePek.message); continue; }
+
+        // skor 0 = pekerjaan selesai tapi pemberi kerja belum menilai.
+        // Barisnya sengaja tidak dibuat supaya jumlah penilai tetap jujur.
+        if (r.skor > 0) {
+          const { error: eNil } = await supabase.from("penilaian").insert({
+            id: uuid(),
+            pekerjaan_id: pekerjaanId,
+            pemberi_kerja_id: dhikaId,
+            skor: r.skor,
+            catatan: r.catatan,
+          });
+          if (eNil) console.error("  penilaian riwayat error:", eNil.message);
+        }
+        console.log("  ✅ Riwayat:", r.lingkup.slice(0, 40));
+      }
     }
   }
 
