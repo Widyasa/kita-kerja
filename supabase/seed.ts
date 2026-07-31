@@ -75,6 +75,34 @@ const keahlianData = [
   { nama_baku: "Penjaga Parkir", bidang_nama: "Perdagangan Kecil", alias: ["tukang parkir", "juru parkir"], pengali_upah: 0.90 },
 ];
 
+const kecamatanData: { nama: string; wilayah_nama: string; lat: number; lng: number }[] = [
+  // Kota Malang
+  { nama: "Sukun", wilayah_nama: "Kota Malang", lat: -7.995, lng: 112.612 },
+  { nama: "Blimbing", wilayah_nama: "Kota Malang", lat: -7.943, lng: 112.635 },
+  { nama: "Klojen", wilayah_nama: "Kota Malang", lat: -7.983, lng: 112.629 },
+  { nama: "Lowokwaru", wilayah_nama: "Kota Malang", lat: -7.936, lng: 112.605 },
+  // Kabupaten Malang
+  { nama: "Kepanjen", wilayah_nama: "Kabupaten Malang", lat: -8.135, lng: 112.567 },
+  { nama: "Turen", wilayah_nama: "Kabupaten Malang", lat: -8.171, lng: 112.694 },
+  { nama: "Singosari", wilayah_nama: "Kabupaten Malang", lat: -7.898, lng: 112.664 },
+  // Kota Surabaya
+  { nama: "Rungkut", wilayah_nama: "Kota Surabaya", lat: -7.335, lng: 112.766 },
+  { nama: "Gubeng", wilayah_nama: "Kota Surabaya", lat: -7.276, lng: 112.752 },
+  { nama: "Wonokromo", wilayah_nama: "Kota Surabaya", lat: -7.310, lng: 112.738 },
+  // Kabupaten Sidoarjo
+  { nama: "Krian", wilayah_nama: "Kabupaten Sidoarjo", lat: -7.379, lng: 112.567 },
+  { nama: "Sidoarjo", wilayah_nama: "Kabupaten Sidoarjo", lat: -7.447, lng: 112.718 },
+  { nama: "Waru", wilayah_nama: "Kabupaten Sidoarjo", lat: -7.339, lng: 112.727 },
+  // Kota Yogyakarta
+  { nama: "Gondokusuman", wilayah_nama: "Kota Yogyakarta", lat: -7.782, lng: 110.379 },
+  { nama: "Umbulharjo", wilayah_nama: "Kota Yogyakarta", lat: -7.813, lng: 110.379 },
+  { nama: "Kraton", wilayah_nama: "Kota Yogyakarta", lat: -7.805, lng: 110.362 },
+  // Kabupaten Sleman
+  { nama: "Gamping", wilayah_nama: "Kabupaten Sleman", lat: -7.786, lng: 110.325 },
+  { nama: "Sleman", wilayah_nama: "Kabupaten Sleman", lat: -7.719, lng: 110.357 },
+  { nama: "Depok", wilayah_nama: "Kabupaten Sleman", lat: -7.771, lng: 110.404 },
+];
+
 // Test users — created via admin.createUser (phone OTP flow)
 const testUsers = [
   { email: "warto@kitakerja.test", phone: "+6281234567890", nama: "Warto Sugianto", peran: "pekerja", wilayah_nama: "Kota Malang" },
@@ -93,6 +121,23 @@ async function seed() {
     const { error } = await supabase.from("wilayah").insert({ id, ...w });
     if (error) console.error("  wilayah error:", error.message);
     else console.log("  ✅ Wilayah:", w.nama);
+  }
+
+  // 1b. Kecamatan
+  const kecamatanMap = new Map<string, string>(); // `${nama}|${wilayah_nama}` -> id
+  for (const k of kecamatanData) {
+    const id = uuid();
+    const wilayah_id = wilayahMap.get(k.wilayah_nama);
+    if (!wilayah_id) {
+      console.error("  wilayah not found:", k.wilayah_nama);
+      continue;
+    }
+    kecamatanMap.set(`${k.nama}|${k.wilayah_nama}`, id);
+    const { error } = await supabase
+      .from("kecamatan")
+      .insert({ id, nama: k.nama, wilayah_id, lat: k.lat, lng: k.lng });
+    if (error) console.error("  kecamatan error:", error.message);
+    else console.log("  ✅ Kecamatan:", k.nama);
   }
 
   // 2. Bidang Kerja
