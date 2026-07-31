@@ -17,7 +17,7 @@ import { lamaranPekerja } from "@/lib/data/lamaran";
 import { daftarLowonganUntukPekerja } from "@/lib/data/lowongan";
 import { formatTanggal, upahTeks } from "@/lib/mock";
 
-import { SapaanWaktu } from "./sapaan-waktu";
+import { SapaanWaktu } from "@/component/bersama/SapaanWaktu";
 import { INFO_STATUS_LAMARAN } from "./status-lamaran";
 
 /**

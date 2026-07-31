@@ -39,9 +39,16 @@ export function KartuLowongan({
         )}
       </p>
 
-      {lw.upah_ditawarkan !== null && lw.satuan_upah && (
+      {/* BUG-013 — baris upah sebelumnya hilang sama sekali saat lowongan
+          tidak mencantumkan upah, sehingga pekerja tidak sadar informasi itu
+          memang tidak ada. Sekarang selalu ditampilkan, apa adanya. */}
+      {lw.upah_ditawarkan !== null && lw.satuan_upah ? (
         <p className="mt-2 text-body font-semibold text-tanah-900">
           {upahTeks(lw.upah_ditawarkan, lw.satuan_upah)}
+        </p>
+      ) : (
+        <p className="mt-2 text-body font-semibold text-hati-600">
+          Upah belum disebutkan — tanyakan dulu sebelum mulai
         </p>
       )}
 

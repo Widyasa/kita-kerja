@@ -3,9 +3,13 @@
 import { useEffect, useState } from "react";
 
 /**
- * Sapaan sesuai jam lokal pekerja.
+ * Sapaan sesuai jam lokal pengguna.
  * Teks awal "Selamat datang" dirender di server, lalu diganti setelah
  * mount supaya tidak terjadi ketidakcocokan hidrasi.
+ *
+ * BUG-035 — dipakai bersama oleh dasbor pekerja dan pemberi kerja. Sebelumnya
+ * pekerja disapa "Selamat sore, ..." sementara pemberi kerja "Halo, ..."
+ * karena komponen ini hanya ada di route group (worker).
  */
 export function SapaanWaktu({ nama }: { nama: string }) {
   const [sapaan, setSapaan] = useState("Selamat datang");

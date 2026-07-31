@@ -82,19 +82,31 @@ export function KartuCalon({
         </div>
       )}
 
-      {/* alasan pencocokan — SELALU dijelaskan */}
+      {/* alasan pencocokan — SELALU dijelaskan.
+          BUG-039: sebelumnya kotak ini tetap dirender walau alasan_cocok
+          kosong, sehingga pemberi kerja hanya melihat label "Cocok karena…"
+          tanpa isi — padahal halaman menjanjikan "Setiap calon dijelaskan
+          kenapa cocok". Sekarang keadaan kosong dijelaskan apa adanya. */}
       <div className="rounded-lg bg-biru-50 p-4">
         <p className="flex items-center gap-2 text-body font-semibold text-biru-900">
           <MessageCircleHeart className="size-5 shrink-0 text-biru-600" aria-hidden />
-          Cocok karena…
+          {calon.alasan_cocok.length > 0 ? "Cocok karena…" : "Belum ada dasar pencocokan"}
         </p>
-        <ul className="mt-2 flex flex-col gap-1">
-          {calon.alasan_cocok.map((alasan, i) => (
-            <li key={i} className="text-body text-tanah-900">
-              · {alasan}
-            </li>
-          ))}
-        </ul>
+        {calon.alasan_cocok.length > 0 ? (
+          <ul className="mt-2 flex flex-col gap-1">
+            {calon.alasan_cocok.map((alasan, i) => (
+              <li key={i} className="text-body text-tanah-900">
+                · {alasan}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-2 text-body text-tanah-900">
+            {calon.keahlian.length === 0
+              ? "Pekerja ini belum menerbitkan Kartu Kerja, jadi keahliannya belum bisa dicocokkan. Tanyakan langsung pengalamannya sebelum memutuskan."
+              : "Keahlian pekerja ini belum bertumpang tindih dengan kebutuhan lowongan. Tanyakan langsung pengalamannya sebelum memutuskan."}
+          </p>
+        )}
       </div>
 
       {/* rekam jejak faktual — tanpa skor angka */}

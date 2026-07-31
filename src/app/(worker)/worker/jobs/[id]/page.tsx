@@ -70,6 +70,17 @@ export default async function HalamanDetailLowongan({
 
   const { lowongan: lw, pemberi, rekamJejakPemberi, sudahMelamar, kesepakatanId } = detail;
 
+  // BUG-041 — pesan setelah melamar sempat berbunyi "Pemberi kerja akan
+  // memeriksa Kartu Kerja Anda" bahkan untuk pekerja yang belum menerbitkan
+  // kartu sama sekali. Statusnya diperiksa agar pesannya jujur.
+  const { data: kartuTerbit } = await supabase
+    .from("kartu_kerja")
+    .select("id")
+    .eq("pekerja_id", user!.id)
+    .not("diterbitkan_pada", "is", null)
+    .maybeSingle();
+  const punyaKartu = Boolean(kartuTerbit);
+
   return (
     <div className="flex flex-col gap-8">
       <nav aria-label="Navigasi kembali">
@@ -257,6 +268,7 @@ export default async function HalamanDetailLowongan({
           tingkat={lw.saringan?.tingkat ?? "aman"}
           pertanyaan={lw.saringan?.pertanyaan_disarankan ?? []}
           sudahMelamar={sudahMelamar}
+          punyaKartu={punyaKartu}
         />
       )}
     </div>
