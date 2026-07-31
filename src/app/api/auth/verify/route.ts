@@ -13,6 +13,32 @@ const BodySchema = z.object({
   nama: z.string().trim().min(3).max(100).optional(),
 });
 
+/**
+ * BUG-008 — pesan galat Supabase sebelumnya diteruskan apa adanya ke
+ * pengguna, sehingga muncul teks Inggris mentah seperti
+ * "Token has expired or is invalid" di aplikasi yang seluruhnya berbahasa
+ * Indonesia. Pesannya juga tidak menyebut sebab sebenarnya: pada alur masuk,
+ * penyebab paling umum adalah nomornya memang belum terdaftar.
+ */
+function pesanRamah(pesanAsli: string | undefined, intent: "signin" | "register"): string {
+  const p = (pesanAsli ?? "").toLowerCase();
+
+  if (p.includes("expired") || p.includes("invalid")) {
+    return intent === "signin"
+      ? "Kode salah atau sudah kedaluwarsa. Bila nomor Anda belum pernah didaftarkan, daftar dulu lewat halaman Daftar."
+      : "Kode salah atau sudah kedaluwarsa. Minta kode baru, lalu masukkan enam angka terakhir yang Anda terima.";
+  }
+  if (p.includes("rate") || p.includes("too many")) {
+    return "Terlalu banyak percobaan. Tunggu beberapa menit sebelum mencoba lagi.";
+  }
+  if (p.includes("not found") || p.includes("no user")) {
+    return "Nomor ini belum terdaftar. Silakan daftar dulu lewat halaman Daftar.";
+  }
+  return intent === "signin"
+    ? "Tidak bisa masuk. Periksa kembali nomor dan kode Anda."
+    : "Pendaftaran gagal. Coba minta kode baru.";
+}
+
 export async function POST(request: Request) {
   let body: z.infer<typeof BodySchema>;
   try {
@@ -74,7 +100,7 @@ export async function POST(request: Request) {
       });
       if (createErr || !newUser.user) {
         return NextResponse.json(
-          { ok: false, pesan: createErr?.message || "Gagal membuat akun demo." },
+          { ok: false, pesan: "Gagal membuat akun. Coba lagi sebentar lagi." },
           { status: 500 }
         );
       }
@@ -88,7 +114,7 @@ export async function POST(request: Request) {
 
     if (error || !data.user) {
       return NextResponse.json(
-        { ok: false, pesan: error?.message || "Demo sign-in gagal." },
+        { ok: false, pesan: pesanRamah(error?.message, body.intent) },
         { status: 401 }
       );
     }
@@ -102,7 +128,7 @@ export async function POST(request: Request) {
 
     if (error || !data.user) {
       return NextResponse.json(
-        { ok: false, pesan: error?.message || "Verifikasi OTP gagal." },
+        { ok: false, pesan: pesanRamah(error?.message, body.intent) },
         { status: 401 }
       );
     }

@@ -65,8 +65,11 @@ export default function RegisterPage() {
   const [noHp, setNoHp] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const namaValid = nama.trim().length >= 3;
-  const hpValid = noHp.replace(/\D/g, "").length >= 9;
+  const namaValid = nama.trim().length >= 3 && nama.trim().length <= 100;
+  // BUG-019 — sebelumnya cukup ">= 9 digit", sehingga "00000000000" dan
+  // nomor 25 digit sama-sama lolos ke tahap kirim SMS. Sekarang mengikuti
+  // pola nomor seluler Indonesia: 08xx / 628xx / +628xx, 9–13 digit.
+  const hpValid = /^(?:\+?62|0)8[1-9][0-9]{6,10}$/.test(noHp.replace(/[\s-]/g, ""));
 
   async function kirimOTP(e: React.FormEvent) {
     e.preventDefault();
@@ -129,16 +132,35 @@ export default function RegisterPage() {
           </header>
 
           <div className="flex flex-col gap-4" role="radiogroup" aria-label="Pilih peran">
-            {PILIHAN_PERAN.map((p) => {
+            {PILIHAN_PERAN.map((p, i) => {
               const Ikon = p.ikon;
               const dipilih = peran?.peran === p.peran;
+              // BUG-025 — radiogroup sebelumnya tidak merespons tombol panah
+              // dan ketiga opsi sama-sama masuk urutan Tab. Pola ARIA
+              // mensyaratkan satu perhentian Tab lalu berpindah dengan panah
+              // (roving tabindex).
+              const indeksTerfokus = peran
+                ? PILIHAN_PERAN.findIndex((x) => x.peran === peran.peran)
+                : 0;
               return (
                 <button
                   key={p.peran}
                   type="button"
                   role="radio"
                   aria-checked={dipilih}
+                  tabIndex={i === indeksTerfokus ? 0 : -1}
                   onClick={() => setPeran(p)}
+                  onKeyDown={(e) => {
+                    const maju = e.key === "ArrowDown" || e.key === "ArrowRight";
+                    const mundur = e.key === "ArrowUp" || e.key === "ArrowLeft";
+                    if (!maju && !mundur) return;
+                    e.preventDefault();
+                    const berikut =
+                      (i + (maju ? 1 : -1) + PILIHAN_PERAN.length) % PILIHAN_PERAN.length;
+                    setPeran(PILIHAN_PERAN[berikut]);
+                    const grup = e.currentTarget.parentElement;
+                    (grup?.children[berikut] as HTMLElement | undefined)?.focus();
+                  }}
                   className={cn(
                     "flex min-h-12 w-full items-center gap-4 rounded-xl border-2 bg-tanah-0 p-5 text-left shadow-1 outline-none",
                     "motion-safe:transition-shadow hover:shadow-2",
@@ -201,13 +223,21 @@ export default function RegisterPage() {
           <form className="flex flex-col gap-6" onSubmit={kirimOTP}>
             <div className="flex flex-col gap-2">
               <label htmlFor="nama" className="text-label text-tanah-800">
-                Nama lengkap
+                {peran?.peran === "pemberi_kerja" ? "Nama Anda atau nama usaha" : "Nama lengkap"}
               </label>
               <Input
                 id="nama"
                 type="text"
                 autoComplete="name"
-                placeholder="Contoh: Warto Sugianto"
+                maxLength={100}
+                /* BUG-034 — placeholder sebelumnya selalu "Contoh: Warto
+                   Sugianto" (nama pekerja di kartu demo), termasuk saat
+                   mendaftar sebagai Pemberi Kerja. */
+                placeholder={
+                  peran?.peran === "pemberi_kerja"
+                    ? "Contoh: CV Karya Mandiri"
+                    : "Contoh: Warto Sugianto"
+                }
                 className="h-14 text-body-lg"
                 value={nama}
                 onChange={(e) => setNama(e.target.value)}
@@ -223,6 +253,7 @@ export default function RegisterPage() {
                 type="tel"
                 inputMode="tel"
                 autoComplete="tel"
+                maxLength={16}
                 placeholder="Contoh: 0812 3456 0001"
                 className="h-14 text-body-lg"
                 value={noHp}
