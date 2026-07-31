@@ -19,7 +19,6 @@ export async function POST(request: Request) {
     );
   }
 
-<<<<<<< HEAD
   const email = body.email;
   const supabase = await createClient();
 

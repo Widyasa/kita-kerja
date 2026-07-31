@@ -92,6 +92,8 @@ async function kePublik(b: BarisLowonganPublik): Promise<LowonganPublik> {
     wilayah_nama: wilayah?.nama ?? null,
     provinsi_nama: wilayah?.provinsi ?? null,
     pemberi_kerja_id: b.pemberi_kerja_id,
+    // Publik tidak punya lokasi pekerja untuk dihitung jaraknya.
+    jarak_km: null,
     saringan: satu(b.saringan),
     acuan: acuan
       ? {
