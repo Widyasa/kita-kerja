@@ -1,29 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
   ArrowLeft,
   ArrowRight,
+  CheckCircle,
   HandHeart,
   HardHat,
   Loader2,
-  MessageSquareText,
+  Mail,
   UsersRound,
   type LucideIcon,
 } from "lucide-react";
 
 import { Button } from "@/component/ui/button";
 import { Input } from "@/component/ui/input";
-import { LangkahOTP } from "@/component/bersama/LangkahOTP";
 import { cn } from "@/lib/utils";
 import type { Peran } from "@/lib/mock";
 
-const KODE_DEMO = "123456";
-
-type Langkah = "peran" | "hp" | "otp";
+type Langkah = "peran" | "email";
 
 const PILIHAN_PERAN: {
   peran: Peran;
@@ -55,32 +52,37 @@ const PILIHAN_PERAN: {
   },
 ];
 
-const NOMOR_LANGKAH: Record<Langkah, number> = { peran: 1, hp: 2, otp: 3 };
+const NOMOR_LANGKAH: Record<Langkah, number> = { peran: 1, email: 2 };
 
 export default function RegisterPage() {
-  const router = useRouter();
   const [langkah, setLangkah] = useState<Langkah>("peran");
   const [peran, setPeran] = useState<(typeof PILIHAN_PERAN)[number] | null>(null);
   const [nama, setNama] = useState("");
-  const [noHp, setNoHp] = useState("");
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
 
   const namaValid = nama.trim().length >= 3;
-  const hpValid = noHp.replace(/\D/g, "").length >= 9;
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-  async function kirimOTP(e: React.FormEvent) {
+  async function kirimLink(e: React.FormEvent) {
     e.preventDefault();
-    if (!namaValid || !hpValid || loading || !peran) return;
+    if (!namaValid || !emailValid || loading || !peran) return;
     setLoading(true);
     try {
       const res = await fetch("/api/auth/otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone: noHp }),
+        body: JSON.stringify({ email, intent: "register" }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.pesan || "Gagal mengirim OTP.");
-      setLangkah("otp");
+      if (!res.ok) throw new Error(json.pesan || "Gagal mengirim email.");
+
+      // Store role + name for when user confirms email
+      localStorage.setItem("pendaftaran_peran", peran.peran);
+      localStorage.setItem("pendaftaran_nama", nama);
+
+      setSent(true);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Terjadi kesalahan.");
     } finally {
@@ -88,35 +90,46 @@ export default function RegisterPage() {
     }
   }
 
-  async function verifikasiOTP(kode: string) {
-    if (loading || !peran) return;
-    setLoading(true);
-    try {
-      const res = await fetch("/api/auth/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phone: noHp,
-          code: kode,
-          intent: "register",
-          role: peran.peran,
-          nama,
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.pesan || "Verifikasi gagal.");
-      router.push(json.redirect);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Terjadi kesalahan.");
-    } finally {
-      setLoading(false);
-    }
+  if (sent) {
+    return (
+      <div className="mx-auto flex w-full max-w-(--max-worker) flex-col gap-8 px-4 py-12 sm:py-16">
+        <header className="flex flex-col gap-3">
+          <div className="flex size-14 items-center justify-center rounded-full bg-hijau-50">
+            <CheckCircle className="size-8 text-hijau-600" aria-hidden />
+          </div>
+          <h1 className="text-h1">Cek email Anda</h1>
+          <p className="text-body-lg text-tanah-600">
+            Kami kirim link konfirmasi ke{" "}
+            <span className="font-semibold text-tanah-800">{email}</span>. Klik
+            link untuk menyelesaikan pendaftaran.
+          </p>
+        </header>
+
+        <div className="rounded-lg bg-biru-50 p-5">
+          <p className="text-body text-biru-900">
+            Link berlaku 24 jam. Periksa folder spam jika tidak melihat email.
+          </p>
+        </div>
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => {
+            setSent(false);
+            setEmail("");
+            setNama("");
+          }}
+        >
+          Gunakan email lain
+        </Button>
+      </div>
+    );
   }
 
   return (
     <div className="mx-auto flex w-full max-w-(--max-worker) flex-col gap-8 px-4 py-12 sm:py-16">
       <p className="mikro text-center text-tanah-500">
-        Langkah {NOMOR_LANGKAH[langkah]} dari 3
+        Langkah {NOMOR_LANGKAH[langkah]} dari 2
       </p>
 
       {langkah === "peran" && (
@@ -169,7 +182,7 @@ export default function RegisterPage() {
             variant="aksen"
             size="lg"
             disabled={!peran}
-            onClick={() => setLangkah("hp")}
+            onClick={() => setLangkah("email")}
           >
             Lanjut
             <ArrowRight aria-hidden />
@@ -187,18 +200,18 @@ export default function RegisterPage() {
         </>
       )}
 
-      {langkah === "hp" && (
+      {langkah === "email" && (
         <>
           <header className="flex flex-col gap-3">
-            <h1 className="text-h1">Nama dan nomor HP Anda</h1>
+            <h1 className="text-h1">Nama dan email Anda</h1>
             <p className="text-body-lg text-tanah-600">
               Sebagai <span className="font-semibold text-tanah-800">{peran?.judul}</span>,
-              nomor HP adalah satu-satunya kunci akun Anda. Kami kirim kode
-              lewat SMS.
+              email adalah satu-satunya kunci akun Anda. Kami kirim link
+              konfirmasi lewat email.
             </p>
           </header>
 
-          <form className="flex flex-col gap-6" onSubmit={kirimOTP}>
+          <form className="flex flex-col gap-6" onSubmit={kirimLink}>
             <div className="flex flex-col gap-2">
               <label htmlFor="nama" className="text-label text-tanah-800">
                 Nama lengkap
@@ -215,28 +228,28 @@ export default function RegisterPage() {
               />
             </div>
             <div className="flex flex-col gap-2">
-              <label htmlFor="no-hp" className="text-label text-tanah-800">
-                Nomor HP
+              <label htmlFor="email" className="text-label text-tanah-800">
+                Email
               </label>
               <Input
-                id="no-hp"
-                type="tel"
-                inputMode="tel"
-                autoComplete="tel"
-                placeholder="Contoh: 0812 3456 0001"
+                id="email"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                placeholder="nama@contoh.com"
                 className="h-14 text-body-lg"
-                value={noHp}
-                onChange={(e) => setNoHp(e.target.value)}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
               />
             </div>
-            <Button type="submit" variant="aksen" size="lg" disabled={!namaValid || !hpValid || loading}>
+            <Button type="submit" variant="aksen" size="lg" disabled={!namaValid || !emailValid || loading}>
               {loading ? (
                 <Loader2 className="animate-spin" aria-hidden />
               ) : (
-                <MessageSquareText aria-hidden />
+                <Mail aria-hidden />
               )}
-              Kirim kode SMS
+              Kirim link konfirmasi
             </Button>
           </form>
 
@@ -253,35 +266,6 @@ export default function RegisterPage() {
         </>
       )}
 
-      {langkah === "otp" && (
-        <>
-          <header className="flex flex-col gap-3">
-            <h1 className="text-h1">Masukkan kode SMS</h1>
-            <p className="text-body-lg text-tanah-600">
-              Enam angka yang kami kirim ke{" "}
-              <span className="font-semibold text-tanah-800">{noHp}</span>.
-            </p>
-          </header>
-
-          <p className="rounded-xl bg-kuning-50 px-4 py-3 text-center text-body font-semibold text-kuning-800">
-            Kode demo: <span className="font-mono tracking-widest">{KODE_DEMO}</span>{" "}
-            — di versi demo, kode apa pun yang lengkap diterima.
-          </p>
-
-          <LangkahOTP onSelesai={verifikasiOTP} />
-
-          <Button
-            type="button"
-            variant="ghost"
-            className="self-start"
-            onClick={() => setLangkah("hp")}
-            disabled={loading}
-          >
-            <ArrowLeft aria-hidden />
-            Ganti nomor HP
-          </Button>
-        </>
-      )}
     </div>
   );
 }

@@ -171,6 +171,33 @@
 }
 
 @layer utilities {
+  /* Masuk halaman — SATU koreografi saat muat, bukan fade-on-scroll di tiap
+     bagian. Dipicu animasi CSS (bukan transition yang di-toggle class), supaya
+     tidak pernah tergantung JavaScript atau IntersectionObserver.
+     Tundaan sengaja pendek: kalau animasi tak pernah jalan, isi tampil utuh
+     hampir seketika. */
+  @keyframes masuk-arsip {
+    from {
+      opacity: 0;
+      transform: translateY(0.625rem);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .masuk {
+    animation: masuk-arsip var(--duration-slow) var(--ease-default) both;
+    animation-delay: var(--tunda, 0ms);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .masuk {
+      animation: none;
+    }
+  }
+
   .text-display {
     font-size: var(--text-display);
     line-height: var(--text-display-line);

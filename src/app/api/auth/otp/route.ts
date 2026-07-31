@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server-client";
-import { normalisasiHp } from "@/lib/auth/shared";
 import { z } from "zod";
 
-const DEMO_MODE = process.env.DEMO_MODE === "true";
-
 const BodySchema = z.object({
-  phone: z.string().min(9),
+  email: z.string().email(),
+  intent: z.enum(["signin", "register"]),
 });
 
 export async function POST(request: Request) {
@@ -21,15 +19,17 @@ export async function POST(request: Request) {
     );
   }
 
-  const phone = normalisasiHp(body.phone);
-
-  // Demo mode bypasses SMS so the jury flow works without a live provider.
-  if (DEMO_MODE) {
-    return NextResponse.json({ ok: true });
-  }
-
+  const email = body.email;
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithOtp({ phone });
+
+  // Send magic link for email confirmation
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: {
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/confirm`,
+      shouldCreateUser: body.intent === "register",
+    },
+  });
 
   if (error) {
     return NextResponse.json(
@@ -38,5 +38,5 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, pesan: "Cek email Anda untuk link konfirmasi." });
 }
