@@ -41,7 +41,7 @@ export function NavBawahPendamping() {
                 href={tab.href}
                 aria-current={aktif ? "page" : undefined}
                 className={cn(
-                  "flex h-16 min-w-12 flex-col items-center justify-center gap-0.5 text-label transition-colors duration-(--duration-fast)",
+                  "flex h-16 min-w-0 flex-col items-center justify-center gap-0.5 overflow-hidden px-1 transition-colors duration-(--duration-fast)",
                   "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-inset focus-visible:ring-biru-600/40",
                   aktif
                     ? "font-bold text-biru-600"
@@ -49,10 +49,12 @@ export function NavBawahPendamping() {
                 )}
               >
                 <Ikon
-                  className={cn("size-6", aktif && "fill-biru-50")}
+                  className={cn("size-5 sm:size-6", aktif && "fill-biru-50")}
                   aria-hidden
                 />
-                {tab.label}
+                <span className="max-w-full truncate text-center text-[0.8125rem] leading-tight max-sm:hidden">
+                  {tab.label}
+                </span>
                 <span
                   className={cn(
                     "h-1 w-8 rounded-pill",

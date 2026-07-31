@@ -54,16 +54,19 @@ export function TombolKeluar({
       )}
     >
       {loading ? (
-        <Loader2 className="size-6 animate-spin" aria-hidden />
+        <Loader2
+          className={cn("animate-spin", horizontal ? "size-6" : "size-5 sm:size-6")}
+          aria-hidden
+        />
       ) : (
-        <LogOut className="size-6" aria-hidden />
+        <LogOut className={cn(horizontal ? "size-6" : "size-5 sm:size-6")} aria-hidden />
       )}
       {/* ukuran label disamakan dengan menu bottom nav lain (BUG-040) */}
       <span
         className={cn(
           horizontal
             ? "text-left"
-            : "max-w-full truncate text-center text-[0.8125rem] leading-tight",
+            : "max-w-full truncate text-center text-[0.8125rem] leading-tight max-sm:hidden",
         )}
       >
         {loading ? "Memuat..." : "Keluar"}
