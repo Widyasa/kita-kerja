@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/server";
 import { createClient } from "@/lib/supabase/server-client";
-import { callGemini } from "@/lib/ai/gemini-client";
+import { callGemini, demoSimulasiAktif } from "@/lib/ai/gemini-client";
 import { SkemaWawancaraHasil } from "@/lib/ai/output-schemas";
 import { PROMPT_WAWANCARA_HASIL } from "@/lib/ai/prompt-interview";
 import { jagaKeahlian } from "@/lib/ai/guard";
@@ -54,6 +54,7 @@ export async function POST(request: Request) {
     .map((p) => p.transkrip)
     .join("\n");
 
+  const { kuotaHabis, aiGagal } = await demoSimulasiAktif();
   const ai = await callGemini({
     jenis: "wawancara",
     promptParts: [
@@ -94,6 +95,8 @@ export async function POST(request: Request) {
     zodSchema: SkemaWawancaraHasil,
     temperature: 0.3,
     userId: userOrResponse.id,
+    demoPaksaKuotaHabis: kuotaHabis,
+    demoPaksaAiGagal: aiGagal,
   });
 
   if (!ai.ok) {

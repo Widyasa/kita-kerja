@@ -4,6 +4,7 @@
  */
 
 import { GoogleGenAI, type Content } from "@google/genai";
+import { cookies } from "next/headers";
 import { z } from "zod";
 
 const apiKey = process.env.GEMINI_API_KEY;
@@ -40,6 +41,24 @@ export interface CallGeminiOptions<T> {
   userId?: string;
   /** Gunakan model light untuk normalisasi. */
   useLight?: boolean;
+  /** Demo only: paksa hasil "kuota habis" tanpa memanggil Gemini. */
+  demoPaksaKuotaHabis?: boolean;
+  /** Demo only: paksa hasil "AI gagal" tanpa memanggil Gemini. */
+  demoPaksaAiGagal?: boolean;
+}
+
+/**
+ * Baca sakelar simulasi demo dari cookie (diset oleh panel /demo).
+ * Hanya aktif bila DEMO_MODE=true — di produksi selalu { false, false }
+ * walau cookie-nya entah kenapa ada.
+ */
+export async function demoSimulasiAktif(): Promise<{ kuotaHabis: boolean; aiGagal: boolean }> {
+  if (process.env.DEMO_MODE !== "true") return { kuotaHabis: false, aiGagal: false };
+  const jar = await cookies();
+  return {
+    kuotaHabis: jar.get("kk-demo-kuota-habis")?.value === "true",
+    aiGagal: jar.get("kk-demo-ai-gagal")?.value === "true",
+  };
 }
 
 export interface CallGeminiResult<T> {
@@ -66,10 +85,17 @@ export async function callGemini<T>({
   temperature = 0.3,
   userId,
   useLight = false,
+  demoPaksaKuotaHabis = false,
+  demoPaksaAiGagal = false,
 }: CallGeminiOptions<T>): Promise<CallGeminiResult<T> | CallGeminiError> {
   // 1. Cek konfigurasi
   if (!apiKey) {
     return { ok: false, kode: "konfigurasi", pesan_pengguna: "AI belum siap. Coba lagi nanti." };
+  }
+
+  // 1b. Simulasi demo: kuota habis (hanya bila DEMO_MODE=true)
+  if (process.env.DEMO_MODE === "true" && demoPaksaKuotaHabis) {
+    return { ok: false, kode: "kuota", pesan_pengguna: "Kuota AI hari ini sudah penuh (simulasi demo)." };
   }
 
   // 2. Cek kuota (lazy import agar tidak circular)
@@ -77,6 +103,11 @@ export async function callGemini<T>({
   const kuota = await checkQuota(jenis, userId);
   if (!kuota.ok) {
     return { ok: false, kode: "kuota", pesan_pengguna: kuota.pesan };
+  }
+
+  // 2b. Simulasi demo: AI gagal (hanya bila DEMO_MODE=true)
+  if (process.env.DEMO_MODE === "true" && demoPaksaAiGagal) {
+    return { ok: false, kode: "gagal", pesan_pengguna: "AI tidak bisa menjawab saat ini. Silakan gunakan jalur manual." };
   }
 
   const modelName = useLight ? modelLight : modelMain;

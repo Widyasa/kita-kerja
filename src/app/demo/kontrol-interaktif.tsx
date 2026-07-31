@@ -185,19 +185,27 @@ export function DaftarRekamanContoh() {
 const KUNCI_KUOTA = "kk-demo-kuota-habis";
 const KUNCI_GAGAL = "kk-demo-ai-gagal";
 
+function bacaCookie(nama: string): boolean {
+  return document.cookie.split("; ").some((c) => c === `${nama}=true`);
+}
+
+function tulisCookie(nama: string, nilai: boolean) {
+  document.cookie = `${nama}=${nilai}; path=/; max-age=${nilai ? 86400 : 0}`;
+}
+
 export function SakelarSimulasiKegagalan() {
   const [kuotaHabis, setKuotaHabis] = useState(false);
   const [aiGagal, setAiGagal] = useState(false);
   const [dimuat, setDimuat] = useState(false);
 
-  // Baca localStorage dari callback, bukan sinkron di badan effect
+  // Baca cookie dari callback, bukan sinkron di badan effect
   useEffect(() => {
     const id = setTimeout(() => {
       try {
-        setKuotaHabis(localStorage.getItem(KUNCI_KUOTA) === "true");
-        setAiGagal(localStorage.getItem(KUNCI_GAGAL) === "true");
+        setKuotaHabis(bacaCookie(KUNCI_KUOTA));
+        setAiGagal(bacaCookie(KUNCI_GAGAL));
       } catch {
-        // storage diblokir — sakelar tetap jalan tanpa simpan
+        // cookie diblokir — sakelar tetap jalan tanpa simpan
       }
       setDimuat(true);
     }, 0);
@@ -206,7 +214,7 @@ export function SakelarSimulasiKegagalan() {
 
   const simpan = (kunci: string, nilai: boolean) => {
     try {
-      localStorage.setItem(kunci, String(nilai));
+      tulisCookie(kunci, nilai);
     } catch {
       // abaikan
     }
