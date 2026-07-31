@@ -72,6 +72,7 @@ export default async function HalamanKartuKerja() {
       <KeadaanKosong
         className="mt-6"
         ikon={IdCard}
+        sebagaiJudulHalaman
         judul="Anda belum punya Kartu Kerja"
         penjelasan="Ceritakan pengalaman kerja Anda lewat Ngobrol Kerja — kira-kira 3 menit — dan Kartu Kerja Anda langsung terbit di sini."
         labelAksi="Mulai Ngobrol Kerja"

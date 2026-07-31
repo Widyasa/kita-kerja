@@ -23,7 +23,10 @@ export function SakelarPublik({ aktifAwal }: { aktifAwal: boolean }) {
           aria-labelledby="label-sakelar-publik"
           checked={aktif}
           onCheckedChange={setAktif}
-          className="min-h-8"
+          /* BUG-037 — sakelar ini mengendalikan privasi (kartu tampil publik
+           atau tidak) tapi area sentuhnya hanya 56x32px. Area diperbesar ke
+           44px tanpa mengubah ukuran visual sakelarnya. */
+        className="min-h-11 self-center"
         />
       </div>
       <p className="mt-2 text-body text-tanah-600">

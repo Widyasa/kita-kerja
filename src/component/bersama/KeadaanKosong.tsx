@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 export function KeadaanKosong({
   ikon: Ikon,
   judul,
+  sebagaiJudulHalaman = false,
   penjelasan,
   labelAksi,
   hrefAksi,
@@ -19,6 +20,12 @@ export function KeadaanKosong({
 }: {
   ikon: LucideIcon;
   judul: string;
+  /**
+   * BUG-038 — beberapa halaman hanya berisi keadaan kosong ini, sehingga
+   * heading teratasnya jadi h2 dan halaman tidak punya h1 sama sekali.
+   * Set true bila komponen ini memang judul utama halaman.
+   */
+  sebagaiJudulHalaman?: boolean;
   /** jelaskan langkah berikutnya dalam bahasa sederhana */
   penjelasan: string;
   labelAksi: string;
@@ -36,7 +43,11 @@ export function KeadaanKosong({
       <span className="flex size-16 items-center justify-center rounded-full bg-tanah-100">
         <Ikon className="size-8 text-tanah-500" aria-hidden />
       </span>
-      <h2 className="text-h3">{judul}</h2>
+      {sebagaiJudulHalaman ? (
+        <h1 className="text-h3">{judul}</h1>
+      ) : (
+        <h2 className="text-h3">{judul}</h2>
+      )}
       <p className="max-w-sm text-body text-tanah-600">{penjelasan}</p>
       {hrefAksi ? (
         <Button asChild size="lg" className="mt-2">

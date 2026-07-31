@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { ArrowLeft, Loader2, Mail } from "lucide-react";
@@ -18,8 +18,14 @@ import { emailValid } from "@/lib/auth/shared";
  * apa pun, siapa saja yang tahu nomor HP seseorang bisa masuk ke akunnya.
  * Spanduk "Kode demo: 123456" yang memberitahukan celah itu juga dihapus.
  */
-export default function SignInPage() {
+function FormMasuk() {
   const router = useRouter();
+  const params = useSearchParams();
+  // BUG-015 — tujuan asal dan alasan dibawa middleware saat pengguna
+  // ditendang keluar, supaya bisa dikembalikan ke halaman semula dan
+  // diberi tahu kenapa diminta masuk lagi.
+  const tujuan = params.get("redirect");
+  const alasan = params.get("alasan");
   const [langkah, setLangkah] = useState<"email" | "otp">("email");
   const [email, setEmail] = useState("");
   const [tersentuh, setTersentuh] = useState(false);
@@ -66,7 +72,10 @@ export default function SignInPage() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.pesan || "Verifikasi gagal.");
-      router.push(json.redirect);
+      // Hanya path internal yang diikuti, supaya tidak bisa dipakai
+      // sebagai open redirect.
+      const aman = tujuan && tujuan.startsWith("/") && !tujuan.startsWith("//");
+      router.push(aman ? tujuan : json.redirect);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Terjadi kesalahan.");
     } finally {
@@ -79,6 +88,16 @@ export default function SignInPage() {
       {langkah === "email" ? (
         <>
           <header className="flex flex-col gap-3">
+            {alasan === "sesi" && (
+              <p role="status" className="rounded-xl bg-hati-50 px-4 py-3 text-body text-hati-800">
+                Sesi Anda sudah berakhir. Silakan masuk lagi untuk melanjutkan.
+              </p>
+            )}
+            {alasan === "peran" && (
+              <p role="status" className="rounded-xl bg-hati-50 px-4 py-3 text-body text-hati-800">
+                Halaman itu bukan untuk peran akun Anda. Masuk dengan akun yang sesuai.
+              </p>
+            )}
             <h1 className="text-h1">Masuk ke Kita Kerja</h1>
             <p className="text-body-lg text-tanah-600">
               Tulis alamat email Anda. Kami kirim kode enam angka ke email itu —
@@ -159,5 +178,20 @@ export default function SignInPage() {
         </>
       )}
     </div>
+  );
+}
+
+/** useSearchParams wajib dibungkus Suspense pada App Router. */
+export default function SignInPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="mx-auto w-full max-w-(--max-worker) px-4 py-12 sm:py-16">
+          <p className="text-body text-tanah-600">Memuat…</p>
+        </div>
+      }
+    >
+      <FormMasuk />
+    </Suspense>
   );
 }

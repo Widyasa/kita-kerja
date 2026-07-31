@@ -38,6 +38,20 @@ import {
  * dengan route tersebut: jangan pernah expose ID internal, nomor HP, atau
  * alamat lengkap.
  */
+/**
+ * BUG-042 — halaman ini publik dan dipindai lewat QR di lokasi kerja, tapi
+ * responsnya bertanda `private, no-cache, no-store` sehingga x-vercel-cache
+ * selalu MISS dan tiap pemindaian menempuh perjalanan penuh ke server asal
+ * (TTFB rata-rata 412ms, puncak 550ms) — dibanding 131ms untuk beranda yang
+ * ter-cache.
+ *
+ * Isi kartu jarang berubah, jadi cukup di-cache singkat di CDN dengan
+ * revalidasi latar. Saat pemilik mematikan "Tampilkan kartu saya untuk
+ * publik", jendela 60 detik ini batas paparannya — kalau perlu instan,
+ * panggil revalidatePath("/verify/" + token) dari handler sakelar itu.
+ */
+export const revalidate = 60;
+
 export const metadata: Metadata = {
   title: "Verifikasi Kartu Kerja — Kita Kerja",
   robots: { index: false, follow: false },
