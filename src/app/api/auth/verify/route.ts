@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient, createServiceClient } from "@/lib/supabase/server-client";
-import { normalisasiHp, tujuanPeran, DEMO_OTP, demoEmailForPhone } from "@/lib/auth/shared";
+import { normalisasiEmail, tujuanPeran, POLA_EMAIL } from "@/lib/auth/shared";
 import { z } from "zod";
 
-const DEMO_MODE = process.env.DEMO_MODE === "true";
-
 const BodySchema = z.object({
-  phone: z.string().min(9),
+  email: z.string().regex(POLA_EMAIL),
   code: z.string().length(6),
   intent: z.enum(["signin", "register"]),
   role: z.enum(["pekerja", "pemberi_kerja", "pendamping"]).optional(),
@@ -17,25 +15,19 @@ const BodySchema = z.object({
  * BUG-008 — pesan galat Supabase sebelumnya diteruskan apa adanya ke
  * pengguna, sehingga muncul teks Inggris mentah seperti
  * "Token has expired or is invalid" di aplikasi yang seluruhnya berbahasa
- * Indonesia. Pesannya juga tidak menyebut sebab sebenarnya: pada alur masuk,
- * penyebab paling umum adalah nomornya memang belum terdaftar.
+ * Indonesia, tanpa menyebut sebab sebenarnya.
  */
 function pesanRamah(pesanAsli: string | undefined, intent: "signin" | "register"): string {
   const p = (pesanAsli ?? "").toLowerCase();
 
   if (p.includes("expired") || p.includes("invalid")) {
-    return intent === "signin"
-      ? "Kode salah atau sudah kedaluwarsa. Bila nomor Anda belum pernah didaftarkan, daftar dulu lewat halaman Daftar."
-      : "Kode salah atau sudah kedaluwarsa. Minta kode baru, lalu masukkan enam angka terakhir yang Anda terima.";
+    return "Kode salah atau sudah kedaluwarsa. Minta kode baru, lalu masukkan enam angka terakhir yang dikirim ke email Anda.";
   }
   if (p.includes("rate") || p.includes("too many")) {
     return "Terlalu banyak percobaan. Tunggu beberapa menit sebelum mencoba lagi.";
   }
-  if (p.includes("not found") || p.includes("no user")) {
-    return "Nomor ini belum terdaftar. Silakan daftar dulu lewat halaman Daftar.";
-  }
   return intent === "signin"
-    ? "Tidak bisa masuk. Periksa kembali nomor dan kode Anda."
+    ? "Tidak bisa masuk. Periksa kembali email dan kode Anda."
     : "Pendaftaran gagal. Coba minta kode baru.";
 }
 
@@ -45,96 +37,37 @@ export async function POST(request: Request) {
     const raw = await request.json();
     body = BodySchema.parse(raw);
   } catch {
+    return NextResponse.json({ ok: false, pesan: "Format tidak valid." }, { status: 400 });
+  }
+
+  const email = normalisasiEmail(body.email);
+  const supabase = await createClient();
+
+  /**
+   * BUG-001 — verifikasi OTP yang sebenarnya.
+   *
+   * Versi lama punya cabang DEMO_MODE: bila kode sama dengan DEMO_OTP,
+   * server mencari pengguna berdasarkan nomor HP lalu memaksa
+   * signInWithPassword memakai DEMO_FALLBACK_PASSWORD — tanpa pernah
+   * memeriksa apakah pemohon benar-benar memegang nomor itu. Itulah
+   * lubang yang membuat siapa pun bisa masuk ke akun orang lain.
+   * Cabang tersebut dihapus; satu-satunya jalan masuk kini adalah kode
+   * yang dikirim Supabase ke alamat email pemohon.
+   */
+  const { data, error } = await supabase.auth.verifyOtp({
+    email,
+    token: body.code,
+    type: "email",
+  });
+
+  if (error || !data.user) {
     return NextResponse.json(
-      { ok: false, pesan: "Format tidak valid." },
-      { status: 400 }
+      { ok: false, pesan: pesanRamah(error?.message, body.intent) },
+      { status: 401 },
     );
   }
 
-  const phone = normalisasiHp(body.phone);
-
-  const supabase = await createClient();
-  let userId: string;
-
-  // Demo fallback: bypass SMS provider by signing in through email/password.
-  // Any phone works in DEMO_MODE as long as the demo code is used.
-  if (DEMO_MODE && body.code === DEMO_OTP) {
-    const fallbackPassword = process.env.DEMO_FALLBACK_PASSWORD;
-    if (!fallbackPassword) {
-      return NextResponse.json(
-        { ok: false, pesan: "Demo fallback belum dikonfigurasi." },
-        { status: 500 }
-      );
-    }
-
-    const service = await createServiceClient();
-    const generatedEmail = demoEmailForPhone(phone);
-
-    // Cari pengguna yang sudah ada berdasarkan nomor HP (cover user hasil seed).
-    const { data: existingPengguna } = await service
-      .from("pengguna")
-      .select("id")
-      .eq("no_hp", phone)
-      .single();
-
-    let authEmail = generatedEmail;
-    let targetUserId: string | null = existingPengguna?.id ?? null;
-
-    if (targetUserId) {
-      const { data: authUser, error: getErr } = await service.auth.admin.getUserById(targetUserId);
-      if (getErr || !authUser.user) {
-        return NextResponse.json(
-          { ok: false, pesan: "Gagal menemukan akun demo." },
-          { status: 500 }
-        );
-      }
-      authEmail = authUser.user.email ?? generatedEmail;
-      await service.auth.admin.updateUserById(targetUserId, { password: fallbackPassword });
-    } else {
-      const { data: newUser, error: createErr } = await service.auth.admin.createUser({
-        email: generatedEmail,
-        phone,
-        password: fallbackPassword,
-        email_confirm: true,
-        phone_confirm: true,
-      });
-      if (createErr || !newUser.user) {
-        return NextResponse.json(
-          { ok: false, pesan: "Gagal membuat akun. Coba lagi sebentar lagi." },
-          { status: 500 }
-        );
-      }
-      targetUserId = newUser.user.id;
-    }
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: authEmail,
-      password: fallbackPassword,
-    });
-
-    if (error || !data.user) {
-      return NextResponse.json(
-        { ok: false, pesan: pesanRamah(error?.message, body.intent) },
-        { status: 401 }
-      );
-    }
-    userId = data.user.id;
-  } else {
-    const { data, error } = await supabase.auth.verifyOtp({
-      phone,
-      token: body.code,
-      type: "sms",
-    });
-
-    if (error || !data.user) {
-      return NextResponse.json(
-        { ok: false, pesan: pesanRamah(error?.message, body.intent) },
-        { status: 401 }
-      );
-    }
-    userId = data.user.id;
-  }
-
+  const userId = data.user.id;
   const service = await createServiceClient();
 
   const { data: existing } = await service
@@ -156,25 +89,28 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, redirect });
   }
 
+  // Email terverifikasi tapi belum punya baris `pengguna`. Untuk alur masuk
+  // ini berarti akunnya memang belum pernah didaftarkan.
   if (body.intent !== "register" || !body.role) {
+    await supabase.auth.signOut();
     return NextResponse.json(
       { ok: false, pesan: "Akun belum terdaftar. Silakan daftar terlebih dahulu." },
-      { status: 403 }
+      { status: 403 },
     );
   }
 
   const { error: insertError } = await service.from("pengguna").insert({
     id: userId,
-    nama: body.nama?.trim() || phone,
-    no_hp: phone,
+    nama: body.nama?.trim() || email.split("@")[0],
+    email,
     peran: body.role,
-    status_verifikasi: "hp_terverifikasi",
+    status_verifikasi: "email_terverifikasi",
   });
 
   if (insertError) {
     return NextResponse.json(
       { ok: false, pesan: "Gagal menyimpan data pengguna." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 
@@ -188,7 +124,7 @@ export async function POST(request: Request) {
     if (kartuError) {
       return NextResponse.json(
         { ok: false, pesan: "Gagal menyiapkan kartu kerja." },
-        { status: 500 }
+        { status: 500 },
       );
     }
   }

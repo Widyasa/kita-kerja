@@ -192,7 +192,18 @@ export default async function VerifyPage({
             {inisialNama(pekerja.nama)}
           </span>
           <div>
-            <LabelSection label="Kartu Kerja terverifikasi" />
+            {/* BUG-024 — sebelumnya selalu "Kartu Kerja terverifikasi",
+                termasuk pada kartu yang riwayat kerjanya nol dan seluruh
+                keahliannya masih berlabel "Diklaim". Yang terverifikasi
+                sebenarnya cuma keaslian kartunya, bukan isinya — dan bagi
+                pemberi kerja yang membaca sekilas itu mudah disalahartikan. */}
+            <LabelSection
+              label={
+                statistik.pekerjaan_selesai > 0
+                  ? "Kartu Kerja terverifikasi"
+                  : "Kartu asli · belum ada riwayat terverifikasi"
+              }
+            />
             <h1 className="mt-3 text-[clamp(2rem,3.6vw,3.25rem)] leading-[1.04] font-extrabold tracking-[-0.025em] text-balance">
               {inisialkanNamaBelakang(pekerja.nama)}
             </h1>

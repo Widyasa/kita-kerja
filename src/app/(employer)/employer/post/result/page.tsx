@@ -113,6 +113,34 @@ function IsiHasil() {
       toast.error("Judul lowongan perlu diisi dulu.");
       return;
     }
+
+    /**
+     * BUG-009 — lowongan sebelumnya bisa tayang tanpa upah, wilayah, maupun
+     * tanggal mulai, padahal halaman ini sendiri sudah menandainya di bagian
+     * "Yang belum jelas" dan kelengkapannya baru 60%. Akibatnya pekerja
+     * melihat lowongan tanpa nilai upah, dan tanpa wilayah pencocokan lokasi
+     * tidak punya data sama sekali.
+     *
+     * Upah dan wilayah kini wajib. Tanggal mulai tetap opsional karena
+     * pekerjaan harian memang sering belum punya tanggal pasti.
+     */
+    const kurang: string[] = [];
+    if (!bidang.upah?.trim() || Number(bidang.upah) <= 0) {
+      kurang.push("besaran upah");
+    }
+    if (!bidang.wilayahId) {
+      kurang.push("wilayah");
+    }
+    if (kurang.length > 0) {
+      toast.error(
+        `Lengkapi ${kurang.join(" dan ")} dulu. Pekerja perlu tahu ini sebelum melamar.`,
+      );
+      document
+        .getElementById(kurang[0] === "wilayah" ? "re-wilayah" : "re-upah")
+        ?.focus();
+      return;
+    }
+
     setMenayangkan(true);
     try {
       let keahlianIds: string[] = [];
