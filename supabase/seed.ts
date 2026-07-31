@@ -54,14 +54,55 @@ const riwayatWarto: {
   mulai: string;
   selesai: string;
   skor: number;
-  catatan: string;
+  catatan: string | null;
 }[] = [
-  { lingkup: "Pasang keramik lantai 60x60 ruang tamu dan kamar", upah: 4200000, satuan: "borongan", mulai: "2026-02-03", selesai: "2026-02-11", skor: 5, catatan: "Rapi, nat lurus semua. Datang tepat waktu." },
-  { lingkup: "Plester dan aci dinding belakang rumah", upah: 175000, satuan: "harian", mulai: "2026-03-09", selesai: "2026-03-17", skor: 5, catatan: "Hasil acian halus, tidak perlu diulang." },
-  { lingkup: "Pasang bata expose pagar depan", upah: 3800000, satuan: "borongan", mulai: "2026-04-06", selesai: "2026-04-15", skor: 4, catatan: "Bagus, hanya selesai mundur dua hari karena hujan." },
-  { lingkup: "Perbaikan keramik kamar mandi bocor", upah: 165000, satuan: "harian", mulai: "2026-05-11", selesai: "2026-05-14", skor: 5, catatan: "Cepat dan bersih, bocornya berhenti." },
-  { lingkup: "Plester dekoratif tekstur kasar dinding teras", upah: 2600000, satuan: "borongan", mulai: "2026-06-08", selesai: "2026-06-13", skor: 5, catatan: "Teksturnya persis seperti yang saya minta." },
-  { lingkup: "Pasang keramik dinding dapur", upah: 180000, satuan: "harian", mulai: "2026-07-06", selesai: "2026-07-10", skor: 4, catatan: "Kerja baik, alat dibawa sendiri." },
+  { lingkup: "Pasang keramik lantai teras, Lowokwaru", upah: 165000, satuan: "harian", mulai: "2025-11-03", selesai: "2025-11-06", skor: 5, catatan: "Rapi dan cepat selesai." },
+  { lingkup: "Perbaikan dinding retak, Blimbing", upah: 150000, satuan: "harian", mulai: "2025-11-10", selesai: "2025-11-13", skor: 5, catatan: "Datang tepat waktu, kerja bagus." },
+  { lingkup: "Plester kamar tambahan, Dinoyo", upah: 155000, satuan: "harian", mulai: "2025-11-17", selesai: "2025-11-20", skor: 4, catatan: "Hasil rata, lumayan cepat." },
+  { lingkup: "Keramik kamar mandi, Kedungkandang", upah: 170000, satuan: "harian", mulai: "2025-11-24", selesai: "2025-11-27", skor: 5, catatan: "Rapi sekali, terima kasih." },
+  { lingkup: "Cor dak lantai dua, Pakis", upah: 160000, satuan: "harian", mulai: "2025-12-02", selesai: "2025-12-05", skor: 5, catatan: "Kuat dan rajin." },
+  { lingkup: "Plester fasad rumah, Karangploso", upah: 155000, satuan: "harian", mulai: "2025-12-08", selesai: "2025-12-11", skor: 5, catatan: null },
+  { lingkup: "Pasang tegel ruang tamu, Wagir", upah: 170000, satuan: "harian", mulai: "2025-12-12", selesai: "2025-12-15", skor: 5, catatan: "Hasil halus, mau pesan lagi." },
+  { lingkup: "Renovasi pagar dan kanopi, Klojen", upah: 150000, satuan: "harian", mulai: "2025-12-19", selesai: "2025-12-22", skor: 5, catatan: null },
+  { lingkup: "Pasang bata dinding gudang, Singosari", upah: 150000, satuan: "harian", mulai: "2025-12-27", selesai: "2025-12-30", skor: 0, catatan: null },
+  { lingkup: "Keramik lantai dua rumah Pak Yono, Dau", upah: 175000, satuan: "harian", mulai: "2026-01-05", selesai: "2026-01-08", skor: 5, catatan: "Kerjanya cekatan." },
+  { lingkup: "Aci dinding rumah baru, Tumpang", upah: 158000, satuan: "harian", mulai: "2026-01-12", selesai: "2026-01-15", skor: 0, catatan: null },
+  { lingkup: "Pengecatan kamar anak, Sukun", upah: 150000, satuan: "harian", mulai: "2026-01-17", selesai: "2026-01-20", skor: 5, catatan: "Rapi, tidak beleber." },
+  { lingkup: "Bongkar pasang dapur, Blimbing", upah: 150000, satuan: "harian", mulai: "2026-01-21", selesai: "2026-01-24", skor: 0, catatan: null },
+  { lingkup: "Cor jalan masuk gang, Pakisaji", upah: 160000, satuan: "harian", mulai: "2026-01-26", selesai: "2026-01-29", skor: 5, catatan: null },
+  { lingkup: "Keramik selasar kantor desa, Pakis", upah: 172000, satuan: "harian", mulai: "2026-01-30", selesai: "2026-02-02", skor: 5, catatan: "Tepat janji." },
+  { lingkup: "Pasang keramik musala, Kepanjen", upah: 170000, satuan: "harian", mulai: "2026-02-02", selesai: "2026-02-05", skor: 5, catatan: "Hasil bagus, jamaah senang." },
+  { lingkup: "Plester tangga dan selasar, Lowokwaru", upah: 155000, satuan: "harian", mulai: "2026-02-07", selesai: "2026-02-10", skor: 0, catatan: null },
+  { lingkup: "Dinding kamar belakang, Wagir", upah: 150000, satuan: "harian", mulai: "2026-02-11", selesai: "2026-02-14", skor: 4, catatan: null },
+  { lingkup: "Cat ulang ruang tamu, Dau", upah: 150000, satuan: "harian", mulai: "2026-02-16", selesai: "2026-02-19", skor: 0, catatan: null },
+  { lingkup: "Cor tiang teras, Singosari", upah: 160000, satuan: "harian", mulai: "2026-02-21", selesai: "2026-02-24", skor: 5, catatan: null },
+  { lingkup: "Keramik teras warung, Pakis", upah: 168000, satuan: "harian", mulai: "2026-02-26", selesai: "2026-03-01", skor: 0, catatan: null },
+  { lingkup: "Plester rumah dua lantai, Karangploso", upah: 160000, satuan: "harian", mulai: "2026-03-03", selesai: "2026-03-06", skor: 5, catatan: "Rapi sekali, hasil halus." },
+  { lingkup: "Perbaikan atap bocor, Sukun", upah: 150000, satuan: "harian", mulai: "2026-03-09", selesai: "2026-03-12", skor: 5, catatan: "Sigap dan jujur." },
+  { lingkup: "Keramik dapur, Blimbing", upah: 172000, satuan: "harian", mulai: "2026-03-14", selesai: "2026-03-17", skor: 5, catatan: null },
+  { lingkup: "Pagar belakang rumah, Dau", upah: 152000, satuan: "harian", mulai: "2026-03-19", selesai: "2026-03-22", skor: 0, catatan: null },
+  { lingkup: "Aci plafon dan lis, Lowokwaru", upah: 158000, satuan: "harian", mulai: "2026-03-24", selesai: "2026-03-27", skor: 0, catatan: null },
+  { lingkup: "Pengecatan pagar besi, Klojen", upah: 150000, satuan: "harian", mulai: "2026-03-28", selesai: "2026-03-31", skor: 4, catatan: "Bersih kerjanya." },
+  { lingkup: "Pasang granit ruang keluarga, Dinoyo", upah: 180000, satuan: "harian", mulai: "2026-04-02", selesai: "2026-04-05", skor: 5, catatan: "Granit rapi, sambungan halus." },
+  { lingkup: "Cor lantai gudang, Pakisaji", upah: 162000, satuan: "harian", mulai: "2026-04-07", selesai: "2026-04-10", skor: 0, catatan: null },
+  { lingkup: "Plester kamar mandi atas, Wagir", upah: 158000, satuan: "harian", mulai: "2026-04-11", selesai: "2026-04-14", skor: 5, catatan: null },
+  { lingkup: "Renovasi kios pasar, Kepanjen", upah: 155000, satuan: "harian", mulai: "2026-04-15", selesai: "2026-04-18", skor: 5, catatan: "Bisa dipercaya, lanjutkan." },
+  { lingkup: "Keramik kamar tidur, Singosari", upah: 170000, satuan: "harian", mulai: "2026-04-20", selesai: "2026-04-23", skor: 4, catatan: null },
+  { lingkup: "Aci dinding luar, Blimbing", upah: 160000, satuan: "harian", mulai: "2026-04-25", selesai: "2026-04-28", skor: 5, catatan: "Hasil bagus." },
+  { lingkup: "Genteng dan rangka baja ringan, Dau", upah: 155000, satuan: "harian", mulai: "2026-05-05", selesai: "2026-05-08", skor: 5, catatan: "Berani tinggi, rapi." },
+  { lingkup: "Keramik teras masjid, Pakis", upah: 172000, satuan: "harian", mulai: "2026-05-09", selesai: "2026-05-12", skor: 5, catatan: "Alhamdulillah rapi." },
+  { lingkup: "Plester dinding sumur, Sukun", upah: 158000, satuan: "harian", mulai: "2026-05-14", selesai: "2026-05-17", skor: 0, catatan: null },
+  { lingkup: "Cor lantai bengkel, Karangploso", upah: 162000, satuan: "harian", mulai: "2026-05-19", selesai: "2026-05-22", skor: 0, catatan: null },
+  { lingkup: "Pasang tegel kamar mandi, Lowokwaru", upah: 175000, satuan: "harian", mulai: "2026-05-24", selesai: "2026-05-27", skor: 5, catatan: "Presisi, air mengalir lancar." },
+  { lingkup: "Perbaikan plafon ruang tamu, Klojen", upah: 152000, satuan: "harian", mulai: "2026-05-28", selesai: "2026-05-31", skor: 0, catatan: null },
+  { lingkup: "Plester rumah petak tiga unit, Kepanjen", upah: 160000, satuan: "harian", mulai: "2026-06-02", selesai: "2026-06-05", skor: 5, catatan: "Cepat dan rapi." },
+  { lingkup: "Perbaikan lantai ambles, Blimbing", upah: 150000, satuan: "harian", mulai: "2026-06-08", selesai: "2026-06-11", skor: 4, catatan: null },
+  { lingkup: "Keramik ruang tamu Pak Hadi, Blimbing", upah: 180000, satuan: "harian", mulai: "2026-06-13", selesai: "2026-06-16", skor: 5, catatan: "Keramik mulus, puas." },
+  { lingkup: "Tembok pembatas kebun, Wagir", upah: 152000, satuan: "harian", mulai: "2026-06-20", selesai: "2026-06-23", skor: 0, catatan: null },
+  { lingkup: "Plester kamar kos, Dinoyo", upah: 160000, satuan: "harian", mulai: "2026-06-27", selesai: "2026-06-30", skor: 0, catatan: null },
+  { lingkup: "Aci ulang dapur, Dinoyo", upah: 160000, satuan: "harian", mulai: "2026-07-06", selesai: "2026-07-09", skor: 5, catatan: "Rapi, bersih." },
+  { lingkup: "Keramik garasi, Pakisaji", upah: 172000, satuan: "harian", mulai: "2026-07-14", selesai: "2026-07-17", skor: 0, catatan: null },
+  { lingkup: "Cor dak musala, Singosari", upah: 165000, satuan: "harian", mulai: "2026-07-22", selesai: "2026-07-25", skor: 5, catatan: "Amanah, hasil kuat." },
 ];
 
 const wilayahData = [
@@ -389,15 +430,19 @@ async function seed() {
         });
         if (ePek) { console.error("  pekerjaan riwayat error:", ePek.message); continue; }
 
-        const { error: eNil } = await supabase.from("penilaian").insert({
-          id: uuid(),
-          pekerjaan_id: pekerjaanId,
-          pemberi_kerja_id: dhikaId,
-          skor: r.skor,
-          catatan: r.catatan,
-        });
-        if (eNil) console.error("  penilaian riwayat error:", eNil.message);
-        else console.log("  ✅ Riwayat:", r.lingkup.slice(0, 40));
+        // skor 0 = pekerjaan selesai tapi pemberi kerja belum menilai.
+        // Barisnya sengaja tidak dibuat supaya jumlah penilai tetap jujur.
+        if (r.skor > 0) {
+          const { error: eNil } = await supabase.from("penilaian").insert({
+            id: uuid(),
+            pekerjaan_id: pekerjaanId,
+            pemberi_kerja_id: dhikaId,
+            skor: r.skor,
+            catatan: r.catatan,
+          });
+          if (eNil) console.error("  penilaian riwayat error:", eNil.message);
+        }
+        console.log("  ✅ Riwayat:", r.lingkup.slice(0, 40));
       }
     }
   }

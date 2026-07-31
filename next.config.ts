@@ -6,6 +6,11 @@ import type { NextConfig } from "next";
  * `connect-src` memuat Supabase agar auth dan query tetap jalan.
  */
 const HEADER_KEAMANAN = [
+  // BUG-030 — respons HTML sempat membawa `access-control-allow-origin: *`
+  // dari konfigurasi hosting. Dokumen HTML tidak butuh CORS sama sekali;
+  // nilainya ditimpa jadi same-origin supaya cakupannya tidak melebar
+  // diam-diam bila kelak ada route yang mengembalikan data pengguna.
+  { key: "Access-Control-Allow-Origin", value: "same-origin" },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },

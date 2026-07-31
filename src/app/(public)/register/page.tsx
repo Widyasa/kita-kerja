@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import {
@@ -56,9 +56,46 @@ const PILIHAN_PERAN: {
 
 const NOMOR_LANGKAH: Record<Langkah, number> = { peran: 1, email: 2, otp: 3 };
 
-export default function RegisterPage() {
+function WizardDaftar() {
   const router = useRouter();
-  const [langkah, setLangkah] = useState<Langkah>("peran");
+  const params = useSearchParams();
+
+  /**
+   * BUG-016 — wizard ini tidak punya state URL: memuat ulang di langkah 2
+   * mengembalikan pengguna ke langkah 1 dengan isian hilang, dan tombol
+   * Back browser keluar total dari pendaftaran ke halaman sebelumnya.
+   * Di Android, Back adalah gestur refleks.
+   *
+   * Langkah kini tersimpan di query string, jadi refresh mempertahankan
+   * posisi dan Back memundurkan satu langkah. Isian tidak ikut disimpan
+   * ke URL — email dan nama tidak pantas tertinggal di riwayat browser.
+   */
+  const langkahDariUrl = (params.get("langkah") ?? "peran") as Langkah;
+  const [langkah, setLangkahState] = useState<Langkah>(
+    ["peran", "email", "otp"].includes(langkahDariUrl) ? langkahDariUrl : "peran",
+  );
+
+  // Sinkronkan saat pengguna menekan Back/Forward browser.
+  // Ditunda satu tick mengikuti pola SapaanWaktu, agar bukan setState
+  // sinkron di dalam effect (aturan react-hooks/set-state-in-effect).
+  useEffect(() => {
+    if (!["peran", "email", "otp"].includes(langkahDariUrl)) return;
+    if (langkahDariUrl === langkah) return;
+    const timer = setTimeout(() => setLangkahState(langkahDariUrl), 0);
+    return () => clearTimeout(timer);
+  }, [langkahDariUrl, langkah]);
+
+  function setLangkah(l: Langkah) {
+    setLangkahState(l);
+    // Langkah OTP tidak didorong ke history: mundur ke sana setelah kode
+    // kedaluwarsa hanya menampilkan layar yang tidak bisa dipakai lagi.
+    if (l === "otp") {
+      window.history.replaceState(null, "", `/register?langkah=${l}`);
+    } else {
+      window.history.pushState(null, "", `/register?langkah=${l}`);
+    }
+  }
+
   const [peran, setPeran] = useState<(typeof PILIHAN_PERAN)[number] | null>(null);
   const [nama, setNama] = useState("");
   const [email, setEmail] = useState("");
@@ -331,5 +368,20 @@ export default function RegisterPage() {
         </>
       )}
     </div>
+  );
+}
+
+/** useSearchParams wajib dibungkus Suspense pada App Router. */
+export default function RegisterPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="mx-auto w-full max-w-(--max-worker) px-4 py-12 sm:py-16">
+          <p className="text-body text-tanah-600">Memuat…</p>
+        </div>
+      }
+    >
+      <WizardDaftar />
+    </Suspense>
   );
 }
