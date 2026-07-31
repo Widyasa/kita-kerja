@@ -479,7 +479,6 @@ export default async function LandingPage() {
             </ul>
           </nav>
 
-<<<<<<< HEAD
             <div className="lg:-translate-y-2 lg:translate-x-2 lg:rotate-[-1.25deg]">
               <KartuKerjaVisual
                 bidangNama={bidangKerja.find((b) => b.id === kartuWarto.bidang_utama_id)?.nama ?? null}
@@ -568,32 +567,5 @@ export default async function LandingPage() {
         </footer>
       </div>
     </div>
-=======
-          <nav aria-label="Media sosial">
-            <p className="mikro text-tanah-500">Media sosial</p>
-            <ul className="mt-4 space-y-2">
-              {tautanSosial.map((t) => (
-                <li key={t.label}>
-                  <a
-                    href={t.href}
-                    className="text-body inline-block rounded-sm py-1 text-tanah-600 underline-offset-4 hover:text-biru-600 hover:underline focus-visible:ring-[3px] focus-visible:ring-biru-600/40 focus-visible:outline-none"
-                  >
-                    {t.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </nav>
-        </div>
-
-        <div className="mt-14 flex flex-col items-start justify-between gap-2 border-t border-tanah-200 pt-6 sm:flex-row sm:items-baseline sm:gap-4">
-          <p className="mikro text-tanah-500">
-            Fase demo — sebagian data pada halaman ini adalah contoh
-          </p>
-          <p className="mikro text-tanah-500">© 2026 Kita Kerja</p>
-        </div>
-      </footer>
-    </LembarArsip>
->>>>>>> feat/phone-otp-auth
   );
 }

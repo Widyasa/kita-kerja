@@ -1,27 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server-client";
-<<<<<<< HEAD
-import { normalisasiEmail, POLA_EMAIL } from "@/lib/auth/shared";
-import { z } from "zod";
-
-/**
- * BUG-001 — kode OTP dikirim ke email, bukan SMS.
- *
- * Sebelumnya rute ini memanggil signInWithOtp({ phone }) dan, dalam
- * DEMO_MODE, langsung membalas ok tanpa mengirim apa pun — sehingga
- * verifikasi berikutnya menerima kode apa pun dan siapa saja yang tahu
- * nomor HP seseorang bisa masuk ke akunnya. Sekarang kode benar-benar
- * dikirim Supabase lewat email: gratis, tanpa provider SMS.
- */
-const BodySchema = z.object({
-  email: z.string().regex(POLA_EMAIL),
-=======
 import { z } from "zod";
 
 const BodySchema = z.object({
   email: z.string().email(),
   intent: z.enum(["signin", "register"]),
->>>>>>> feat/phone-otp-auth
 });
 
 export async function POST(request: Request) {
@@ -37,26 +20,15 @@ export async function POST(request: Request) {
   }
 
 <<<<<<< HEAD
-  const email = normalisasiEmail(body.email);
-  const supabase = await createClient();
-
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    // Akun auth dibuat saat verifikasi berhasil; baris `pengguna` menyusul
-    // di /api/auth/verify sesuai peran yang dipilih.
-    options: { shouldCreateUser: true },
-=======
   const email = body.email;
   const supabase = await createClient();
 
-  // Send magic link for email confirmation
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
       emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/confirm`,
       shouldCreateUser: body.intent === "register",
     },
->>>>>>> feat/phone-otp-auth
   });
 
   if (error) {
