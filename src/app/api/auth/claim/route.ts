@@ -100,7 +100,20 @@ export async function POST(request: Request) {
     // nomornya bebas ditempelkan ke pengguna_id di bawah tanpa bentrok
     // constraint unique.
     if (verifyData.user.id !== body.pengguna_id) {
-      await service.auth.admin.deleteUser(verifyData.user.id);
+      const { error: deleteErr } = await service.auth.admin.deleteUser(verifyData.user.id);
+
+      if (deleteErr) {
+        // Gagal dibersihkan berarti identitas sementara ini MASIH memegang
+        // nomor tsb — kalau kita lanjut ke updateUserById di bawah, itu akan
+        // gagal karena bentrok constraint unique dan terlihat seperti
+        // "Gagal memverifikasi nomor." padahal akar masalahnya di sini.
+        // Berhenti sekarang dengan pesan yang jelas berbeda supaya retry
+        // berikutnya tidak terus-menerus bentrok dengan identitas basi ini.
+        return NextResponse.json(
+          { ok: false, pesan: "Gagal membersihkan identitas verifikasi sementara. Coba lagi beberapa saat." },
+          { status: 500 }
+        );
+      }
     }
   }
 
