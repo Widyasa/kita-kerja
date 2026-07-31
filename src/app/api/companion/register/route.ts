@@ -44,6 +44,7 @@ export async function POST(request: Request) {
   const { error: penggunaError } = await service.from("pengguna").insert({
     id: authUser.user.id,
     nama: body.nama,
+    email,
     no_hp: phone ?? `tanpa-hp-${authUser.user.id.slice(0, 8)}`,
     peran: "pekerja",
     wilayah_id: body.wilayah_id,
