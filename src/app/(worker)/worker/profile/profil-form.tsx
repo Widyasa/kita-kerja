@@ -89,7 +89,10 @@ export function ProfilForm({
         <select
           id="wilayah"
           value={wilayahId}
-          onChange={(e) => setWilayahId(e.target.value)}
+          onChange={(e) => {
+            setWilayahId(e.target.value);
+            setKecamatanId("");
+          }}
           disabled={menyimpan}
           className="h-14 w-full rounded-md border border-input bg-tanah-0 px-4 text-body-lg shadow-1 outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
         >

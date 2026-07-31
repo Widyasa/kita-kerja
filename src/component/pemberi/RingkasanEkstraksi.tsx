@@ -150,7 +150,7 @@ export function RingkasanEkstraksi({
           <select
             id="re-wilayah"
             value={bidang.wilayahId}
-            onChange={(e) => onUbah({ wilayahId: e.target.value })}
+            onChange={(e) => onUbah({ wilayahId: e.target.value, kecamatanId: "" })}
             className={kelasSelect}
           >
             <option value="">Belum dipilih</option>
