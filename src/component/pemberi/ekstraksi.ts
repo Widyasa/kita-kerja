@@ -8,6 +8,7 @@ export interface BidangLowongan {
   jumlahPekerja: string;
   lokasi: string;
   wilayahId: string;
+  kecamatanId: string;
   keahlianIds: string[];
   upah: string;
   satuanUpah: SatuanUpah;

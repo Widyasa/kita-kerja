@@ -165,6 +165,10 @@ export async function kelolaLowongan(
         ? { acuan_harian: acuan.acuan_harian, metode: acuan.metode, jumlah_laporan: acuan.jumlah_laporan }
         : null,
       alasan_cocok: null,
+      // Halaman kelola lowongan ditampilkan ke PEMBERI KERJA, bukan pekerja
+      // tertentu — tidak ada satu titik "kecamatan pekerja" untuk dihitung
+      // jaraknya. Perkiraan jarak hanya berlaku di sisi pekerja (lowongan.ts).
+      jarak_km: null,
     },
     jumlah_calon: lamaran.length,
     jumlah_dilamar: lamaran.filter((l) => l.status === "dilamar").length,

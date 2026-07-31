@@ -6,6 +6,7 @@ import { z } from "zod";
 const BodySchema = z.object({
   nama: z.string().trim().min(3).max(100).optional(),
   wilayah_id: z.string().uuid().nullable().optional(),
+  kecamatan_id: z.string().uuid().nullable().optional(),
 });
 
 export async function PATCH(request: Request) {
@@ -22,6 +23,7 @@ export async function PATCH(request: Request) {
   const patch: Record<string, unknown> = {};
   if (body.nama !== undefined) patch.nama = body.nama;
   if (body.wilayah_id !== undefined) patch.wilayah_id = body.wilayah_id;
+  if (body.kecamatan_id !== undefined) patch.kecamatan_id = body.kecamatan_id;
 
   if (Object.keys(patch).length === 0) {
     return NextResponse.json({ ok: false, pesan: "Tidak ada yang diubah." }, { status: 400 });

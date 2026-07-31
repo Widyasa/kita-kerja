@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Input } from "@/component/ui/input";
 import { cn } from "@/lib/utils";
 import type { JenisKerja, SatuanUpah } from "@/lib/mock";
-import type { PilihanWilayah } from "@/lib/data/profil";
+import type { PilihanKecamatan, PilihanWilayah } from "@/lib/data/profil";
 import {
   LABEL_JENIS_KERJA,
   LABEL_SATUAN_UPAH,
@@ -53,6 +53,7 @@ export function RingkasanEkstraksi({
   className?: string;
 }) {
   const [daftarWilayah, setDaftarWilayah] = useState<PilihanWilayah[]>([]);
+  const [daftarKecamatan, setDaftarKecamatan] = useState<PilihanKecamatan[]>([]);
 
   useEffect(() => {
     let dibatalkan = false;
@@ -69,6 +70,23 @@ export function RingkasanEkstraksi({
       dibatalkan = true;
     };
   }, []);
+
+  useEffect(() => {
+    let dibatalkan = false;
+    (async () => {
+      try {
+        const qs = bidang.wilayahId ? `?wilayah_id=${bidang.wilayahId}` : "";
+        const res = await fetch(`/api/kecamatan${qs}`);
+        const json = await res.json();
+        if (!dibatalkan && res.ok) setDaftarKecamatan(json.data.kecamatan as PilihanKecamatan[]);
+      } catch {
+        // gagal diam-diam — select tetap tampil kosong
+      }
+    })();
+    return () => {
+      dibatalkan = true;
+    };
+  }, [bidang.wilayahId]);
 
   return (
     <div
@@ -139,6 +157,24 @@ export function RingkasanEkstraksi({
             {daftarWilayah.map((w) => (
               <option key={w.id} value={w.id}>
                 {w.nama}
+              </option>
+            ))}
+          </select>
+        </Bidang>
+      </div>
+
+      <div className="sm:col-span-2">
+        <Bidang label="Kecamatan (untuk perkiraan jarak ke pekerja)" htmlFor="re-kecamatan">
+          <select
+            id="re-kecamatan"
+            value={bidang.kecamatanId}
+            onChange={(e) => onUbah({ kecamatanId: e.target.value })}
+            className={kelasSelect}
+          >
+            <option value="">Belum dipilih</option>
+            {daftarKecamatan.map((k) => (
+              <option key={k.id} value={k.id}>
+                {k.nama}
               </option>
             ))}
           </select>

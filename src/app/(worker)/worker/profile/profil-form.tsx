@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2, Save } from "lucide-react";
 
 import { Button } from "@/component/ui/button";
 import { Input } from "@/component/ui/input";
-import type { PilihanWilayah, ProfilTampil } from "@/lib/data/profil";
+import type { PilihanKecamatan, PilihanWilayah, ProfilTampil } from "@/lib/data/profil";
 
 export function ProfilForm({
   profil,
@@ -19,9 +19,28 @@ export function ProfilForm({
   const router = useRouter();
   const [nama, setNama] = useState(profil.nama);
   const [wilayahId, setWilayahId] = useState(profil.wilayah_id ?? "");
+  const [kecamatanId, setKecamatanId] = useState(profil.kecamatan_id ?? "");
+  const [daftarKecamatan, setDaftarKecamatan] = useState<PilihanKecamatan[]>([]);
   const [menyimpan, setMenyimpan] = useState(false);
 
   const namaValid = nama.trim().length >= 3;
+
+  useEffect(() => {
+    let dibatalkan = false;
+    (async () => {
+      try {
+        const qs = wilayahId ? `?wilayah_id=${wilayahId}` : "";
+        const res = await fetch(`/api/kecamatan${qs}`);
+        const json = await res.json();
+        if (!dibatalkan && res.ok) setDaftarKecamatan(json.data.kecamatan as PilihanKecamatan[]);
+      } catch {
+        // gagal diam-diam — select tetap tampil kosong
+      }
+    })();
+    return () => {
+      dibatalkan = true;
+    };
+  }, [wilayahId]);
 
   async function simpan(e: React.FormEvent) {
     e.preventDefault();
@@ -31,7 +50,11 @@ export function ProfilForm({
       const res = await fetch("/api/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nama: nama.trim(), wilayah_id: wilayahId || null }),
+        body: JSON.stringify({
+          nama: nama.trim(),
+          wilayah_id: wilayahId || null,
+          kecamatan_id: kecamatanId || null,
+        }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.pesan || "Gagal menyimpan profil.");
@@ -74,6 +97,26 @@ export function ProfilForm({
           {daftarWilayah.map((w) => (
             <option key={w.id} value={w.id}>
               {w.nama}, {w.provinsi}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <label htmlFor="kecamatan" className="text-label text-tanah-800">
+          Kecamatan tempat tinggal (untuk perkiraan jarak ke lowongan)
+        </label>
+        <select
+          id="kecamatan"
+          value={kecamatanId}
+          onChange={(e) => setKecamatanId(e.target.value)}
+          disabled={menyimpan}
+          className="h-14 w-full rounded-md border border-input bg-tanah-0 px-4 text-body-lg shadow-1 outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        >
+          <option value="">Belum dipilih</option>
+          {daftarKecamatan.map((k) => (
+            <option key={k.id} value={k.id}>
+              {k.nama}
             </option>
           ))}
         </select>
