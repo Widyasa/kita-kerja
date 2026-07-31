@@ -17,6 +17,7 @@ import {
   SakelarSimulasiKegagalan,
   SetelUlangDataDemo,
 } from "./kontrol-interaktif";
+import { TombolPersona } from "./tombol-persona";
 
 /**
  * /demo — panel mode demo (Bagian 16). Asuransi babak final di depan juri.
@@ -57,35 +58,35 @@ function Bagian({
 }
 
 const PERSONA: {
-  href: string;
+  persona: "warto" | "yanti" | "dhika" | "slamet";
   nama: string;
   peran: string;
   satuBaris: string;
   ikon: LucideIcon;
 }[] = [
   {
-    href: "/worker",
+    persona: "warto",
     nama: "Pak Warto",
     peran: "Pekerja — kartu lengkap",
     satuBaris: "Tukang bangunan 12 tahun, Kartu Kerja lengkap dengan riwayat panjang.",
     ikon: House,
   },
   {
-    href: "/worker/interview",
+    persona: "yanti",
     nama: "Bu Yanti",
     peran: "Pekerja baru — tanpa kartu",
     satuBaris: "Pekerja baru yang belum punya kartu — mulai dari Ngobrol Kerja.",
     ikon: Mic,
   },
   {
-    href: "/employer",
+    persona: "dhika",
     nama: "Mbak Dhika",
     peran: "Pemberi kerja",
     satuBaris: "Pekerja kantoran yang memasang lowongan dan memilih pekerja.",
     ikon: Users,
   },
   {
-    href: "/companion",
+    persona: "slamet",
     nama: "Pak Slamet",
     peran: "Pendamping",
     satuBaris: "Pengurus RT yang mendaftarkan pekerja tanpa HP.",
@@ -119,26 +120,13 @@ export default function HalamanPanelDemo() {
             const Ikon = p.ikon;
             return (
               <li key={p.nama}>
-                <Link
-                  href={p.href}
-                  className="flex min-h-14 items-center gap-4 rounded-xl border border-tanah-200 bg-tanah-0 p-4 shadow-1 transition-colors duration-(--duration-fast) hover:bg-tanah-100 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-biru-600/40"
-                >
-                  <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-biru-50 text-biru-600">
-                    <Ikon className="size-6" aria-hidden />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-body-lg font-bold">
-                      {p.nama}{" "}
-                      <span className="font-semibold text-tanah-600">
-                        · {p.peran}
-                      </span>
-                    </span>
-                    <span className="block text-label text-tanah-600">
-                      {p.satuBaris}
-                    </span>
-                  </span>
-                  <ArrowRight className="size-5 shrink-0 text-tanah-400" aria-hidden />
-                </Link>
+                <TombolPersona
+                  persona={p.persona}
+                  nama={p.nama}
+                  peran={p.peran}
+                  satuBaris={p.satuBaris}
+                  ikon={<Ikon className="size-6" aria-hidden />}
+                />
               </li>
             );
           })}

@@ -106,8 +106,9 @@ const kecamatanData: { nama: string; wilayah_nama: string; lat: number; lng: num
 // Test users — created via admin.createUser (phone OTP flow)
 const testUsers = [
   { email: "warto@kitakerja.test", phone: "+6281234567890", nama: "Warto Sugianto", peran: "pekerja", wilayah_nama: "Kota Malang" },
-  { email: "budi@kitakerja.test", phone: "+6281234567891", nama: "Budi Santoso", peran: "pemberi_kerja", wilayah_nama: "Kota Malang" },
-  { email: "ani@kitakerja.test", phone: "+6281234567892", nama: "Ani Wulandari", peran: "pendamping", wilayah_nama: "Kota Malang" },
+  { email: "dhika@kitakerja.test", phone: "+6281234567891", nama: "Dhika Ayu Permata", peran: "pemberi_kerja", wilayah_nama: "Kota Malang" },
+  { email: "slamet@kitakerja.test", phone: "+6281234567892", nama: "Slamet Riyadi", peran: "pendamping", wilayah_nama: "Kota Malang" },
+  { email: "yanti@kitakerja.test", phone: "+6281234567893", nama: "Yanti Puspitasari", peran: "pekerja", wilayah_nama: "Kota Surabaya" },
 ];
 
 async function seed() {
