@@ -12,15 +12,10 @@ import { KeadaanKosong } from "@/component/bersama/KeadaanKosong";
 import { KartuLowongan } from "@/component/pekerja/KartuLowongan";
 import { createClient } from "@/lib/supabase/server-client";
 import { getDashboardPekerja } from "@/lib/data/kartu-kerja";
+import { kesepakatanAktifPekerja } from "@/lib/data/kesepakatan";
+import { lamaranPekerja } from "@/lib/data/lamaran";
 import { daftarLowonganUntukPekerja } from "@/lib/data/lowongan";
-import {
-  formatTanggal,
-  kesepakatanAktifWarto,
-  lamaran,
-  lowongan,
-  pekerjaUtama,
-  upahTeks,
-} from "@/lib/mock";
+import { formatTanggal, upahTeks } from "@/lib/mock";
 
 import { SapaanWaktu } from "./sapaan-waktu";
 import { INFO_STATUS_LAMARAN } from "./status-lamaran";
@@ -30,10 +25,7 @@ import { INFO_STATUS_LAMARAN } from "./status-lamaran";
  * sapaan → status Kartu Kerja → kesepakatan aktif (menonjol, tanggal bayar)
  * → lowongan yang cocok → lamaran berjalan.
  *
- * Sapaan, status Kartu Kerja, dan lowongan yang cocok pakai data asli
- * (pengguna + kartu_kerja + pencocokan lowongan). Kesepakatan aktif dan
- * lamaran berjalan masih dari mock Pak Warto — belum ada alur
- * kesepakatan/lamaran asli, jadi sengaja belum diganti (proyek terpisah).
+ * Seluruh bagian memakai data asli Supabase.
  */
 export default async function HalamanBerandaPekerja() {
   const supabase = await createClient();
@@ -43,7 +35,9 @@ export default async function HalamanBerandaPekerja() {
   const dashboard = await getDashboardPekerja(user!.id);
   const kartuSudahTerbit = !!dashboard.kartu?.diterbitkan_pada;
 
-  const lamaranWarto = lamaran.filter((l) => l.pekerja_id === pekerjaUtama.id);
+  const kesepakatanAktif = await kesepakatanAktifPekerja(user!.id);
+  const lamaranPekerjaIni = await lamaranPekerja(user!.id);
+  const lamaranTeratas = lamaranPekerjaIni.slice(0, 3);
 
   const { lowongan: lowonganCocok, idSudahDilamar: idSudahDilamarAsli } =
     await daftarLowonganUntukPekerja(user!.id);
@@ -62,7 +56,7 @@ export default async function HalamanBerandaPekerja() {
       </header>
 
       {/* Kesepakatan aktif — paling menonjol bila ada */}
-      {kesepakatanAktifWarto.status === "berjalan" && (
+      {kesepakatanAktif && (
         <section
           aria-labelledby="judul-kesepakatan"
           className="rounded-2xl border-2 border-biru-600 bg-biru-50 p-5 shadow-2"
@@ -75,11 +69,9 @@ export default async function HalamanBerandaPekerja() {
             Kesepakatan sedang berjalan
           </h2>
           <p className="mt-2 text-body text-tanah-800">
-            Pasang keramik rumah Pak Hadi, Blimbing ·{" "}
-            {upahTeks(
-              kesepakatanAktifWarto.upah_disepakati,
-              kesepakatanAktifWarto.satuan,
-            )}
+            {kesepakatanAktif.judul_lowongan ?? "Pekerjaan"}
+            {kesepakatanAktif.lokasi_teks ? `, ${kesepakatanAktif.lokasi_teks}` : ""} ·{" "}
+            {upahTeks(kesepakatanAktif.upah_disepakati, kesepakatanAktif.satuan)}
           </p>
           <p className="mt-3 flex items-center gap-2 rounded-lg bg-tanah-0 p-3 text-body font-bold text-tanah-900 shadow-1">
             <CalendarCheck
@@ -87,10 +79,10 @@ export default async function HalamanBerandaPekerja() {
               aria-hidden
             />
             Upah dijanjikan dibayar{" "}
-            {formatTanggal(kesepakatanAktifWarto.tanggal_bayar_dijanjikan)}
+            {formatTanggal(kesepakatanAktif.tanggal_bayar_dijanjikan)}
           </p>
           <Link
-            href={`/worker/agreements/${kesepakatanAktifWarto.id}`}
+            href={`/worker/agreements/${kesepakatanAktif.id}`}
             className="mt-4 inline-flex min-h-12 items-center gap-2 rounded-md px-2 text-body font-bold text-biru-600 underline underline-offset-4 focus-visible:ring-[3px] focus-visible:ring-biru-600/40 focus-visible:outline-none"
           >
             Lihat kesepakatan
@@ -174,12 +166,10 @@ export default async function HalamanBerandaPekerja() {
         <h2 id="judul-lamaran" className="text-h2 text-tanah-900">
           Lamaran berjalan
         </h2>
-        {lamaranWarto.length > 0 ? (
+        {lamaranTeratas.length > 0 ? (
           <ul className="mt-3 flex flex-col gap-3">
-            {lamaranWarto.map((lm) => {
-              const lw = lowongan.find((l) => l.id === lm.lowongan_id);
+            {lamaranTeratas.map((lm) => {
               const info = INFO_STATUS_LAMARAN[lm.status];
-              if (!lw) return null;
               return (
                 <li
                   key={lm.id}
@@ -187,7 +177,7 @@ export default async function HalamanBerandaPekerja() {
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h3 className="text-body font-bold text-tanah-900">
-                      {lw.judul_baku}
+                      {lm.judul_baku}
                     </h3>
                     <span
                       className={`inline-flex items-center rounded-pill px-3 py-1 text-label font-semibold ${info.kelas}`}
@@ -212,7 +202,7 @@ export default async function HalamanBerandaPekerja() {
             hrefAksi="/worker/jobs"
           />
         )}
-        {lamaranWarto.length > 0 && (
+        {lamaranTeratas.length > 0 && (
           <Link
             href="/worker/applications"
             className="mt-4 inline-flex min-h-12 items-center gap-2 rounded-md px-2 text-body font-bold text-biru-600 underline underline-offset-4 focus-visible:ring-[3px] focus-visible:ring-biru-600/40 focus-visible:outline-none"

@@ -42,6 +42,57 @@ function satu<T>(v: T | T[] | null): T | null {
   return Array.isArray(v) ? (v[0] ?? null) : v;
 }
 
+export interface KesepakatanAktifTampil {
+  id: string;
+  judul_lowongan: string | null;
+  lokasi_teks: string | null;
+  upah_disepakati: number;
+  satuan: SatuanUpah;
+  tanggal_bayar_dijanjikan: string;
+}
+
+interface BarisAktif {
+  id: string;
+  upah_disepakati: number;
+  satuan: SatuanUpah;
+  tanggal_bayar_dijanjikan: string;
+  lowongan:
+    | { judul_baku: string | null; lokasi_teks: string | null }
+    | { judul_baku: string | null; lokasi_teks: string | null }[]
+    | null;
+}
+
+export async function kesepakatanAktifPekerja(
+  pekerjaId: string,
+): Promise<KesepakatanAktifTampil | null> {
+  const supabase = await createClient();
+
+  const { data } = await supabase
+    .from("kesepakatan_kerja")
+    .select(
+      `id, upah_disepakati, satuan, tanggal_bayar_dijanjikan,
+       lowongan:lowongan_id(judul_baku, lokasi_teks)`,
+    )
+    .eq("pekerja_id", pekerjaId)
+    .eq("status", "berjalan")
+    .order("mulai", { ascending: false, nullsFirst: false })
+    .limit(1)
+    .maybeSingle<BarisAktif>();
+
+  if (!data) return null;
+
+  const lw = satu(data.lowongan);
+
+  return {
+    id: data.id,
+    judul_lowongan: lw?.judul_baku ?? null,
+    lokasi_teks: lw?.lokasi_teks ?? null,
+    upah_disepakati: data.upah_disepakati,
+    satuan: data.satuan,
+    tanggal_bayar_dijanjikan: data.tanggal_bayar_dijanjikan,
+  };
+}
+
 export async function kesepakatanUntukPihak(
   kesepakatanId: string,
   penggunaId: string,
