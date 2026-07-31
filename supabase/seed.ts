@@ -31,6 +31,39 @@ function uuid(): string {
 
 // ============ DATA SEED ============
 
+/**
+ * BUG-003 / BUG-036 — kartu contoh Pak Warto.
+ *
+ * Token ini dipakai beranda pada tautan "Lihat seperti yang dilihat pemindai
+ * QR", teks di bawah kode QR, dan tautan footer. Sebelumnya seed mengacak
+ * token setiap dijalankan sehingga ketiganya selalu berujung "Kartu tidak
+ * ditemukan". Nilainya kini tetap dan sama dengan yang dirujuk beranda.
+ */
+export const TOKEN_KARTU_DEMO = "9f3c1a7b2e4d48f6a1c5e7b9d2f4a6c8";
+
+/**
+ * Riwayat kerja Warto yang benar-benar tercatat di database, bukan angka
+ * hias di beranda. Tiap baris menghasilkan rantai lengkap
+ * lowongan -> lamaran -> kesepakatan -> pekerjaan -> penilaian, sehingga
+ * statistik kartu dihitung dari data nyata.
+ */
+const riwayatWarto: {
+  lingkup: string;
+  upah: number;
+  satuan: string;
+  mulai: string;
+  selesai: string;
+  skor: number;
+  catatan: string;
+}[] = [
+  { lingkup: "Pasang keramik lantai 60x60 ruang tamu dan kamar", upah: 4200000, satuan: "borongan", mulai: "2026-02-03", selesai: "2026-02-11", skor: 5, catatan: "Rapi, nat lurus semua. Datang tepat waktu." },
+  { lingkup: "Plester dan aci dinding belakang rumah", upah: 175000, satuan: "harian", mulai: "2026-03-09", selesai: "2026-03-17", skor: 5, catatan: "Hasil acian halus, tidak perlu diulang." },
+  { lingkup: "Pasang bata expose pagar depan", upah: 3800000, satuan: "borongan", mulai: "2026-04-06", selesai: "2026-04-15", skor: 4, catatan: "Bagus, hanya selesai mundur dua hari karena hujan." },
+  { lingkup: "Perbaikan keramik kamar mandi bocor", upah: 165000, satuan: "harian", mulai: "2026-05-11", selesai: "2026-05-14", skor: 5, catatan: "Cepat dan bersih, bocornya berhenti." },
+  { lingkup: "Plester dekoratif tekstur kasar dinding teras", upah: 2600000, satuan: "borongan", mulai: "2026-06-08", selesai: "2026-06-13", skor: 5, catatan: "Teksturnya persis seperti yang saya minta." },
+  { lingkup: "Pasang keramik dinding dapur", upah: 180000, satuan: "harian", mulai: "2026-07-06", selesai: "2026-07-10", skor: 4, catatan: "Kerja baik, alat dibawa sendiri." },
+];
+
 const wilayahData = [
   { nama: "Kota Malang", jenis: "kota", provinsi: "Jawa Timur", umk: 3338547, tahun_umk: 2026 },
   { nama: "Kabupaten Malang", jenis: "kabupaten", provinsi: "Jawa Timur", umk: 3368275, tahun_umk: 2026 },
@@ -55,6 +88,8 @@ const keahlianData = [
   { nama_baku: "Tukang Kayu", bidang_nama: "Konstruksi", alias: ["carpenter", "tukang pintu"], pengali_upah: 1.10 },
   { nama_baku: "Tukang Besi", bidang_nama: "Konstruksi", alias: ["tukang las", "welder"], pengali_upah: 1.20 },
   { nama_baku: "Tukang Cat", bidang_nama: "Konstruksi", alias: ["painter", "tukang tembok"], pengali_upah: 1.05 },
+  { nama_baku: "Pemasangan Keramik", bidang_nama: "Konstruksi", alias: ["tukang keramik", "pasang keramik"], pengali_upah: 1.15 },
+  { nama_baku: "Plesteran", bidang_nama: "Konstruksi", alias: ["plester", "aci"], pengali_upah: 1.10 },
   // Rumah Tangga
   { nama_baku: "Asisten Rumah Tangga", bidang_nama: "Rumah Tangga", alias: ["ART", "pembantu"], pengali_upah: 1.00 },
   { nama_baku: "Pengasuh Anak", bidang_nama: "Rumah Tangga", alias: ["nanny", "suster"], pengali_upah: 1.05 },
@@ -249,7 +284,10 @@ async function seed() {
     const { error } = await supabase.from("kartu_kerja").insert({
       id: kartuId,
       pekerja_id: wartoId,
-      token_publik: crypto.randomUUID().replace(/-/g, ""),
+      // BUG-003 — token dibuat tetap agar cocok dengan tautan "Contoh
+      // verifikasi kartu" di beranda. Sebelumnya token diacak tiap seed,
+      // sehingga /verify/9f3c1a7b… selalu membalas "Kartu tidak ditemukan".
+      token_publik: TOKEN_KARTU_DEMO,
       aktif_publik: true,
       ringkasan: "Tukang batu berpengalaman 12 tahun di Kota Malang. Ahli pemasangan bata expose dan plester dekoratif.",
       bidang_utama_id: bidangMap.get("Konstruksi")!,
@@ -264,9 +302,12 @@ async function seed() {
     else console.log("  ✅ Kartu Kerja: Warto");
 
     // Kartu Keahlian untuk Warto
+    // BUG-036 — tiga keahlian ini sama dengan yang ditampilkan kartu contoh
+    // di beranda, supaya kartu asli dan kartu demo tidak saling bertentangan.
     const wartoKeahlian = [
-      { keahlian: "Tukang Batu", level: "ahli", kutipan: "Saya sudah 12 tahun pasang bata expose di rumah-rumah di Malang. Paling senang kalau pasang bata merah tanpa plester karena harus rata semua.", keyakinan: 0.95, sumber: "manual" },
-      { keahlian: "Tukang Plester", level: "terampil", kutipan: "Plester dekoratif tekstur kasar juga pernah saya kerjakan di rumah Pak Darmo di Sukun.", keyakinan: 0.80, sumber: "manual" },
+      { keahlian: "Pemasangan Keramik", level: "ahli", kutipan: "Saya sudah 12 tahun pasang keramik di rumah-rumah di Malang. Paling teliti di bagian nat supaya lurus semua.", keyakinan: 0.95, sumber: "manual" },
+      { keahlian: "Plesteran", level: "ahli", kutipan: "Plester dekoratif tekstur kasar juga pernah saya kerjakan di rumah Pak Darmo di Sukun.", keyakinan: 0.90, sumber: "manual" },
+      { keahlian: "Tukang Batu", level: "terampil", kutipan: "Pasang bata expose tanpa plester, harus rata semua dari awal.", keyakinan: 0.80, sumber: "manual" },
     ];
     for (const k of wartoKeahlian) {
       const keahlian_id = keahlianMap.get(k.keahlian);
@@ -284,6 +325,80 @@ async function seed() {
       });
       if (error) console.error("  kartu_keahlian error:", error.message);
       else console.log("  ✅ Keahlian:", k.keahlian);
+    }
+
+    // BUG-036 — riwayat kerja nyata untuk Warto.
+    // Sebelumnya kartu contoh di beranda mengklaim 47 pekerjaan selesai dan
+    // 4,8 dari 32 penilai, sementara akun Warto yang sebenarnya kosong
+    // (0 pekerjaan, 0 penilai, keahlian masih "Diklaim"). Sekarang tiap
+    // pekerjaan ditulis sebagai rantai lengkap sehingga statistik kartu
+    // dihitung dari data yang benar-benar ada.
+    const dhikaId = userMap.get("dhika@kitakerja.test");
+    const wilayahMalang = wilayahMap.get("Kota Malang");
+    if (dhikaId) {
+      for (const r of riwayatWarto) {
+        const lowonganId = uuid();
+        const { error: eLow } = await supabase.from("lowongan").insert({
+          id: lowonganId,
+          pemberi_kerja_id: dhikaId,
+          wilayah_id: wilayahMalang,
+          teks_asli: r.lingkup,
+          judul_baku: r.lingkup,
+          bidang_id: bidangMap.get("Konstruksi"),
+          jenis_kerja: r.satuan === "harian" ? "harian" : "borongan",
+          jumlah_pekerja: 1,
+          upah_ditawarkan: r.upah,
+          satuan_upah: r.satuan,
+          lokasi_teks: "Sukun, Kota Malang",
+          mulai: r.mulai,
+          status: "terisi",
+        });
+        if (eLow) { console.error("  lowongan riwayat error:", eLow.message); continue; }
+
+        await supabase.from("lamaran").insert({
+          id: uuid(), lowongan_id: lowonganId, pekerja_id: wartoId, status: "disepakati",
+        });
+
+        const kesepakatanId = uuid();
+        const { error: eKes } = await supabase.from("kesepakatan_kerja").insert({
+          id: kesepakatanId,
+          lowongan_id: lowonganId,
+          pekerja_id: wartoId,
+          pemberi_kerja_id: dhikaId,
+          lingkup: r.lingkup,
+          upah_disepakati: r.upah,
+          satuan: r.satuan,
+          mulai: r.mulai,
+          selesai: r.selesai,
+          tanggal_bayar_dijanjikan: r.selesai,
+          otp_pekerja_pada: new Date(r.selesai).toISOString(),
+          otp_pemberi_pada: new Date(r.selesai).toISOString(),
+          status: "selesai",
+        });
+        if (eKes) { console.error("  kesepakatan riwayat error:", eKes.message); continue; }
+
+        const pekerjaanId = uuid();
+        const { error: ePek } = await supabase.from("pekerjaan").insert({
+          id: pekerjaanId,
+          kesepakatan_id: kesepakatanId,
+          pekerja_id: wartoId,
+          pemberi_kerja_id: dhikaId,
+          dikonfirmasi_selesai_pekerja: true,
+          dikonfirmasi_selesai_pemberi: true,
+          selesai_pada: new Date(r.selesai).toISOString(),
+        });
+        if (ePek) { console.error("  pekerjaan riwayat error:", ePek.message); continue; }
+
+        const { error: eNil } = await supabase.from("penilaian").insert({
+          id: uuid(),
+          pekerjaan_id: pekerjaanId,
+          pemberi_kerja_id: dhikaId,
+          skor: r.skor,
+          catatan: r.catatan,
+        });
+        if (eNil) console.error("  penilaian riwayat error:", eNil.message);
+        else console.log("  ✅ Riwayat:", r.lingkup.slice(0, 40));
+      }
     }
   }
 
