@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Play, RotateCcw, Square } from "lucide-react";
+import { Loader2, Play, RotateCcw, Square } from "lucide-react";
 
 import { Button } from "@/component/ui/button";
 import { Switch } from "@/component/ui/switch";
@@ -19,14 +19,33 @@ import { cn } from "@/lib/utils";
 export function SetelUlangDataDemo() {
   const [mintaKonfirmasi, setMintaKonfirmasi] = useState(false);
   const [selesai, setSelesai] = useState(false);
+  const [sedangProses, setSedangProses] = useState(false);
+  const [galat, setGalat] = useState<string | null>(null);
 
-  const setelUlang = () => {
+  const setelUlang = async () => {
+    setSedangProses(true);
+    setGalat(null);
+    try {
+      const res = await fetch("/api/demo/reset", { method: "POST" });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.ok) {
+        setGalat(json?.pesan ?? "Gagal menghubungi server, coba lagi.");
+        setSedangProses(false);
+        return;
+      }
+    } catch {
+      setGalat("Gagal menghubungi server, coba lagi.");
+      setSedangProses(false);
+      return;
+    }
+
     try {
       sessionStorage.clear();
       localStorage.clear();
     } catch {
       // storage diblokir — tetap beri umpan balik
     }
+    setSedangProses(false);
     setMintaKonfirmasi(false);
     setSelesai(true);
   };
@@ -60,11 +79,27 @@ export function SetelUlangDataDemo() {
           Yakin? Semua data percobaan di perangkat ini akan dihapus dan demo
           kembali seperti semula.
         </p>
+        {galat ? (
+          <p role="alert" className="text-label text-bahaya-600">
+            {galat}
+          </p>
+        ) : null}
         <div className="grid grid-cols-2 gap-3">
-          <Button variant="outline" size="lg" onClick={() => setMintaKonfirmasi(false)}>
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => setMintaKonfirmasi(false)}
+            disabled={sedangProses}
+          >
             Batal
           </Button>
-          <Button variant="destructive" size="lg" onClick={setelUlang}>
+          <Button
+            variant="destructive"
+            size="lg"
+            onClick={setelUlang}
+            disabled={sedangProses}
+          >
+            {sedangProses ? <Loader2 className="animate-spin" aria-hidden /> : null}
             Ya, setel ulang
           </Button>
         </div>
