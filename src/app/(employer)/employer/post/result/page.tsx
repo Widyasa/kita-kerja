@@ -87,6 +87,7 @@ function IsiHasil() {
           jumlahPekerja: d.jumlah_pekerja ? String(d.jumlah_pekerja) : "",
           lokasi: d.lokasi_teks ?? "",
           wilayahId: "",
+          kecamatanId: "",
           keahlianIds: [],
           upah: d.upah_ditawarkan ? String(d.upah_ditawarkan) : "",
           satuanUpah: d.satuan_upah ?? "harian",
@@ -114,6 +115,21 @@ function IsiHasil() {
     }
     setMenayangkan(true);
     try {
+      let keahlianIds: string[] = [];
+      if (keahlianDisarankan.length > 0) {
+        try {
+          const resResolve = await fetch("/api/keahlian/resolve", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ nama: keahlianDisarankan }),
+          });
+          const jsonResolve = await resResolve.json();
+          if (resResolve.ok) keahlianIds = jsonResolve.data.keahlian_ids;
+        } catch {
+          // resolusi keahlian gagal → tetap lanjut publish tanpa keahlian_ids,
+          // jangan blokir penerbitan lowongan karena ini
+        }
+      }
       const res = await fetch("/api/jobs/publish", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -129,9 +145,10 @@ function IsiHasil() {
           satuan_upah: bidang.satuanUpah,
           lokasi_teks: bidang.lokasi || null,
           wilayah_id: bidang.wilayahId || null,
+          kecamatan_id: bidang.kecamatanId || null,
           mulai: bidang.mulai || null,
           syarat_tersirat: bidang.syaratTersirat,
-          keahlian_ids: bidang.keahlianIds,
+          keahlian_ids: keahlianIds,
           paksa_tayang: paksa,
         }),
       });
@@ -315,8 +332,9 @@ function IsiHasil() {
                 ))}
               </ul>
               <p className="mt-1 text-label text-tanah-600">
-                Sekadar informasi — belum tersambung ke daftar keahlian baku,
-                jadi belum dipakai untuk mencocokkan pekerja.
+                Akan dicocokkan otomatis ke daftar keahlian baku saat
+                lowongan ditayangkan. Nama yang tidak dikenali akan
+                dilewati.
               </p>
             </div>
           )}

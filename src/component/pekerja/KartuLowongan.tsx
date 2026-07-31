@@ -6,6 +6,7 @@ import { PenandaRisiko } from "@/component/bersama/PanelSaringanAman";
 import { cn } from "@/lib/utils";
 import type { LowonganTampil } from "@/lib/data/types";
 import { upahTeks } from "@/lib/mock/utils";
+import { jarakTeks } from "@/lib/engine/jarak";
 
 /**
  * KartuLowongan (Bagian 4.5):
@@ -33,6 +34,9 @@ export function KartuLowongan({
       <p className="mt-2 flex items-center gap-2 text-body text-tanah-600">
         <MapPin className="size-5 shrink-0" aria-hidden />
         {lw.lokasi_teks ?? lw.wilayah_nama ?? "Lokasi belum diisi"}
+        {lw.jarak_km !== null && (
+          <span className="text-tanah-500">· {jarakTeks(lw.jarak_km)}</span>
+        )}
       </p>
 
       {lw.upah_ditawarkan !== null && lw.satuan_upah && (

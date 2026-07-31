@@ -61,6 +61,9 @@ export interface LowonganTampil {
   acuan: AcuanTampil | null;
   /** satu kalimat, TIDAK PERNAH skor angka */
   alasan_cocok: string | null;
+  /** perkiraan garis lurus (haversine) dari kecamatan pekerja ke kecamatan
+   * lowongan — null bila salah satu (atau keduanya) belum punya kecamatan_id */
+  jarak_km: number | null;
 }
 
 export interface RekamJejakPemberi {

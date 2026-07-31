@@ -4,6 +4,7 @@ import {
   CircleCheck,
   HandHeart,
   Mic,
+  Share2,
   UserPlus,
   Users,
 } from "lucide-react";
@@ -127,6 +128,26 @@ export default async function HalamanPekerjaDidampingi() {
                     </Button>
                   </div>
                 )}
+
+                {/* Setiap pekerja di daftar ini masih "didampingi" (belum
+                    punya HP asli) — tautan klaim memungkinkan pekerja
+                    mengambil alih akunnya sendiri begitu ia punya HP. */}
+                <div className="flex items-center justify-between gap-3 rounded-xl border border-tanah-200 bg-tanah-50 p-4">
+                  <div className="min-w-0">
+                    <p className="text-label text-tanah-600">
+                      Tautan klaim untuk {pekerja.nama}
+                    </p>
+                    <p className="truncate font-mono text-label text-tanah-800">
+                      https://kita-kerja.example/claim/{pekerja.id}
+                    </p>
+                  </div>
+                  <Button asChild variant="outline" size="sm" className="shrink-0">
+                    <Link href={`/claim/${pekerja.id}`}>
+                      <Share2 aria-hidden />
+                      Buka
+                    </Link>
+                  </Button>
+                </div>
               </li>
             );
           })}

@@ -16,6 +16,7 @@ const BodySchema = z.object({
   satuan_upah: z.enum(["harian", "bulanan", "borongan", "per_jam"]).nullable(),
   lokasi_teks: z.string().max(300).nullable(),
   wilayah_id: z.string().uuid().nullable(),
+  kecamatan_id: z.string().uuid().nullable(),
   mulai: z.string().nullable(),
   syarat_tersirat: z.array(z.string()).max(20).default([]),
   keahlian_ids: z.array(z.string().uuid()).max(10).default([]),
@@ -45,6 +46,7 @@ export async function POST(request: Request) {
     satuan_upah: body.satuan_upah,
     lokasi_teks: body.lokasi_teks,
     wilayah_id: body.wilayah_id,
+    kecamatan_id: body.kecamatan_id,
     mulai: body.mulai,
     syarat_tersirat: body.syarat_tersirat,
   };

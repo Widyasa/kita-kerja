@@ -84,6 +84,9 @@ function lowonganTampilDariMock(l: Lowongan): LowonganTampil {
     saringan: sa,
     acuan,
     alasan_cocok: l.alasan_cocok,
+    // Katalog demo pakai data mock statis — tidak ada kecamatan pekerja
+    // sungguhan untuk dihitung jaraknya.
+    jarak_km: null,
   };
 }
 

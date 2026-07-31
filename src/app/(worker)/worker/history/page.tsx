@@ -1,4 +1,4 @@
-import { House, Megaphone, Star } from "lucide-react";
+import { House, Star } from "lucide-react";
 
 import { BadgeLapis } from "@/component/bersama/BadgeLapis";
 import { KeadaanKosong } from "@/component/bersama/KeadaanKosong";
@@ -7,6 +7,7 @@ import { riwayatPekerja } from "@/lib/data/riwayat";
 import { formatRupiah, formatTanggal, upahTeks } from "@/lib/mock/utils";
 
 import { GrafikPenghasilan } from "./grafik-penghasilan";
+import { LaporUpah } from "./lapor-upah";
 
 const JUMLAH_RIWAYAT_TAMPIL = 10;
 
@@ -131,10 +132,9 @@ export default async function HalamanRiwayat() {
           </section>
 
           {/* Ajakan lapor upah — kecil, tidak mengganggu */}
-          <p className="flex items-start gap-2 rounded-lg bg-tanah-100 p-4 text-label text-tanah-600">
-            <Megaphone className="mt-0.5 size-4 shrink-0" aria-hidden />
-            Upah yang Anda laporkan memperbaiki acuan untuk pekerja lain.
-          </p>
+          <LaporUpah
+            pekerjaanTerbaru={riwayat.slice(0, 5).map((p) => ({ id: p.id, judul: p.judul }))}
+          />
         </>
       )}
     </div>

@@ -7,16 +7,23 @@
 import { createClient } from "@/lib/supabase/server-client";
 import { hitungAcuanUpah } from "@/lib/engine/wage-benchmark";
 import { cocokkanPekerja } from "@/lib/engine/matching";
+import { jarakKm } from "@/lib/engine/jarak";
 import type { LowonganTampil, RekamJejakPemberi, SaringanTampil } from "./types";
 
 const KOLOM_LOWONGAN = `
   id, judul_baku, teks_asli, status, jenis_kerja, jumlah_pekerja,
   upah_ditawarkan, satuan_upah, lokasi_teks, mulai, syarat_tersirat,
-  wilayah_id, pemberi_kerja_id,
+  wilayah_id, kecamatan_id, pemberi_kerja_id,
   wilayah:wilayah_id(nama),
+  kecamatan:kecamatan_id(lat, lng),
   saringan:saringan_aman(tingkat, temuan, pertanyaan_disarankan),
   keahlian:lowongan_keahlian(keahlian_id)
 `;
+
+interface TitikKecamatan {
+  lat: number;
+  lng: number;
+}
 
 interface BarisLowongan {
   id: string;
@@ -31,8 +38,10 @@ interface BarisLowongan {
   mulai: string | null;
   syarat_tersirat: string[] | null;
   wilayah_id: string | null;
+  kecamatan_id: string | null;
   pemberi_kerja_id: string;
   wilayah: { nama: string } | { nama: string }[] | null;
+  kecamatan: TitikKecamatan | TitikKecamatan[] | null;
   saringan: SaringanTampil | SaringanTampil[] | null;
   keahlian: { keahlian_id: string }[] | null;
 }
@@ -41,9 +50,35 @@ function satu<T>(v: T | T[] | null): T | null {
   return Array.isArray(v) ? (v[0] ?? null) : v;
 }
 
+/** Titik kecamatan (lat/lng) tempat pekerja biasa bekerja — null bila
+ * pekerja belum memilih kecamatan di profilnya. Dipakai untuk perkiraan
+ * jarak (ADR-0002), TIDAK PERNAH memanggil geocoding/routing sungguhan. */
+async function kecamatanPekerja(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  pekerjaId: string,
+): Promise<TitikKecamatan | null> {
+  const { data } = await supabase
+    .from("pengguna")
+    .select("kecamatan:kecamatan_id(lat, lng)")
+    .eq("id", pekerjaId)
+    .maybeSingle<{ kecamatan: TitikKecamatan | TitikKecamatan[] | null }>();
+
+  const titik = data && satu(data.kecamatan);
+  return titik ? { lat: Number(titik.lat), lng: Number(titik.lng) } : null;
+}
+
+function jarakDariPekerja(
+  pekerja: TitikKecamatan | null,
+  lowongan: TitikKecamatan | null,
+): number | null {
+  if (!pekerja || !lowongan) return null;
+  return jarakKm(pekerja, { lat: Number(lowongan.lat), lng: Number(lowongan.lng) });
+}
+
 async function keLowonganTampil(
   b: BarisLowongan,
   alasan: string | null,
+  pekerjaKecamatan: TitikKecamatan | null,
 ): Promise<LowonganTampil> {
   const keahlianId = b.keahlian?.[0]?.keahlian_id ?? null;
   const acuan =
@@ -73,6 +108,7 @@ async function keLowonganTampil(
         }
       : null,
     alasan_cocok: alasan,
+    jarak_km: jarakDariPekerja(pekerjaKecamatan, satu(b.kecamatan)),
   };
 }
 
@@ -80,6 +116,8 @@ export async function daftarLowonganUntukPekerja(
   pekerjaId: string,
 ): Promise<{ lowongan: LowonganTampil[]; idSudahDilamar: Set<string> }> {
   const supabase = await createClient();
+
+  const pekerjaKecamatan = await kecamatanPekerja(supabase, pekerjaId);
 
   const { data: baris } = await supabase
     .from("lowongan")
@@ -97,7 +135,9 @@ export async function daftarLowonganUntukPekerja(
     .eq("pekerja_id", pekerjaId);
 
   const lowongan = await Promise.all(
-    (baris ?? []).map((b) => keLowonganTampil(b, petaAlasan.get(b.id) ?? null)),
+    (baris ?? []).map((b) =>
+      keLowonganTampil(b, petaAlasan.get(b.id) ?? null, pekerjaKecamatan),
+    ),
   );
 
   return {
@@ -124,6 +164,8 @@ export async function detailLowonganUntukPekerja(
 ): Promise<DetailLowongan | null> {
   const supabase = await createClient();
 
+  const pekerjaKecamatan = await kecamatanPekerja(supabase, pekerjaId);
+
   const { data: baris } = await supabase
     .from("lowongan")
     .select(KOLOM_LOWONGAN)
@@ -136,6 +178,7 @@ export async function detailLowonganUntukPekerja(
   const lowongan = await keLowonganTampil(
     baris,
     cocok.find((c) => c.id === baris.id)?.alasan ?? null,
+    pekerjaKecamatan,
   );
 
   const { data: pemberi } = await supabase
