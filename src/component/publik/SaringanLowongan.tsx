@@ -2,6 +2,8 @@ import Link from "next/link";
 import { Search, X } from "lucide-react";
 
 import { Button } from "@/component/ui/button";
+import { Combobox } from "@/component/ui/combobox";
+import { Input } from "@/component/ui/input";
 import { LABEL_JENIS_KERJA } from "@/component/pemberi/ekstraksi";
 import type { WilayahPilihan } from "@/lib/data/lowongan-publik";
 import type { JenisKerja } from "@/lib/mock/types";
@@ -9,15 +11,14 @@ import type { JenisKerja } from "@/lib/mock/types";
 /**
  * Penyaring daftar lowongan publik.
  *
- * Sengaja `<form method="get">` tanpa JavaScript: halaman ini dibuka pekerja
- * di ponsel murah dengan jaringan buruk, dan hasil penyaringan harus bisa
+ * Form-nya sengaja `<form method="get">`: halaman ini dibuka pekerja di
+ * ponsel murah dengan jaringan buruk, dan hasil penyaringan harus bisa
  * di-bookmark serta dibagikan sebagai URL. Tidak ada auto-submit on-change —
- * satu tombol eksplisit lebih mudah dipakai satu tangan.
+ * satu tombol eksplisit lebih mudah dipakai satu tangan. Combobox wilayah/
+ * jenis tetap menulis nilainya ke `<input type="hidden">` di dalam form ini
+ * (lihat Combobox), jadi submit GET-nya tidak berubah — hanya kendalinya
+ * yang jadi shadcn.
  */
-
-const GAYA_KENDALI =
-  "h-12 w-full rounded-lg border border-tanah-300 bg-tanah-0 px-4 text-body text-tanah-900 " +
-  "focus-visible:border-biru-600 focus-visible:ring-[3px] focus-visible:ring-biru-600/40 focus-visible:outline-none";
 
 export function SaringanLowongan({
   wilayah,
@@ -50,13 +51,13 @@ export function SaringanLowongan({
           >
             Cari pekerjaan
           </label>
-          <input
+          <Input
             id="saring-q"
             name="q"
             type="search"
             defaultValue={terpilih.q ?? ""}
             placeholder="Tukang bangunan, ART, sopir…"
-            className={`mt-2 ${GAYA_KENDALI} placeholder:text-tanah-500`}
+            className="mt-2 h-12"
           />
         </div>
 
@@ -67,19 +68,22 @@ export function SaringanLowongan({
           >
             Wilayah
           </label>
-          <select
+          <Combobox
             id="saring-wilayah"
             name="wilayah"
             defaultValue={terpilih.wilayah ?? ""}
-            className={`mt-2 ${GAYA_KENDALI}`}
-          >
-            <option value="">Semua wilayah</option>
-            {wilayah.map((w) => (
-              <option key={w.id} value={w.id}>
-                {w.nama}, {w.provinsi}
-              </option>
-            ))}
-          </select>
+            placeholder="Semua wilayah"
+            searchPlaceholder="Cari wilayah…"
+            emptyText="Wilayah tidak ditemukan."
+            className="mt-2"
+            options={[
+              { value: "", label: "Semua wilayah" },
+              ...wilayah.map((w) => ({
+                value: w.id,
+                label: `${w.nama}, ${w.provinsi}`,
+              })),
+            ]}
+          />
         </div>
 
         <div>
@@ -89,19 +93,22 @@ export function SaringanLowongan({
           >
             Jenis kerja
           </label>
-          <select
+          <Combobox
             id="saring-jenis"
             name="jenis"
             defaultValue={terpilih.jenis ?? ""}
-            className={`mt-2 ${GAYA_KENDALI}`}
-          >
-            <option value="">Semua jenis</option>
-            {(Object.keys(LABEL_JENIS_KERJA) as JenisKerja[]).map((j) => (
-              <option key={j} value={j}>
-                {LABEL_JENIS_KERJA[j]}
-              </option>
-            ))}
-          </select>
+            placeholder="Semua jenis"
+            searchPlaceholder="Cari jenis kerja…"
+            emptyText="Jenis kerja tidak ditemukan."
+            className="mt-2"
+            options={[
+              { value: "", label: "Semua jenis" },
+              ...(Object.keys(LABEL_JENIS_KERJA) as JenisKerja[]).map((j) => ({
+                value: j,
+                label: LABEL_JENIS_KERJA[j],
+              })),
+            ]}
+          />
         </div>
 
         <Button

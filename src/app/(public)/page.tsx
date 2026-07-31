@@ -1,11 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Mic, ShieldCheck, UsersRound } from "lucide-react";
+import { ArrowRight, ShieldCheck } from "lucide-react";
 
 import { LabelSection } from "@/component/bersama/LabelSection";
 import { Button } from "@/component/ui/button";
 import { KartuKerjaVisual } from "@/component/kartu/KartuKerjaVisual";
 import { BarisLowongan } from "@/component/publik/BarisLowongan";
+import { HeroCTA } from "@/component/publik/HeroCTA";
 import { LembarArsip, SeksiArsip } from "@/component/publik/LembarArsip";
 import { daftarLowonganPublik } from "@/lib/data/lowongan-publik";
 import {
@@ -99,7 +100,9 @@ function FotoArsip({
  * di `public/ilustrasi/`.
  */
 export default async function LandingPage() {
-  const urlVerifikasiWarto = `/verify/${kartuWarto.token_publik}`;
+  // Halaman statis, bukan token DB — supaya tautan "contoh nyata" ini selalu
+  // hidup terlepas dari apakah seed sudah dijalankan di project yang aktif.
+  const urlVerifikasiWarto = "/verify/contoh";
   const lowonganTerbaru = await daftarLowonganPublik({ batas: 3 });
 
   const langkah = [
@@ -176,49 +179,7 @@ export default async function LandingPage() {
             siapa pun.
           </p>
 
-          {/* `flex-1` HANYA dari sm ke atas: di kolom, flex-1 bekerja pada
-              tinggi dan menggencet tombol 56px jadi ~28px. */}
-          <div className="mt-10 flex max-w-xl flex-col gap-4 sm:flex-row">
-            <Button
-              asChild
-              variant="aksen"
-              size="lg"
-              className="w-full sm:w-auto sm:flex-1 motion-safe:transition-shadow hover:shadow-2"
-            >
-              <Link href="/register">
-                <Mic aria-hidden />
-                Saya cari kerja
-              </Link>
-            </Button>
-            <Button
-              asChild
-              variant="outline"
-              size="lg"
-              className="w-full border-2 border-biru-600 text-biru-600 hover:bg-biru-50 sm:w-auto sm:flex-1"
-            >
-              <Link href="/register">
-                <UsersRound aria-hidden />
-                Saya butuh pekerja
-              </Link>
-            </Button>
-          </div>
-
-          <p className="text-label mt-6 text-tanah-600">
-            Cuma mau lihat-lihat dulu?{" "}
-            <Link
-              href="/lowongan"
-              className="rounded-sm font-bold text-biru-600 underline underline-offset-4 focus-visible:ring-[3px] focus-visible:ring-biru-600/40 focus-visible:outline-none"
-            >
-              Buka papan lowongan
-            </Link>{" "}
-            — tanpa akun. Sudah punya akun?{" "}
-            <Link
-              href="/sign-in"
-              className="rounded-sm font-bold text-biru-600 underline underline-offset-4 focus-visible:ring-[3px] focus-visible:ring-biru-600/40 focus-visible:outline-none"
-            >
-              Masuk di sini
-            </Link>
-          </p>
+          <HeroCTA />
         </div>
 
         {/* Kolase foto (desktop): tiga foto kerja nyata, diselipkan
@@ -381,7 +342,7 @@ export default async function LandingPage() {
             >
               <Link href={urlVerifikasiWarto}>
                 <ShieldCheck aria-hidden />
-                Lihat seperti yang dilihat pemindai QR
+                Lihat Hasil Scan QR
                 <ArrowRight aria-hidden />
               </Link>
             </Button>
