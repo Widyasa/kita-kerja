@@ -31,7 +31,11 @@ export async function POST(request: Request) {
   // Peran & nama dibawa lewat query link konfirmasi, karena browser yang
   // membuka link itu belum tentu tab yang sama dengan yang mengisi form —
   // localStorage tidak bisa diandalkan lintas perangkat/klien email.
-  const redirect = new URL(`${process.env.NEXT_PUBLIC_APP_URL}/auth/confirm`);
+  // NEXT_PUBLIC_APP_URL dipakai kalau diset (perlu di production, karena
+  // origin request bisa jadi proxy/internal); di dev/preview yang belum
+  // mengesetnya, jatuh ke origin request itu sendiri.
+  const basisUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin;
+  const redirect = new URL("/auth/confirm", basisUrl);
   if (body.intent === "register" && body.peran && body.nama) {
     redirect.searchParams.set("peran", body.peran);
     redirect.searchParams.set("nama", body.nama);
