@@ -49,7 +49,7 @@ export function TombolKeluar({
         "text-tanah-600 hover:bg-tanah-100 hover:text-tanah-800 disabled:opacity-60",
         horizontal
           ? "flex min-h-12 w-full items-center gap-3 px-4"
-          : "flex h-16 min-w-12 flex-col items-center justify-center gap-0.5 px-2",
+          : "flex h-16 min-w-0 flex-col items-center justify-center gap-0.5 overflow-hidden px-1",
         className,
       )}
     >
@@ -58,7 +58,16 @@ export function TombolKeluar({
       ) : (
         <LogOut className="size-6" aria-hidden />
       )}
-      <span className={cn(horizontal && "text-left")}>{loading ? "Memuat..." : "Keluar"}</span>
+      {/* ukuran label disamakan dengan menu bottom nav lain (BUG-040) */}
+      <span
+        className={cn(
+          horizontal
+            ? "text-left"
+            : "max-w-full truncate text-center text-[0.8125rem] leading-tight",
+        )}
+      >
+        {loading ? "Memuat..." : "Keluar"}
+      </span>
     </button>
   );
 }

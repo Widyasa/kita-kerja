@@ -20,11 +20,37 @@ import { TombolKeluar } from "./TombolKeluar";
  * Ikon SELALU berpasangan dengan label teks.
  */
 
-const MENU: { href: string; label: string; ikon: LucideIcon }[] = [
-  { href: "/employer", label: "Dasbor", ikon: LayoutDashboard },
-  { href: "/employer/post", label: "Pasang Lowongan", ikon: SquarePlus },
-  { href: "/employer/jobs", label: "Lowongan Saya", ikon: BriefcaseBusiness },
-  { href: "/employer/agreements", label: "Kesepakatan", ikon: Handshake },
+/**
+ * `labelSingkat` dipakai pada bottom nav (BUG-040). Label panjang seperti
+ * "Kesepakatan" butuh 106px sedangkan tiap sel grid hanya 75px di layar
+ * 375px, sehingga teks meluap dan saling menimpa antar menu.
+ * Pola label pendek ini mengikuti NavBawahPekerja yang sudah rapi.
+ */
+const MENU: {
+  href: string;
+  label: string;
+  labelSingkat: string;
+  ikon: LucideIcon;
+}[] = [
+  { href: "/employer", label: "Dasbor", labelSingkat: "Dasbor", ikon: LayoutDashboard },
+  {
+    href: "/employer/post",
+    label: "Pasang Lowongan",
+    labelSingkat: "Pasang",
+    ikon: SquarePlus,
+  },
+  {
+    href: "/employer/jobs",
+    label: "Lowongan Saya",
+    labelSingkat: "Lowongan",
+    ikon: BriefcaseBusiness,
+  },
+  {
+    href: "/employer/agreements",
+    label: "Kesepakatan",
+    labelSingkat: "Sepakat",
+    ikon: Handshake,
+  },
 ];
 
 function menuAktif(pathname: string, href: string): boolean {
@@ -47,7 +73,7 @@ export function NavPemberi() {
           "flex items-center gap-3 rounded-lg px-4 text-label transition-colors duration-(--duration-fast)",
           "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-biru-600/40",
           sempit
-            ? "h-16 min-w-12 flex-col justify-center gap-0.5 px-2"
+            ? "h-16 min-w-0 flex-col justify-center gap-0.5 overflow-hidden px-1"
             : "min-h-12 w-full",
           aktif
             ? "bg-biru-50 font-bold text-biru-600"
@@ -55,8 +81,16 @@ export function NavPemberi() {
         )}
       >
         <Ikon className="size-6 shrink-0" aria-hidden />
-        <span className={cn(sempit && "text-center leading-tight")}>
-          {item.label}
+        <span
+          className={cn(
+            sempit
+              ? // ukuran diturunkan + truncate sebagai pengaman terakhir supaya
+                // label tidak pernah lagi meluap ke sel tetangga (BUG-040)
+                "max-w-full truncate text-center text-[0.8125rem] leading-tight"
+              : undefined,
+          )}
+        >
+          {sempit ? item.labelSingkat : item.label}
         </span>
       </Link>
     );

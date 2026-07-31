@@ -13,7 +13,11 @@ import { cn } from "@/lib/utils"
  *   tanah-900 #1A1814 di atas kuning-600 #D97706 = 5,45:1 (AA)
  */
 const buttonVariants = cva(
-  "inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-md text-button font-semibold whitespace-nowrap transition-colors duration-(--duration-fast) ease-(--ease-default) outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5",
+  // `whitespace-normal` + `max-w-full` (BUG-011): sebelumnya `whitespace-nowrap`
+  // memaksa label panjang tetap satu baris, sehingga CTA "Lihat seperti yang
+  // dilihat pemindai QR" melebar 392px di viewport 375px dan memicu scroll
+  // horizontal pada beranda.
+  "inline-flex max-w-full shrink-0 cursor-pointer items-center justify-center gap-2 rounded-md text-center text-button font-semibold whitespace-normal transition-colors duration-(--duration-fast) ease-(--ease-default) outline-none focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5",
   {
     variants: {
       variant: {
@@ -28,7 +32,10 @@ const buttonVariants = cva(
       },
       size: {
         default: "min-h-12 px-5 py-2",
-        lg: "h-14 px-6", // CTA utama 56px
+        // `min-h-14`, bukan `h-14` (BUG-012): tinggi tetap bisa ditimpa saat
+        // tombol jadi flex item ber-`flex-1` di kontainer kolom — dua CTA hero
+        // sempat mengecil jadi 28px dan 32px di layar <=768px.
+        lg: "min-h-14 px-6 py-2", // CTA utama 56px
         sm: "min-h-12 px-4",
         icon: "size-12",
         "icon-lg": "size-14",
