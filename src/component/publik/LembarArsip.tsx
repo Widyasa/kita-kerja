@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
  * dulu ikut memakai padding ponsel dan terasa sempit.
  */
 
-export const PADDING_ARSIP = "px-5 sm:px-8 lg:px-14";
+export const PADDING_ARSIP = "px-5 sm:px-8 lg:px-[100px]";
 
 export function LembarArsip({
   children,

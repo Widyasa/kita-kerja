@@ -95,7 +95,7 @@ export default async function HalamanLowonganPublik({
       </SeksiArsip>
 
       {/* ============ SARINGAN ============ */}
-      <div className="px-5 sm:px-8 lg:px-14">
+      <div className="px-5 sm:px-8 lg:px-[100px]">
         <SaringanLowongan
           wilayah={wilayah}
           terpilih={{ wilayah: sp.wilayah, jenis: sp.jenis, q: sp.q }}

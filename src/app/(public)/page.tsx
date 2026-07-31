@@ -438,7 +438,7 @@ export default async function LandingPage() {
       )}
 
       {/* ============ FOOTER — kolofon dokumen ============ */}
-      <footer className="border-t border-tanah-200 bg-tanah-0 px-5 pt-16 pb-10 sm:px-8 lg:px-14">
+      <footer className="border-t border-tanah-200 bg-tanah-0 px-5 pt-16 pb-10 sm:px-8 lg:px-[100px]">
         <div className="grid grid-cols-2 gap-8 lg:grid-cols-[1.6fr_1fr_1fr_1fr] lg:gap-10">
           <div className="max-lg:col-span-2">
             <p className="text-h3 text-biru-600">Kita Kerja</p>
