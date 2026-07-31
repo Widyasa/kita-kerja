@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import type { StatusLowongan } from "@/lib/mock";
+import type { StatusLowongan } from "@/lib/mock/types";
 
 /**
  * BadgeStatusLowongan — status lowongan untuk pemberi kerja.

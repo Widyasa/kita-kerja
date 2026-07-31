@@ -1,12 +1,8 @@
 import { CircleCheck, TriangleAlert, CircleAlert, type LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import {
-  formatRupiah,
-  kalimatMetodeAcuan,
-  statusUpah,
-  type StatusUpah,
-} from "@/lib/mock";
+import { formatRupiah, kalimatMetodeAcuan, statusUpah } from "@/lib/mock/utils";
+import type { StatusUpah } from "@/lib/mock/types";
 import type { AcuanTampil } from "@/lib/data/types";
 
 /**

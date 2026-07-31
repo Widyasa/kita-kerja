@@ -1,4 +1,4 @@
-import type { StatusLamaran } from "@/lib/mock";
+import type { StatusLamaran } from "@/lib/mock/types";
 
 /**
  * Arti tiap status lamaran dalam bahasa sederhana —

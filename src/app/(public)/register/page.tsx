@@ -20,7 +20,7 @@ import { Input } from "@/component/ui/input";
 import { LangkahOTP } from "@/component/bersama/LangkahOTP";
 import { cn } from "@/lib/utils";
 import { emailValid } from "@/lib/auth/shared";
-import type { Peran } from "@/lib/mock";
+import type { Peran } from "@/lib/mock/types";
 
 type Langkah = "peran" | "email" | "otp";
 

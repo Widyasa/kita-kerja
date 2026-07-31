@@ -19,7 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/component/ui/dialog";
-import type { TingkatRisiko } from "@/lib/mock";
+import type { TingkatRisiko } from "@/lib/mock/types";
 
 /**
  * Tombol lamar (CTA 56px).

@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import type { SaringanAman, TingkatRisiko } from "@/lib/mock";
+import type { SaringanAman, TingkatRisiko } from "@/lib/mock/types";
 
 /**
  * PanelSaringanAman (Bagian 4.5):

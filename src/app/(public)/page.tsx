@@ -6,12 +6,14 @@ import { LabelSection } from "@/component/bersama/LabelSection";
 import { Button } from "@/component/ui/button";
 import { KartuKerjaVisual } from "@/component/kartu/KartuKerjaVisual";
 import {
+  bidangKerja,
   kartuWarto,
   keahlianBaku,
   keahlianWarto,
   pekerjaUtama,
   statistikWarto,
   type KartuKeahlian,
+  wilayah,
 } from "@/lib/mock";
 import type { KeahlianTampil } from "@/lib/data/types";
 
@@ -344,6 +346,8 @@ export default function LandingPage() {
 
             <div className="lg:-translate-y-2 lg:translate-x-2 lg:rotate-[-1.25deg]">
               <KartuKerjaVisual
+                bidangNama={bidangKerja.find((b) => b.id === kartuWarto.bidang_utama_id)?.nama ?? null}
+                wilayahNama={wilayah.find((w) => w.id === pekerjaUtama.wilayah_id)?.nama ?? null}
                 kartu={kartuWarto}
                 pekerja={pekerjaUtama}
                 keahlian={keahlianWarto.map(keahlianTampilDariMock)}

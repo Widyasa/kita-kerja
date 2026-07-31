@@ -4,15 +4,9 @@ import { BadgeLapis } from "@/component/bersama/BadgeLapis";
 import { QrSvg } from "@/component/bersama/QrSvg";
 import { formatPenilaian } from "./format";
 import { cn } from "@/lib/utils";
-import {
-  bidangKerja,
-  inisialkanNamaBelakang,
-  inisialNama,
-  wilayah,
-  type KartuKerja,
-  type Pengguna,
-} from "@/lib/mock";
 import type { KeahlianTampil } from "@/lib/data/types";
+import type { KartuKerja, Pengguna } from "@/lib/mock/types";
+import { inisialNama, inisialkanNamaBelakang } from "@/lib/mock/utils";
 
 /**
  * KartuKerjaVisual (Bagian 4.5) — representasi digital Kartu Kerja.
@@ -45,8 +39,10 @@ export function KartuKerjaVisual({
   wilayahNama?: string | null;
   className?: string;
 }) {
-  const namaBidang = bidangNama ?? bidangKerja.find((b) => b.id === kartu.bidang_utama_id)?.nama ?? null;
-  const namaWilayah = wilayahNama ?? wilayah.find((w) => w.id === pekerja.wilayah_id)?.nama ?? null;
+  // BUG-043/044 — pencarian nama dipindah ke pemanggil supaya komponen ini
+  // tidak lagi menyeret src/lib/mock/data.ts (47 KB) ke bundle klien.
+  const namaBidang = bidangNama ?? null;
+  const namaWilayah = wilayahNama ?? null;
   const urlVerifikasi = `https://kita-kerja.example/verify/${kartu.token_publik}`;
 
   return (

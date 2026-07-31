@@ -1,4 +1,4 @@
-import type { LevelKeahlian } from "@/lib/mock";
+import type { LevelKeahlian } from "@/lib/mock/types";
 
 /**
  * Penyimpanan sisi klien untuk alur Ngobrol Kerja.

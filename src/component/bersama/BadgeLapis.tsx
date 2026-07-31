@@ -1,7 +1,7 @@
 import { ShieldCheck, Star, UserRound, type LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import type { LapisKepercayaan } from "@/lib/mock";
+import type { LapisKepercayaan } from "@/lib/mock/types";
 
 /**
  * BadgeLapis — penanda tiga lapis kepercayaan (tabel Bagian 4.2).

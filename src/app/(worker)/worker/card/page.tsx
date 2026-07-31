@@ -21,7 +21,8 @@ import { formatBulanTahun } from "@/component/kartu/format";
 import { Button } from "@/component/ui/button";
 import { createClient } from "@/lib/supabase/server-client";
 import { getDashboardPekerja } from "@/lib/data/kartu-kerja";
-import { formatTanggal, upahTeks, type LapisKepercayaan } from "@/lib/mock";
+import { formatTanggal, upahTeks } from "@/lib/mock/utils";
+import type { LapisKepercayaan } from "@/lib/mock/types";
 
 export const metadata: Metadata = {
   title: "Kartu Kerja Anda — Kita Kerja",

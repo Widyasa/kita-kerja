@@ -3,15 +3,9 @@ import { Star } from "lucide-react";
 import { BadgeLapis } from "@/component/bersama/BadgeLapis";
 import { QrSvg } from "@/component/bersama/QrSvg";
 import { cn } from "@/lib/utils";
-import {
-  bidangKerja,
-  inisialNama,
-  wilayah,
-  type KartuKerja,
-  type LapisKepercayaan,
-  type Pengguna,
-} from "@/lib/mock";
 import type { KeahlianTampil } from "@/lib/data/types";
+import type { KartuKerja, LapisKepercayaan, Pengguna } from "@/lib/mock/types";
+import { inisialNama } from "@/lib/mock/utils";
 import type { RiwayatPekerjaanRingkas } from "@/lib/data/kartu-kerja";
 
 import { formatBulanTahun, formatPenilaian } from "./format";
@@ -52,8 +46,10 @@ export async function LembarA5({
   wilayahNama?: string | null;
   className?: string;
 }) {
-  const bidang = bidangNama ?? bidangKerja.find((b) => b.id === kartu.bidang_utama_id)?.nama ?? null;
-  const wl = wilayahNama ?? wilayah.find((w) => w.id === pekerja.wilayah_id)?.nama ?? null;
+  // BUG-043/044 — pencarian nama dipindah ke pemanggil supaya komponen ini
+  // tidak lagi menyeret src/lib/mock/data.ts (47 KB) ke bundle klien.
+  const bidang = bidangNama ?? null;
+  const wl = wilayahNama ?? null;
   const urlVerifikasi = `https://kita-kerja.example/verify/${kartu.token_publik}`;
   const urlPendek = `kk.id/v/${kartu.token_publik.slice(0, 6)}`;
   const sepuluhTerakhir = [...riwayat]

@@ -12,12 +12,8 @@ import {
 import { BadgeLapis } from "@/component/bersama/BadgeLapis";
 import { LabelSection } from "@/component/bersama/LabelSection";
 import { createServiceClient } from "@/lib/supabase/server-client";
-import {
-  formatTanggal,
-  inisialkanNamaBelakang,
-  inisialNama,
-  type LapisKepercayaan,
-} from "@/lib/mock";
+import { formatTanggal, inisialkanNamaBelakang, inisialNama } from "@/lib/mock/utils";
+import type { LapisKepercayaan } from "@/lib/mock/types";
 
 /**
  * Verifikasi publik `/verify/[token]` (Bagian 6.5).

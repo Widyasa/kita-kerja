@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import { Input } from "@/component/ui/input";
 import { cn } from "@/lib/utils";
-import type { JenisKerja, SatuanUpah } from "@/lib/mock";
+import type { JenisKerja, SatuanUpah } from "@/lib/mock/types";
 import type { PilihanKecamatan, PilihanWilayah } from "@/lib/data/profil";
 import {
   LABEL_JENIS_KERJA,
