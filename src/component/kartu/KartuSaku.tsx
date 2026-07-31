@@ -4,10 +4,10 @@ import {
   bidangKerja,
   inisialNama,
   wilayah,
-  type KartuKeahlian,
   type KartuKerja,
   type Pengguna,
 } from "@/lib/mock";
+import type { KeahlianTampil } from "@/lib/data/types";
 
 import { namaPendekKeahlian } from "./format";
 
@@ -30,17 +30,22 @@ export async function KartuSaku({
   keahlian,
   jumlahPekerjaanSelesai,
   rataRataPenilaian,
+  bidangNama,
+  wilayahNama,
   className,
 }: {
   kartu: KartuKerja;
   pekerja: Pengguna;
-  keahlian: KartuKeahlian[];
+  keahlian: KeahlianTampil[];
   jumlahPekerjaanSelesai: number;
   rataRataPenilaian: number;
+  /** override lookup mock — pakai ini kalau kartu berasal dari data Supabase asli */
+  bidangNama?: string | null;
+  wilayahNama?: string | null;
   className?: string;
 }) {
-  const bidang = bidangKerja.find((b) => b.id === kartu.bidang_utama_id);
-  const wl = wilayah.find((w) => w.id === pekerja.wilayah_id);
+  const bidang = bidangNama ?? bidangKerja.find((b) => b.id === kartu.bidang_utama_id)?.nama ?? null;
+  const wl = wilayahNama ?? wilayah.find((w) => w.id === pekerja.wilayah_id)?.nama ?? null;
   const urlVerifikasi = `https://kita-kerja.example/verify/${kartu.token_publik}`;
   const urlPendek = `kk.id/v/${kartu.token_publik.slice(0, 6)}`;
   const tigaKeahlian = keahlian.slice(0, 3).map(namaPendekKeahlian).join(" · ");
@@ -71,10 +76,10 @@ export async function KartuSaku({
                 {pekerja.nama}
               </h3>
               <p className="text-[10pt] leading-snug text-tanah-700">
-                {bidang?.nama ?? "—"}
+                {bidang ?? "—"}
               </p>
               <p className="text-[10pt] leading-snug text-tanah-700">
-                {wl?.nama ?? "—"}
+                {wl ?? "—"}
               </p>
             </div>
           </div>
