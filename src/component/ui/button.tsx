@@ -22,7 +22,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: "bg-biru-600 text-tanah-0 shadow-1 hover:bg-biru-700",
-        aksen: "bg-kuning-600 text-tanah-900 shadow-1 hover:bg-kuning-500",
+        aksen: "bg-kuning-500 text-tanah-900 shadow-1 hover:bg-kuning-400",
         destructive: "bg-bahaya-600 text-tanah-0 shadow-1 hover:bg-bahaya-600/90",
         outline:
           "border border-tanah-300 bg-tanah-0 text-tanah-800 shadow-1 hover:bg-tanah-100",
