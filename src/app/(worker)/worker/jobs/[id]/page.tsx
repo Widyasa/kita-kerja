@@ -96,10 +96,10 @@ export default async function HalamanDetailLowongan({
       </header>
 
       {/* 2. PenandaUpah — nominal acuan + kalimat metode */}
-      {lw.satuan_upah === "harian" ? (
+      {lw.satuan_upah === "harian" && lw.acuan && lw.upah_ditawarkan !== null ? (
         <PenandaUpah
-          ditawarkan={lw.upah_ditawarkan!}
-          acuan={lw.acuan!}
+          ditawarkan={lw.upah_ditawarkan}
+          acuan={lw.acuan}
           wilayahNama={lw.wilayah_nama ?? "wilayah ini"}
         />
       ) : (
