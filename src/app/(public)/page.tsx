@@ -479,93 +479,32 @@ export default async function LandingPage() {
             </ul>
           </nav>
 
-            <div className="lg:-translate-y-2 lg:translate-x-2 lg:rotate-[-1.25deg]">
-              <KartuKerjaVisual
-                bidangNama={bidangKerja.find((b) => b.id === kartuWarto.bidang_utama_id)?.nama ?? null}
-                wilayahNama={wilayah.find((w) => w.id === pekerjaUtama.wilayah_id)?.nama ?? null}
-                kartu={kartuWarto}
-                pekerja={pekerjaUtama}
-                keahlian={keahlianWarto.map(keahlianTampilDariMock)}
-                jumlahPekerjaanSelesai={statistikWarto.jumlahPekerjaanSelesai}
-                rataRataPenilaian={statistikWarto.rataRataPenilaian}
-                jumlahPenilai={statistikWarto.jumlahPenilai}
-                className="w-full"
-              />
-            </div>
-          </div>
-        </section>
+          <nav aria-label="Media sosial">
+            <p className="mikro text-tanah-500">Media sosial</p>
+            <ul className="mt-4 space-y-2">
+              {tautanSosial.map((t) => (
+                <li key={t.label}>
+                  <a
+                    href={t.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-body inline-block rounded-sm py-1 text-tanah-600 underline-offset-4 hover:text-biru-600 hover:underline focus-visible:ring-[3px] focus-visible:ring-biru-600/40 focus-visible:outline-none"
+                  >
+                    {t.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
 
-        {/* ============ FOOTER — kolofon dokumen ============ */}
-        <footer className="border-t border-tanah-200 bg-tanah-0 px-14 pt-16 pb-10 max-lg:px-5">
-          <div className="grid grid-cols-[1.6fr_1fr_1fr_1fr] gap-10 max-lg:grid-cols-2 max-lg:gap-8">
-            <div>
-              <p className="text-h3 text-biru-600">Kita Kerja</p>
-              <p className="text-body mt-2 max-w-[32ch] text-balance text-tanah-600">
-                Bukti pengalaman untuk pekerja informal Indonesia.
-              </p>
-            </div>
-
-            <nav aria-label="Halaman">
-              <p className="mikro text-tanah-500">Halaman</p>
-              <ul className="mt-4 space-y-2">
-                {tautanHalaman.map((t) => (
-                  <li key={t.label}>
-                    <Link
-                      href={t.href}
-                      className="inline-flex min-h-11 items-center text-body text-tanah-600 underline-offset-4 hover:text-biru-600 hover:underline focus-visible:ring-[3px] focus-visible:ring-biru-600/40"
-                    >
-                      {t.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-
-            <nav aria-label="Untuk siapa">
-              <p className="mikro text-tanah-500">Untuk siapa</p>
-              <ul className="mt-4 space-y-2">
-                {tautanPeran.map((t) => (
-                  <li key={t.label}>
-                    <Link
-                      href={t.href}
-                      className="inline-flex min-h-11 items-center text-body text-tanah-600 underline-offset-4 hover:text-biru-600 hover:underline focus-visible:ring-[3px] focus-visible:ring-biru-600/40"
-                    >
-                      {t.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-
-            {tautanSosial.length > 0 && (
-              <nav aria-label="Media sosial">
-                <p className="mikro text-tanah-500">Media sosial</p>
-                <ul className="mt-4 space-y-2">
-                  {tautanSosial.map((t) => (
-                    <li key={t.label}>
-                      <a
-                        href={t.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex min-h-11 items-center text-body text-tanah-600 underline-offset-4 hover:text-biru-600 hover:underline focus-visible:ring-[3px] focus-visible:ring-biru-600/40"
-                      >
-                        {t.label}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </nav>
-            )}
-          </div>
-
-          <div className="mt-14 flex items-baseline justify-between gap-4 border-t border-tanah-200 pt-6 max-lg:flex-col max-lg:gap-2">
-            <p className="mikro text-tanah-500">
-              Fase demo — seluruh data pada halaman ini adalah contoh
-            </p>
-            <p className="mikro text-tanah-500">© 2026 Kita Kerja</p>
-          </div>
-        </footer>
-      </div>
-    </div>
+        <div className="mt-14 flex flex-col items-start justify-between gap-2 border-t border-tanah-200 pt-6 sm:flex-row sm:items-baseline sm:gap-4">
+          <p className="mikro text-tanah-500">
+            Fase demo — sebagian data pada halaman ini adalah contoh
+          </p>
+          <p className="mikro text-tanah-500">© 2026 Kita Kerja</p>
+        </div>
+      </footer>
+    </LembarArsip>
   );
 }
