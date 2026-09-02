@@ -29,6 +29,107 @@ function uuid(): string {
   return crypto.randomUUID();
 }
 
+type TemuanSaringan = { jenis: string; kutipan: string; penjelasan: string };
+
+type LowonganTayangSeed = {
+  judul: string;
+  bidang: string;
+  jenis: string;
+  upah: number;
+  satuan: string;
+  lokasi: string;
+  mulai: string;
+  teks: string;
+  keahlian: string[];
+  wilayah_nama: string;
+  saringan?: {
+    skor_risiko: number;
+    skor_aturan: number;
+    skor_ai: number;
+    tingkat: "berisiko_tinggi";
+    temuan: TemuanSaringan[];
+    pertanyaan_disarankan: string[];
+  };
+};
+
+/** Sisipkan lowongan tayang + keahlian; upsert saringan bila ada. Idempotent per judul + pemberi. */
+async function seedLowonganTayang(
+  pemberiId: string,
+  wilayahMap: Map<string, string>,
+  bidangMap: Map<string, string>,
+  keahlianMap: Map<string, string>,
+  lw: LowonganTayangSeed,
+): Promise<void> {
+  const bidang_id = bidangMap.get(lw.bidang);
+  const wilayah_id = wilayahMap.get(lw.wilayah_nama);
+  if (!bidang_id || !wilayah_id) {
+    console.error("  lowongan skip (bidang/wilayah):", lw.judul);
+    return;
+  }
+
+  const { data: ada } = await supabase
+    .from("lowongan")
+    .select("id")
+    .eq("judul_baku", lw.judul)
+    .eq("pemberi_kerja_id", pemberiId)
+    .maybeSingle();
+
+  let lowonganId = ada?.id;
+  if (lowonganId) {
+    console.log("  ⚠️  Lowongan ada:", lw.judul);
+  } else {
+    lowonganId = uuid();
+    const { error } = await supabase.from("lowongan").insert({
+      id: lowonganId,
+      pemberi_kerja_id: pemberiId,
+      wilayah_id,
+      teks_asli: lw.teks,
+      judul_baku: lw.judul,
+      bidang_id,
+      jenis_kerja: lw.jenis,
+      upah_ditawarkan: lw.upah,
+      satuan_upah: lw.satuan,
+      lokasi_teks: lw.lokasi,
+      mulai: lw.mulai,
+      status: "tayang",
+    });
+    if (error) {
+      console.error("  lowongan error:", error.message);
+      return;
+    }
+    console.log("  ✅ Lowongan:", lw.judul);
+  }
+
+  for (const keahlianNama of lw.keahlian) {
+    const keahlian_id = keahlianMap.get(keahlianNama);
+    if (!keahlian_id) continue;
+    const { error: keahlianErr } = await supabase.from("lowongan_keahlian").upsert(
+      { lowongan_id: lowonganId, keahlian_id, wajib: true },
+      { onConflict: "lowongan_id,keahlian_id", ignoreDuplicates: true },
+    );
+    if (keahlianErr) console.error("  lowongan_keahlian error:", keahlianErr.message);
+    else console.log("    • Keahlian:", keahlianNama);
+  }
+
+  if (lw.saringan) {
+    const { error: sErr } = await supabase.from("saringan_aman").upsert(
+      {
+        lowongan_id: lowonganId,
+        skor_risiko: lw.saringan.skor_risiko,
+        tingkat: lw.saringan.tingkat,
+        temuan: lw.saringan.temuan,
+        pertanyaan_disarankan: lw.saringan.pertanyaan_disarankan,
+        skor_ai: lw.saringan.skor_ai,
+        skor_aturan: lw.saringan.skor_aturan,
+        model: null,
+      },
+      { onConflict: "lowongan_id" },
+    );
+    if (sErr) console.error("  saringan_aman error:", sErr.message);
+    else console.log("    • Saringan Aman:", lw.saringan.tingkat);
+  }
+}
+
 // ============ DATA SEED ============
 
 /**
@@ -198,17 +299,26 @@ async function seed() {
   // 20260731100000_dedup_wilayah_unique.sql yang memasang constraint-nya.
   const wilayahMap = new Map<string, string>();
   for (const w of wilayahData) {
+    const { data: existing } = await supabase
+      .from("wilayah")
+      .select("id")
+      .eq("nama", w.nama)
+      .eq("provinsi", w.provinsi)
+      .maybeSingle();
+    if (existing) {
+      wilayahMap.set(w.nama, existing.id);
+      console.log("  ⚠️  Wilayah ada:", w.nama);
+      continue;
+    }
     const { data, error } = await supabase
       .from("wilayah")
-      .upsert({ id: uuid(), ...w }, { onConflict: "nama,provinsi", ignoreDuplicates: false })
+      .insert({ id: uuid(), ...w })
       .select("id")
       .single();
     if (error || !data) {
       console.error("  wilayah error:", error?.message ?? "tidak ada baris kembali");
       continue;
     }
-    // id diambil dari baris hasil upsert, bukan uuid() lokal, supaya saat
-    // baris sudah ada seluruh relasi tetap menunjuk id kanonik yang sama.
     wilayahMap.set(w.nama, data.id);
     console.log("  ✅ Wilayah:", w.nama);
   }
@@ -222,6 +332,17 @@ async function seed() {
       console.error("  wilayah not found:", k.wilayah_nama);
       continue;
     }
+    const { data: kecamatanAda } = await supabase
+      .from("kecamatan")
+      .select("id")
+      .eq("nama", k.nama)
+      .eq("wilayah_id", wilayah_id)
+      .maybeSingle();
+    if (kecamatanAda) {
+      kecamatanMap.set(`${k.nama}|${k.wilayah_nama}`, kecamatanAda.id);
+      console.log("  ⚠️  Kecamatan ada:", k.nama);
+      continue;
+    }
     kecamatanMap.set(`${k.nama}|${k.wilayah_nama}`, id);
     const { error } = await supabase
       .from("kecamatan")
@@ -233,6 +354,16 @@ async function seed() {
   // 2. Bidang Kerja
   const bidangMap = new Map<string, string>();
   for (const b of bidangKerjaData) {
+    const { data: existing } = await supabase
+      .from("bidang_kerja")
+      .select("id")
+      .eq("nama", b.nama)
+      .maybeSingle();
+    if (existing) {
+      bidangMap.set(b.nama, existing.id);
+      console.log("  ⚠️  Bidang ada:", b.nama);
+      continue;
+    }
     const id = uuid();
     bidangMap.set(b.nama, id);
     const { error } = await supabase.from("bidang_kerja").insert({ id, ...b });
@@ -243,13 +374,23 @@ async function seed() {
   // 3. Keahlian Baku
   const keahlianMap = new Map<string, string>();
   for (const k of keahlianData) {
+    const { data: existing } = await supabase
+      .from("keahlian_baku")
+      .select("id")
+      .eq("nama_baku", k.nama_baku)
+      .maybeSingle();
+    if (existing) {
+      keahlianMap.set(k.nama_baku, existing.id);
+      console.log("  ⚠️  Keahlian ada:", k.nama_baku);
+      continue;
+    }
     const id = uuid();
-    keahlianMap.set(k.nama_baku, id);
     const bidang_id = bidangMap.get(k.bidang_nama);
     if (!bidang_id) {
       console.error("  bidang not found:", k.bidang_nama);
       continue;
     }
+    keahlianMap.set(k.nama_baku, id);
     const { error } = await supabase.from("keahlian_baku").insert({
       id,
       bidang_id,
@@ -290,7 +431,6 @@ async function seed() {
 
     if (authErr) {
       console.error("  auth error:", authErr.message);
-      // try to fetch existing
       const { data: list } = await supabase.auth.admin.listUsers();
       const existing = list?.users?.find((x) => x.email === u.email);
       if (existing) {
@@ -298,24 +438,31 @@ async function seed() {
         await supabase.auth.admin.updateUserById(existing.id, { password: DEMO_PASSWORD });
         console.log("  ⚠️  User exists:", u.nama);
       }
-      continue;
+    } else if (authUser?.user) {
+      userMap.set(u.email, authUser.user.id);
     }
 
-    if (authUser?.user) {
-      userMap.set(u.email, authUser.user.id);
-      const { error } = await supabase.from("pengguna").insert({
-        id: authUser.user.id,
+    const userId = userMap.get(u.email);
+    if (!userId) continue;
+
+    // email wajib setelah migrasi auth_email_otp; seed lama tidak mengisinya
+    // sehingga insert pengguna gagal dan seluruh lowongan/kartu ikut batal.
+    const { error } = await supabase.from("pengguna").upsert(
+      {
+        id: userId,
         nama: u.nama,
+        email: u.email,
         no_hp: u.phone,
         peran: u.peran,
         wilayah_id,
         url_foto: null,
-        status_verifikasi: "hp_terverifikasi",
+        status_verifikasi: "email_terverifikasi",
         didampingi_oleh: null,
-      });
-      if (error) console.error("  pengguna error:", error.message);
-      else console.log("  ✅ Pengguna:", u.nama, `(${u.peran})`);
-    }
+      },
+      { onConflict: "id" },
+    );
+    if (error) console.error("  pengguna error:", error.message);
+    else console.log("  ✅ Pengguna:", u.nama, `(${u.peran})`);
   }
 
   // 6. Kartu Kerja untuk pekerja test (Warto)
@@ -471,10 +618,12 @@ async function seed() {
     else console.log("  ✅ Acuan Upah:", a.keahlian);
   }
 
-  // 8. Lowongan sample untuk pemberi kerja test (Budi)
-  const budiId = userMap.get("budi@kitakerja.test");
-  if (budiId) {
-    const lowonganData = [
+  // 8. Lowongan sample yang TAYANG — dipakai halaman publik /lowongan.
+  // Pemberi kerja seed adalah Dhika (budi@kitakerja.test tidak ada di testUsers,
+  // jadi blok ini dulu tidak pernah menulis baris dan papan lowongan kosong).
+  const pemberiId = userMap.get("dhika@kitakerja.test");
+  if (pemberiId) {
+    const lowonganData: LowonganTayangSeed[] = [
       {
         judul: "Tukang Batu Pemasangan Rumah",
         bidang: "Konstruksi",
@@ -485,6 +634,7 @@ async function seed() {
         mulai: "2026-08-01",
         teks: "Cari tukang batu untuk pemasangan bata expose rumah baru di Sukun. Harus berpengalaman minimum 5 tahun. Upah 150rb/hari, ada bonus kalau selesai cepat. Bawa waterpass dan trowel sendiri.",
         keahlian: ["Tukang Batu"],
+        wilayah_nama: "Kota Malang",
       },
       {
         judul: "Sopir Pribadi Harian",
@@ -496,6 +646,7 @@ async function seed() {
         mulai: "2026-08-05",
         teks: "Butuh sopir pribadi untuk perjalanan sehari-hari. Punya SIM A & B, usia 25-50 tahun, bersih dan rapi. Gaji 200rb/hari. Mulai jam 7 pagi.",
         keahlian: ["Sopir Pribadi"],
+        wilayah_nama: "Kota Malang",
       },
       {
         judul: "Asisten Rumah Tangga Tinggal",
@@ -507,50 +658,151 @@ async function seed() {
         mulai: "2026-08-10",
         teks: "ART berpengalaman untuk keluarga kecil (2 anak). Tugas: memasak, membersihkan, menjaga anak. Tinggal di rumah, libur hari Jum'at-Sabtu. Gaji 2,5jt/bulan, ada asuransi & TPP.",
         keahlian: ["Asisten Rumah Tangga"],
+        wilayah_nama: "Kota Malang",
       },
     ];
 
-    const lowonganMap = new Map<string, string>(); // judul -> id
     for (const lw of lowonganData) {
-      const bidang_id = bidangMap.get(lw.bidang);
-      const wilayah_id = wilayahMap.get("Kota Malang");
-      if (!bidang_id || !wilayah_id) continue;
+      await seedLowonganTayang(pemberiId, wilayahMap, bidangMap, keahlianMap, lw);
+    }
 
-      const lowonganId = uuid();
-      lowonganMap.set(lw.judul, lowonganId);
+    // 9. Lowongan berisiko tinggi — QA 1.3 / Bagian 17: tetap tayang di daftar publik,
+    // dipindah ke kelompok bawah dengan Saringan Aman (bukan disembunyikan, bukan "penipuan").
+    const lowonganBerisiko: LowonganTayangSeed[] = [
+      {
+        judul: "Tukang proyek apartemen, Surabaya",
+        bidang: "Konstruksi",
+        jenis: "harian",
+        upah: 350000,
+        satuan: "harian",
+        lokasi: "Surabaya (detail menyusul)",
+        mulai: "2026-08-03",
+        teks:
+          "LOWONGAN TERBATAS! Proyek apartemen Surabaya butuh tukang bangunan, gaji Rp350.000 per hari!! Hanya untuk 3 orang pertama. Wajib kirim biaya administrasi Rp150.000 untuk seragam dan ID card proyek. SEGERA hubungi sekarang sebelum penuh!!",
+        keahlian: ["Tukang Batu"],
+        wilayah_nama: "Kota Surabaya",
+        saringan: {
+          skor_risiko: 92,
+          skor_aturan: 25,
+          skor_ai: 67,
+          tingkat: "berisiko_tinggi",
+          temuan: [
+            {
+              jenis: "diminta_uang",
+              kutipan: "Wajib kirim biaya administrasi Rp150.000",
+              penjelasan: "Lowongan asli jarang meminta pekerja membayar lebih dulu.",
+            },
+            {
+              jenis: "mendesak",
+              kutipan: "SEGERA hubungi sekarang sebelum penuh!!",
+              penjelasan: "Desakan waktu dipakai agar Anda tidak sempat berpikir dan bertanya.",
+            },
+            {
+              jenis: "upah_tidak_wajar",
+              kutipan: "gaji Rp350.000 per hari",
+              penjelasan:
+                "Upah ini jauh di atas acuan untuk tukang di Surabaya — terlalu bagus untuk menjadi kenyataan.",
+            },
+          ],
+          pertanyaan_disarankan: [
+            "Apakah biaya administrasi bisa dipotong dari gaji pertama saja?",
+            "Di mana alamat kantor proyek yang bisa saya datangi langsung?",
+            "Apa nama resmi perusahaan pemilik proyek apartemen ini?",
+            "Bisakah saya bertemu dulu tanpa membayar apa pun?",
+          ],
+        },
+      },
+      {
+        judul: "Pekerja gudang pabrik, Sidoarjo",
+        bidang: "Jasa Harian",
+        jenis: "harian",
+        upah: 250000,
+        satuan: "harian",
+        lokasi: "dirahasiakan",
+        mulai: "2026-08-04",
+        teks:
+          "Dibutuhkan pekerja gudang pabrik besar. Lokasi dirahasiakan demi keamanan perusahaan. Gaji pokok tinggi plus bonus mingguan. Pendaftaran Rp100.000 via transfer, kuota hanya hari ini. Jangan tanya-tanya dulu, langsung daftar.",
+        keahlian: ["Tukang Pindahan"],
+        wilayah_nama: "Kabupaten Sidoarjo",
+        saringan: {
+          skor_risiko: 88,
+          skor_aturan: 33,
+          skor_ai: 55,
+          tingkat: "berisiko_tinggi",
+          temuan: [
+            {
+              jenis: "lokasi_tidak_jelas",
+              kutipan: "Lokasi dirahasiakan demi keamanan perusahaan",
+              penjelasan: "Tempat kerja yang sah selalu bisa ditunjukkan sebelum Anda mulai.",
+            },
+            {
+              jenis: "diminta_uang",
+              kutipan: "Pendaftaran Rp100.000 via transfer",
+              penjelasan:
+                "Pungutan pendaftaran lewat transfer sering muncul pada lowongan yang belum bisa menunjukkan lokasi kerja.",
+            },
+            {
+              jenis: "mendesak",
+              kutipan: "kuota hanya hari ini",
+              penjelasan: "Batas waktu palsu dibuat agar Anda buru-buru memutuskan.",
+            },
+          ],
+          pertanyaan_disarankan: [
+            "Apa nama pabrik dan alamat lengkapnya?",
+            "Mengapa pendaftaran harus lewat transfer, bukan di tempat?",
+            "Bisakah saya melihat lokasi kerja dulu sebelum memutuskan?",
+            "Siapa penanggung jawab yang bisa saya temui langsung?",
+          ],
+        },
+      },
+      {
+        judul: "Pekerja serabutan, Malang",
+        bidang: "Jasa Harian",
+        jenis: "harian",
+        upah: 300000,
+        satuan: "harian",
+        lokasi: "Malang (nanti diinfokan)",
+        mulai: "2026-08-02",
+        teks:
+          "Pekerja serabutan diutamakan bisa segala. Gaji besar dibayar mingguan. Kirim foto KTP dan biaya jaminan Rp200.000 (dikembalikan setelah kerja). Langsung kerja besok, tanpa wawancara. Jangan sampai menyesal!",
+        keahlian: ["Tukang Batu"],
+        wilayah_nama: "Kabupaten Malang",
+        saringan: {
+          skor_risiko: 90,
+          skor_aturan: 45,
+          skor_ai: 45,
+          tingkat: "berisiko_tinggi",
+          temuan: [
+            {
+              jenis: "diminta_uang",
+              kutipan: "biaya jaminan Rp200.000 (dikembalikan setelah kerja)",
+              penjelasan: "Janji uang kembali setelah kerja hampir tidak pernah ditepati.",
+            },
+            {
+              jenis: "jaminan_pribadi",
+              kutipan: "Kirim foto KTP",
+              penjelasan:
+                "Foto KTP bisa disalahgunakan tanpa Anda tahu sebelum bertemu langsung.",
+            },
+            {
+              jenis: "terlalu_mudah",
+              kutipan: "Langsung kerja besok, tanpa wawancara",
+              penjelasan: "Pekerjaan asli selalu ingin mengenal pekerjanya dulu.",
+            },
+          ],
+          pertanyaan_disarankan: [
+            "Mengapa perlu foto KTP sebelum bertemu langsung?",
+            "Di mana alamat tempat kerjanya, bisa saya lihat dulu?",
+            "Apakah jaminan bisa diganti pertemuan langsung tanpa uang?",
+            "Bagaimana bentuk kesepakatan upah mingguannya, tertulis atau lisan?",
+          ],
+        },
+      },
+    ];
 
-      const { error } = await supabase.from("lowongan").insert({
-        id: lowonganId,
-        pemberi_kerja_id: budiId,
-        wilayah_id,
-        teks_asli: lw.teks,
-        judul_baku: lw.judul,
-        bidang_id,
-        jenis_kerja: lw.jenis,
-        upah_ditawarkan: lw.upah,
-        satuan_upah: lw.satuan,
-        lokasi_teks: lw.lokasi,
-        mulai: lw.mulai,
-        status: "tayang",
-      });
-      if (error) console.error("  lowongan error:", error.message);
-      else console.log("  ✅ Lowongan:", lw.judul);
-
-      // Lowongan Keahlian links
-      for (const keahlianNama of lw.keahlian) {
-        const keahlian_id = keahlianMap.get(keahlianNama);
-        if (!keahlian_id) continue;
-        const { error: keahlianErr } = await supabase
-          .from("lowongan_keahlian")
-          .insert({
-            lowongan_id: lowonganId,
-            keahlian_id,
-            wajib: true,
-          });
-        if (keahlianErr)
-          console.error("  lowongan_keahlian error:", keahlianErr.message);
-        else console.log("    • Keahlian:", keahlianNama);
-      }
+    console.log("\n  — Lowongan berisiko tinggi (Saringan Aman) —");
+    for (const lw of lowonganBerisiko) {
+      await seedLowonganTayang(pemberiId, wilayahMap, bidangMap, keahlianMap, lw);
     }
   }
 
