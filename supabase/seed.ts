@@ -23,7 +23,7 @@ const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-const DEMO_PASSWORD = process.env.DEMO_FALLBACK_PASSWORD ?? "kitakerja-demo-2026";
+const SEED_PASSWORD = "123456";
 
 function uuid(): string {
   return crypto.randomUUID();
@@ -179,13 +179,83 @@ const kecamatanData: { nama: string; wilayah_nama: string; lat: number; lng: num
   { nama: "Depok", wilayah_nama: "Kabupaten Sleman", lat: -7.771, lng: 110.404 },
 ];
 
-// Test users — created via admin.createUser (phone OTP flow)
+// Akun uji per peran — masuk lewat email + kata sandi (lihat SEED_PASSWORD).
 const testUsers = [
   { email: "warto@kitakerja.test", phone: "+6281234567890", nama: "Warto Sugianto", peran: "pekerja", wilayah_nama: "Kota Malang" },
   { email: "dhika@kitakerja.test", phone: "+6281234567891", nama: "Dhika Ayu Permata", peran: "pemberi_kerja", wilayah_nama: "Kota Malang" },
   { email: "slamet@kitakerja.test", phone: "+6281234567892", nama: "Slamet Riyadi", peran: "pendamping", wilayah_nama: "Kota Malang" },
   { email: "yanti@kitakerja.test", phone: "+6281234567893", nama: "Yanti Puspitasari", peran: "pekerja", wilayah_nama: "Kota Surabaya" },
 ];
+
+async function pastikanAkunTest(
+  u: (typeof testUsers)[number],
+  wilayahMap: Map<string, string>,
+): Promise<string | null> {
+  const wilayah_id = wilayahMap.get(u.wilayah_nama) ?? null;
+  let userId: string | null = null;
+
+  const { data: authUser, error: authErr } = await supabase.auth.admin.createUser({
+    email: u.email,
+    phone: u.phone,
+    password: SEED_PASSWORD,
+    email_confirm: true,
+    phone_confirm: true,
+    user_metadata: { nama: u.nama },
+  });
+
+  if (authErr) {
+    const { data: list } = await supabase.auth.admin.listUsers();
+    const existing = list?.users?.find((x) => x.email === u.email);
+    if (!existing) {
+      console.error("  auth error:", authErr.message);
+      return null;
+    }
+    userId = existing.id;
+    await supabase.auth.admin.updateUserById(existing.id, { password: SEED_PASSWORD });
+    console.log("  ⚠️  User exists (password diperbarui):", u.nama);
+  } else if (authUser?.user) {
+    userId = authUser.user.id;
+    console.log("  ✅ Auth:", u.nama);
+  }
+
+  if (!userId) return null;
+
+  const { error: penggunaErr } = await supabase.from("pengguna").upsert(
+    {
+      id: userId,
+      nama: u.nama,
+      email: u.email,
+      no_hp: u.phone,
+      peran: u.peran,
+      wilayah_id,
+      url_foto: null,
+      status_verifikasi: "email_terverifikasi",
+      didampingi_oleh: null,
+    },
+    { onConflict: "id" },
+  );
+
+  if (penggunaErr) {
+    console.error("  pengguna error:", penggunaErr.message);
+    return null;
+  }
+  console.log("  ✅ Pengguna:", u.nama, `(${u.peran})`);
+
+  if (u.peran === "pekerja") {
+    const { data: kartuAda } = await supabase
+      .from("kartu_kerja")
+      .select("id")
+      .eq("pekerja_id", userId)
+      .maybeSingle();
+    if (!kartuAda) {
+      const { error: kartuErr } = await supabase.from("kartu_kerja").insert({ pekerja_id: userId });
+      if (kartuErr) console.error("  kartu_kerja error:", kartuErr.message);
+      else console.log("  ✅ Kartu Kerja (kosong):", u.nama);
+    }
+  }
+
+  return userId;
+}
 
 async function seed() {
   console.log("🌱 Seeding Kita Kerja...\n");
@@ -274,48 +344,12 @@ async function seed() {
     else console.log("  ✅ Konversi:", k.satuan_lokal);
   }
 
-  // 5. Pengguna test (via admin.createUser + insert pengguna)
+  // 5. Pengguna test (email + kata sandi, satu per peran + pekerja tambahan)
   const userMap = new Map<string, string>(); // email -> id
+  console.log(`  🔑 Kata sandi semua akun uji: ${SEED_PASSWORD}\n`);
   for (const u of testUsers) {
-    const wilayah_id = wilayahMap.get(u.wilayah_nama) ?? null;
-
-    const { data: authUser, error: authErr } = await supabase.auth.admin.createUser({
-      email: u.email,
-      phone: u.phone,
-      password: DEMO_PASSWORD,
-      email_confirm: true,
-      phone_confirm: true,
-      user_metadata: { nama: u.nama },
-    });
-
-    if (authErr) {
-      console.error("  auth error:", authErr.message);
-      // try to fetch existing
-      const { data: list } = await supabase.auth.admin.listUsers();
-      const existing = list?.users?.find((x) => x.email === u.email);
-      if (existing) {
-        userMap.set(u.email, existing.id);
-        await supabase.auth.admin.updateUserById(existing.id, { password: DEMO_PASSWORD });
-        console.log("  ⚠️  User exists:", u.nama);
-      }
-      continue;
-    }
-
-    if (authUser?.user) {
-      userMap.set(u.email, authUser.user.id);
-      const { error } = await supabase.from("pengguna").insert({
-        id: authUser.user.id,
-        nama: u.nama,
-        no_hp: u.phone,
-        peran: u.peran,
-        wilayah_id,
-        url_foto: null,
-        status_verifikasi: "hp_terverifikasi",
-        didampingi_oleh: null,
-      });
-      if (error) console.error("  pengguna error:", error.message);
-      else console.log("  ✅ Pengguna:", u.nama, `(${u.peran})`);
-    }
+    const id = await pastikanAkunTest(u, wilayahMap);
+    if (id) userMap.set(u.email, id);
   }
 
   // 6. Kartu Kerja untuk pekerja test (Warto)
@@ -471,8 +505,8 @@ async function seed() {
     else console.log("  ✅ Acuan Upah:", a.keahlian);
   }
 
-  // 8. Lowongan sample untuk pemberi kerja test (Budi)
-  const budiId = userMap.get("budi@kitakerja.test");
+  // 8. Lowongan sample untuk pemberi kerja test (Dhika)
+  const budiId = userMap.get("dhika@kitakerja.test");
   if (budiId) {
     const lowonganData = [
       {
