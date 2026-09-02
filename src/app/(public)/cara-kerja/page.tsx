@@ -28,7 +28,7 @@ const LANGKAH = [
     ikon: Mic,
     judul: "Ngobrol Kerja",
     ringkas: "Tiga menit bercerita, bukan mengisi formulir",
-    isi: "Anda ditanya seperti tetangga bertanya: pernah kerja apa, di mana, berapa lama. Jawab dengan suara, boleh pakai bahasa daerah. Kalau tidak mau bicara, ada jalur ketik yang isinya sama.",
+    isi: "Anda ditanya seperti tetangga bertanya: pernah kerja apa, di mana, berapa lama. Jawab dengan suara dalam bahasa Indonesia. Kalau tidak mau bicara, ada jalur ketik yang isinya sama.",
   },
   {
     ikon: Printer,
