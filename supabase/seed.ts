@@ -23,7 +23,7 @@ const supabase = createClient(SUPABASE_URL, SERVICE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-const SEED_PASSWORD = process.env.DEMO_FALLBACK_PASSWORD ?? "123456";
+const SEED_PASSWORD = process.env.DEMO_FALLBACK_PASSWORD ?? "12345678";
 
 function uuid(): string {
   return crypto.randomUUID();
