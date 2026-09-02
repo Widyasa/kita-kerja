@@ -293,10 +293,7 @@ export default function HalamanNgobrolKerja() {
             </h1>
             <p className="max-w-[42ch] text-body-lg text-balance text-tanah-700">
               Saya akan tanya beberapa hal tentang pekerjaan Bapak/Ibu. Jawab
-              pakai suara saja, tidak perlu menulis.
-            </p>
-            <p className="max-w-[42ch] text-body-lg text-balance text-tanah-700">
-              Boleh pakai bahasa daerah. Kira-kira 3 menit.
+              pakai suara saja, tidak perlu menulis. Kira-kira 3 menit.
             </p>
           </div>
 

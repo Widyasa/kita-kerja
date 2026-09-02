@@ -108,7 +108,7 @@ export default async function LandingPage() {
   const langkah = [
     {
       judul: "Ngobrol dengan suara, 3 menit",
-      isi: "Ceritakan pekerjaan Anda seperti bercerita ke tetangga. Boleh pakai bahasa daerah.",
+      isi: "Ceritakan pekerjaan Anda seperti bercerita ke tetangga — cukup dengan suara, tidak perlu menulis.",
     },
     {
       judul: "Kartu Kerja Anda terbit",
