@@ -23,6 +23,7 @@ import { createClient } from "@/lib/supabase/server-client";
 import { getDashboardPekerja } from "@/lib/data/kartu-kerja";
 import { formatTanggal, upahTeks } from "@/lib/mock/utils";
 import type { LapisKepercayaan } from "@/lib/mock/types";
+import { urlVerifikasiKartu } from "@/lib/kartu/url";
 
 export const metadata: Metadata = {
   title: "Kartu Kerja Anda — Kita Kerja",
@@ -83,7 +84,7 @@ export default async function HalamanKartuKerja() {
   }
 
   const token = kartu.token_publik;
-  const urlVerifikasi = `https://kita-kerja.example/verify/${token}`;
+  const urlVerifikasi = urlVerifikasiKartu(token);
   const namaPanggilan = pekerja.nama.split(" ")[0];
 
   const riwayatTerverifikasi = dashboard.riwayat;

@@ -42,6 +42,7 @@ export type Peran = "pekerja" | "pemberi_kerja" | "pendamping";
 export type StatusVerifikasi =
   | "belum"
   | "hp_terverifikasi"
+  | "email_terverifikasi"
   | "identitas_terverifikasi";
 
 export interface Pengguna {

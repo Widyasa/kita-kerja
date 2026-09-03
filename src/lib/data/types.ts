@@ -94,5 +94,6 @@ export interface CalonTampil {
 export const LABEL_VERIFIKASI: Record<StatusVerifikasi, string> = {
   identitas_terverifikasi: "Identitas terverifikasi",
   hp_terverifikasi: "Nomor HP terverifikasi",
+  email_terverifikasi: "Email terverifikasi",
   belum: "Belum terverifikasi",
 };

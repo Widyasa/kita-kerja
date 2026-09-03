@@ -9,6 +9,7 @@ import { inisialNama } from "@/lib/mock/utils";
 import type { RiwayatPekerjaanRingkas } from "@/lib/data/kartu-kerja";
 
 import { formatBulanTahun, formatPenilaian } from "./format";
+import { urlVerifikasiKartu } from "@/lib/kartu/url";
 
 const URUTAN_LAPIS: { lapis: LapisKepercayaan; judul: string }[] = [
   { lapis: "terverifikasi", judul: "Terverifikasi" },
@@ -50,7 +51,7 @@ export async function LembarA5({
   // tidak lagi menyeret src/lib/mock/data.ts (47 KB) ke bundle klien.
   const bidang = bidangNama ?? null;
   const wl = wilayahNama ?? null;
-  const urlVerifikasi = `https://kita-kerja.example/verify/${kartu.token_publik}`;
+  const urlVerifikasi = urlVerifikasiKartu(kartu.token_publik);
   const urlPendek = `kk.id/v/${kartu.token_publik.slice(0, 6)}`;
   const sepuluhTerakhir = [...riwayat]
     .sort((a, b) => b.selesai_pada.localeCompare(a.selesai_pada))
@@ -127,9 +128,12 @@ export async function LembarA5({
                       className="flex items-baseline justify-between gap-[3mm] text-[11pt]"
                     >
                       <span className="font-semibold">{k.nama_tampil}</span>
-                      <span className="text-[10pt] text-tanah-600 italic">
-                        &ldquo;{k.sebutan_pekerja}&rdquo;
-                      </span>
+                      {k.sebutan_pekerja &&
+                        k.sebutan_pekerja.toLowerCase() !== k.nama_tampil.toLowerCase() && (
+                          <span className="text-[10pt] text-tanah-600 italic">
+                            &ldquo;{k.sebutan_pekerja}&rdquo;
+                          </span>
+                        )}
                     </li>
                   ))}
                 </ul>

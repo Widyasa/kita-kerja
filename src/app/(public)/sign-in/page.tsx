@@ -78,6 +78,11 @@ export default function SignInPage() {
             onChange={(e) => setPassword(e.target.value)}
             disabled={loading}
           />
+          {password.length > 0 && !passwordValid && (
+            <p className="text-label text-hati-600" role="alert">
+              Kata sandi minimal 8 karakter
+            </p>
+          )}
         </div>
         <Button
           type="submit"

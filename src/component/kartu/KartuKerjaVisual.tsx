@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import type { KeahlianTampil } from "@/lib/data/types";
 import type { KartuKerja, Pengguna } from "@/lib/mock/types";
 import { inisialNama, inisialkanNamaBelakang } from "@/lib/mock/utils";
+import { urlVerifikasiKartu } from "@/lib/kartu/url";
 
 /**
  * KartuKerjaVisual (Bagian 4.5) — representasi digital Kartu Kerja.
@@ -43,7 +44,7 @@ export function KartuKerjaVisual({
   // tidak lagi menyeret src/lib/mock/data.ts (47 KB) ke bundle klien.
   const namaBidang = bidangNama ?? null;
   const namaWilayah = wilayahNama ?? null;
-  const urlVerifikasi = `https://kita-kerja.example/verify/${kartu.token_publik}`;
+  const urlVerifikasi = urlVerifikasiKartu(kartu.token_publik);
 
   return (
     <article

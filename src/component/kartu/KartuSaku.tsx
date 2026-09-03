@@ -5,6 +5,7 @@ import type { KartuKerja, Pengguna } from "@/lib/mock/types";
 import { inisialNama } from "@/lib/mock/utils";
 
 import { formatPenilaian, namaPendekKeahlian } from "./format";
+import { urlVerifikasiKartu } from "@/lib/kartu/url";
 
 /**
  * KartuSaku (Bagian 15.3) — kartu cetak 85 × 54 mm, sebesar KTP.
@@ -46,7 +47,7 @@ export async function KartuSaku({
   // tidak lagi menyeret src/lib/mock/data.ts (47 KB) ke bundle klien.
   const bidang = bidangNama ?? null;
   const wl = wilayahNama ?? null;
-  const urlVerifikasi = `https://kita-kerja.example/verify/${kartu.token_publik}`;
+  const urlVerifikasi = urlVerifikasiKartu(kartu.token_publik);
   const urlPendek = `kk.id/v/${kartu.token_publik.slice(0, 6)}`;
   const tigaKeahlian = keahlian.slice(0, 3).map(namaPendekKeahlian).join(" · ");
 
@@ -54,7 +55,7 @@ export async function KartuSaku({
     <article
       aria-label={`Kartu saku ${pekerja.nama}`}
       className={cn(
-        "kartu-saku flex flex-col overflow-hidden rounded-[2mm] border border-tanah-300 bg-tanah-0 p-[3mm]",
+        "kartu-saku flex flex-col overflow-hidden rounded-[2mm] border border-tanah-300 bg-tanah-0 p-[4mm]",
         className,
       )}
     >

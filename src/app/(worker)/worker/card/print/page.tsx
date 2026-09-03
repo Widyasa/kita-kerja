@@ -21,6 +21,7 @@ export const metadata: Metadata = {
 const CSS_CETAK = `
 .kartu-saku { width: 85mm; height: 54mm; }
 .lembar-a5 { width: 148mm; min-height: 210mm; }
+.wadah-kartu-saku { display: flex; flex-direction: column; gap: 6mm; align-items: flex-start; }
 @page { size: A4; margin: 10mm; }
 @media print {
   nav, .tanpa-cetak { display: none !important; }
@@ -30,7 +31,13 @@ const CSS_CETAK = `
     break-inside: avoid;
     border: 0.3mm dashed #A69F92;
   }
-  .lembar-a5 { width: 148mm; min-height: 210mm; break-inside: avoid; }
+  .wadah-kartu-saku {
+    display: grid;
+    grid-template-columns: repeat(3, 85mm);
+    gap: 6mm;
+    justify-content: center;
+  }
+  .lembar-a5 { width: 148mm; min-height: 210mm; break-inside: avoid; margin: 0 auto; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 `;
@@ -86,7 +93,7 @@ export default async function HalamanCetakKartu() {
 
       <PanelCetak
         kartuSaku={
-          <div className="flex flex-col items-center gap-6 sm:items-start print:gap-[8mm]">
+          <div className="wadah-kartu-saku flex flex-col items-center gap-6 sm:items-start print:gap-[6mm]">
             {[0, 1, 2].map((i) => (
               <KartuSaku key={i} {...propertiKartu} />
             ))}

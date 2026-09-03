@@ -203,7 +203,15 @@ export default async function HalamanDetailLowongan({
         </dl>
       </section>
 
-      {/* 6. Pemberi kerja — identitas, verifikasi, rekam jejak FAKTUAL */}
+      {/* 6. Teks asli lowongan */}
+      <section aria-labelledby="judul-teks-asli" className="rounded-2xl border border-tanah-200 bg-tanah-0 p-5 shadow-1">
+        <h2 id="judul-teks-asli" className="text-h2 text-tanah-900">
+          Teks asli dari pemberi kerja
+        </h2>
+        <p className="mt-3 whitespace-pre-wrap text-body text-tanah-800">{lw.teks_asli}</p>
+      </section>
+
+      {/* 7. Pemberi kerja — identitas, verifikasi, rekam jejak FAKTUAL */}
       <section aria-labelledby="judul-pemberi" className="rounded-2xl border border-tanah-200 bg-tanah-0 p-5 shadow-1">
         <h2 id="judul-pemberi" className="text-h2 text-tanah-900">
           Pemberi kerja
@@ -249,7 +257,7 @@ export default async function HalamanDetailLowongan({
         </ul>
       </section>
 
-      {/* 7. Tombol lamar 56px */}
+      {/* 8. Tombol lamar 56px */}
       {kesepakatanId ? (
         <div className="rounded-2xl border border-biru-600/30 bg-biru-50 p-5 text-center">
           <p className="text-body font-bold text-tanah-900">

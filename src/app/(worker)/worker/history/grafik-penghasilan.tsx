@@ -46,9 +46,11 @@ export function GrafikPenghasilan({ data }: { data: TitikBulan[] }) {
             tick={{ fill: "var(--tanah-600)", fontSize: 13 }}
             tickLine={false}
             axisLine={false}
-            tickFormatter={(v: number) =>
-              v >= 1000 ? `Rp${Math.round(v / 1000)} rb` : `Rp${v}`
-            }
+            tickFormatter={(v: number) => {
+              if (v >= 1_000_000) return `${Math.round(v / 1_000_000)} jt`;
+              if (v >= 1_000) return `${Math.round(v / 1_000)} rb`;
+              return `${v}`;
+            }}
           />
           <Tooltip
             cursor={{ fill: "var(--tanah-100)" }}

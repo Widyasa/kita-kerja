@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { IdCard, Phone, ShieldCheck } from "lucide-react";
 
-import { TombolKeluar } from "@/component/bersama/TombolKeluar";
 import { createClient } from "@/lib/supabase/server-client";
 import { profilPengguna } from "@/lib/data/profil";
 import { LABEL_VERIFIKASI } from "@/lib/data/types";
@@ -45,10 +44,6 @@ export default async function HalamanProfil() {
       </section>
 
       <ProfilForm profil={profil} daftarWilayah={daftarWilayah} />
-
-      <section aria-label="Keluar akun" className="border-t border-tanah-200 pt-6">
-        <TombolKeluar />
-      </section>
     </div>
   );
 }
