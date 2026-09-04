@@ -89,6 +89,8 @@ export interface CalonTampil {
   keahlian: KeahlianTampil[];
   rekam_jejak: RekamJejakPekerja;
   kesepakatan_id: string | null;
+  /** token publik Kartu Kerja bila aktif; null bila belum terbit / tidak publik */
+  token_publik: string | null;
 }
 
 export const LABEL_VERIFIKASI: Record<StatusVerifikasi, string> = {

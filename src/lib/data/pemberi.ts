@@ -205,7 +205,9 @@ export async function calonUntukLowongan(
 
     const { data: kartu } = await supabase
       .from("kartu_kerja")
-      .select("id, pengalaman_tahun, bidang:bidang_utama_id(nama)")
+      .select(
+        "id, pengalaman_tahun, token_publik, aktif_publik, bidang:bidang_utama_id(nama)",
+      )
       .eq("pekerja_id", pekerjaId)
       .maybeSingle();
 
@@ -229,6 +231,11 @@ export async function calonUntukLowongan(
       .eq("pekerja_id", pekerjaId)
       .maybeSingle();
 
+    const tokenPublik =
+      kartu?.aktif_publik && typeof kartu.token_publik === "string"
+        ? kartu.token_publik
+        : null;
+
     hasil.push({
       lamaran_id: c.id as string,
       status: c.status as StatusLamaran,
@@ -241,6 +248,7 @@ export async function calonUntukLowongan(
       keahlian,
       rekam_jejak: jejakSatu,
       kesepakatan_id: (kesepakatan?.id as string) ?? null,
+      token_publik: tokenPublik,
     });
   }
 

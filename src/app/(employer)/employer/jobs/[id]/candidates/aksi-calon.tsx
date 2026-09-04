@@ -78,6 +78,8 @@ export function AksiCalon({ calon }: { calon: CalonTampil }) {
     }
   }
 
+  const tanpaDasar = calon.alasan_cocok.length === 0;
+
   return (
     <>
       {calon.status === "dilamar" && (
@@ -86,7 +88,13 @@ export function AksiCalon({ calon }: { calon: CalonTampil }) {
           Undang
         </Button>
       )}
-      <Button size="lg" className="flex-1" disabled={sibuk} onClick={() => setBuka(true)}>
+      <Button
+        size="lg"
+        variant={tanpaDasar ? "outline" : "default"}
+        className="flex-1"
+        disabled={sibuk}
+        onClick={() => setBuka(true)}
+      >
         <Handshake aria-hidden />
         Buat kesepakatan
       </Button>

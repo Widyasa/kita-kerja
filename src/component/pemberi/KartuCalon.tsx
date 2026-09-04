@@ -1,4 +1,11 @@
-import { MapPin, ClipboardList, MessageCircleHeart } from "lucide-react";
+import Link from "next/link";
+import {
+  MapPin,
+  ClipboardList,
+  MessageCircleHeart,
+  TriangleAlert,
+  IdCard,
+} from "lucide-react";
 
 import { BadgeLapis } from "@/component/bersama/BadgeLapis";
 import { cn } from "@/lib/utils";
@@ -30,6 +37,8 @@ export function KartuCalon({
   aksi?: React.ReactNode;
   className?: string;
 }) {
+  const adaDasar = calon.alasan_cocok.length > 0;
+
   return (
     <article
       aria-label={`Calon pekerja ${calon.nama}`}
@@ -82,17 +91,43 @@ export function KartuCalon({
         </div>
       )}
 
+      {calon.token_publik && (
+        <Link
+          href={`/verify/${calon.token_publik}`}
+          className="inline-flex min-h-12 items-center gap-2 rounded-md px-1 text-label font-bold text-biru-600 underline underline-offset-4 focus-visible:ring-[3px] focus-visible:ring-biru-600/40 focus-visible:outline-none"
+        >
+          <IdCard className="size-4" aria-hidden />
+          Lihat Kartu Kerja lengkap
+        </Link>
+      )}
+
       {/* alasan pencocokan — SELALU dijelaskan.
           BUG-039: sebelumnya kotak ini tetap dirender walau alasan_cocok
           kosong, sehingga pemberi kerja hanya melihat label "Cocok karena…"
           tanpa isi — padahal halaman menjanjikan "Setiap calon dijelaskan
-          kenapa cocok". Sekarang keadaan kosong dijelaskan apa adanya. */}
-      <div className="rounded-lg bg-biru-50 p-4">
-        <p className="flex items-center gap-2 text-body font-semibold text-biru-900">
-          <MessageCircleHeart className="size-5 shrink-0 text-biru-600" aria-hidden />
-          {calon.alasan_cocok.length > 0 ? "Cocok karena…" : "Belum ada dasar pencocokan"}
+          kenapa cocok". Sekarang keadaan kosong dijelaskan apa adanya.
+          Issue #42: tanpa dasar pencocokan pakai latar hati (peringatan),
+          bukan biru, agar bobot visual di atas CTA. */}
+      <div
+        className={cn(
+          "rounded-lg p-4",
+          adaDasar ? "bg-biru-50" : "border border-hati-600/25 bg-hati-50",
+        )}
+      >
+        <p
+          className={cn(
+            "flex items-center gap-2 text-body font-semibold",
+            adaDasar ? "text-biru-900" : "text-tanah-900",
+          )}
+        >
+          {adaDasar ? (
+            <MessageCircleHeart className="size-5 shrink-0 text-biru-600" aria-hidden />
+          ) : (
+            <TriangleAlert className="size-5 shrink-0 text-hati-600" aria-hidden />
+          )}
+          {adaDasar ? "Cocok karena…" : "Belum ada dasar pencocokan"}
         </p>
-        {calon.alasan_cocok.length > 0 ? (
+        {adaDasar ? (
           <ul className="mt-2 flex flex-col gap-1">
             {calon.alasan_cocok.map((alasan, i) => (
               <li key={i} className="text-body text-tanah-900">

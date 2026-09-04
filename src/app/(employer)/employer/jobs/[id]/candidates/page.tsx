@@ -51,7 +51,7 @@ export default async function HalamanCalonPekerja({
         </Link>
         <h1 className="text-h1">Calon untuk &ldquo;{kelola.lowongan.judul_baku}&rdquo;</h1>
         <p className="text-body-lg text-tanah-600">
-          Setiap calon dijelaskan kenapa cocok — tidak ada skor angka.
+          Setiap calon dijelaskan kecocokannya — tanpa skor angka.
         </p>
       </header>
 
