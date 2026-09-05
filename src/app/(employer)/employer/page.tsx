@@ -216,7 +216,13 @@ export default async function HalamanDasborPemberi() {
             judul="Belum ada kesepakatan"
             penjelasan="Bila Anda dan pekerja sudah sepakat, buat kesepakatan dari daftar calon agar janji upah dan tanggal bayar tercatat jelas."
             labelAksi="Lihat calon"
-            hrefAksi={aktif[0] ? `/employer/jobs/${aktif[0].id}/candidates` : "/employer/post"}
+            hrefAksi={
+              calonTerbaru[0]
+                ? `/employer/jobs/${calonTerbaru[0].lowongan_id}/candidates`
+                : lowongan.length > 0
+                  ? "/employer/jobs"
+                  : "/employer/post"
+            }
           />
         ) : (
           <ul className="flex flex-col gap-3">

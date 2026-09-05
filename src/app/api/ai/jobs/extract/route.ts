@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-import { requireSession, requireRole } from "@/lib/auth/server";
+import { requireRole } from "@/lib/auth/server";
 import { callGemini, demoSimulasiAktif } from "@/lib/ai/gemini-client";
 import { SkemaEkstrakLowongan } from "@/lib/ai/output-schemas";
 import { PROMPT_EKSTRAK_LOWONGAN } from "@/lib/ai/prompt-job-extract";
 import { jagaEkstrakLowongan } from "@/lib/ai/guard";
-import { createClient } from "@/lib/supabase/server-client";
 import { z } from "zod";
 
 const BodySchema = z.object({
@@ -57,9 +56,11 @@ export async function POST(request: Request) {
   });
 
   if (!hasil.ok) {
+    const status =
+      hasil.kode === "kuota" ? 429 : hasil.kode === "validasi" ? 422 : 503;
     return NextResponse.json(
-      { ok: false, pesan: hasil.pesan_pengguna },
-      { status: 503 }
+      { ok: false, pesan: hasil.pesan_pengguna, kode: hasil.kode },
+      { status },
     );
   }
 

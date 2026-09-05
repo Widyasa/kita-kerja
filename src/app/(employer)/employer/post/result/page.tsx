@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -12,6 +12,8 @@ import {
   TriangleAlert,
   CircleCheck,
   PencilLine,
+  LoaderCircle,
+  ArrowLeft,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -38,12 +40,76 @@ import type { TemuanSaringan } from "@/lib/mock/types";
 
 type Keadaan = "sunting" | "tayang" | "tayang_dengan_penanda";
 
+function KerangkaMemuat({ teksCuplikan }: { teksCuplikan?: string | null }) {
+  return (
+    <div className="flex flex-col gap-8" aria-busy="true">
+      <header>
+        <h1 className="text-h1">Sedang membaca tulisan Anda</h1>
+        <p className="mt-2 text-body-lg text-tanah-600">
+          Biasanya selesai dalam beberapa detik. Bidang lowongan akan muncul di
+          sini.
+        </p>
+      </header>
+
+      <div
+        role="status"
+        className="flex items-center gap-3 rounded-2xl border border-biru-600/20 bg-biru-50 px-5 py-4"
+      >
+        <LoaderCircle
+          className="size-6 shrink-0 animate-spin text-biru-600"
+          aria-hidden
+        />
+        <p className="text-body font-semibold text-biru-900">
+          Membaca tulisan Anda…
+        </p>
+      </div>
+
+      {teksCuplikan ? (
+        <figure className="rounded-2xl border border-tanah-200 bg-tanah-50 p-5">
+          <figcaption className="flex items-center gap-2 text-label font-semibold text-tanah-600">
+            <Quote className="size-4" aria-hidden />
+            Tulisan Anda:
+          </figcaption>
+          <blockquote className="mt-2 line-clamp-4 text-body-lg text-tanah-900 italic">
+            &ldquo;{teksCuplikan}&rdquo;
+          </blockquote>
+        </figure>
+      ) : (
+        <div
+          className="h-28 animate-pulse rounded-2xl bg-tanah-100"
+          aria-hidden
+        />
+      )}
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2" aria-hidden>
+        <div className="h-40 animate-pulse rounded-2xl bg-tanah-100" />
+        <div className="h-40 animate-pulse rounded-2xl bg-tanah-100" />
+      </div>
+      <div className="flex flex-col gap-3" aria-hidden>
+        <div className="h-12 animate-pulse rounded-xl bg-tanah-100" />
+        <div className="h-12 animate-pulse rounded-xl bg-tanah-100" />
+        <div className="h-12 animate-pulse rounded-xl bg-tanah-100" />
+      </div>
+
+      <Button asChild variant="ghost" className="w-full sm:w-auto sm:self-start">
+        <Link href="/employer/post">
+          <ArrowLeft aria-hidden />
+          Kembali tulis ulang
+        </Link>
+      </Button>
+    </div>
+  );
+}
+
 function IsiHasil() {
   const router = useRouter();
 
   const [keadaan, setKeadaan] = useState<Keadaan>("sunting");
   const [bidang, setBidang] = useState<BidangLowongan | null>(null);
   const [memuat, setMemuat] = useState(true);
+  const [gagalEkstrak, setGagalEkstrak] = useState<string | null>(null);
+  const [teksAsli, setTeksAsli] = useState<string | null>(null);
+  const [ulang, setUlang] = useState(0);
   const [menayangkan, setMenayangkan] = useState(false);
   const [saringan, setSaringan] = useState<{ tingkat: string; temuan: TemuanSaringan[] } | null>(
     null,
@@ -56,56 +122,62 @@ function IsiHasil() {
    * — ditampilkan sebagai info, tidak dikirim sebagai keahlian_ids) */
   const [keahlianDisarankan, setKeahlianDisarankan] = useState<string[]>([]);
 
-  useEffect(() => {
-    (async () => {
-      const teks = sessionStorage.getItem(KUNCI_TEKS_LOWONGAN)?.trim();
-      if (!teks) {
-        router.replace("/employer/post");
-        return;
+  const mulaiEkstrak = useCallback(async () => {
+    const teks = sessionStorage.getItem(KUNCI_TEKS_LOWONGAN)?.trim();
+    if (!teks) {
+      router.replace("/employer/post");
+      return;
+    }
+    setTeksAsli(teks);
+    setMemuat(true);
+    setGagalEkstrak(null);
+    try {
+      const res = await fetch("/api/ai/jobs/extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ teks }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.pesan || "Gagal membaca tulisan Anda.");
+      const d = json.data;
+      // "mulai" HARUS ISO yyyy-mm-dd untuk kolom `date` di Postgres — Gemini
+      // kadang mengembalikan teks bebas ("senin", "senin depan"). Tolak apa
+      // pun yang bukan ISO alih-alih mengirimnya mentah ke /api/jobs/publish
+      // (yang akan gagal insert dengan pesan tidak jelas bagi pemberi kerja).
+      const mulaiIsoValid = /^\d{4}-\d{2}-\d{2}$/.test(d.mulai ?? "");
+      const yangBelumJelas: string[] = d.yang_belum_jelas ?? [];
+      if (!mulaiIsoValid && d.mulai) {
+        yangBelumJelas.push("Tanggal mulai yang pasti");
       }
-      try {
-        const res = await fetch("/api/ai/jobs/extract", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ teks }),
-        });
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.pesan || "Gagal membaca tulisan Anda.");
-        const d = json.data;
-        // "mulai" HARUS ISO yyyy-mm-dd untuk kolom `date` di Postgres — Gemini
-        // kadang mengembalikan teks bebas ("senin", "senin depan"). Tolak apa
-        // pun yang bukan ISO alih-alih mengirimnya mentah ke /api/jobs/publish
-        // (yang akan gagal insert dengan pesan tidak jelas bagi pemberi kerja).
-        const mulaiIsoValid = /^\d{4}-\d{2}-\d{2}$/.test(d.mulai ?? "");
-        const yangBelumJelas: string[] = d.yang_belum_jelas ?? [];
-        if (!mulaiIsoValid && d.mulai) {
-          yangBelumJelas.push("Tanggal mulai yang pasti");
-        }
-        setBidang({
-          judul: d.judul_baku ?? "",
-          jenisKerja: d.jenis_kerja ?? "",
-          jumlahPekerja: d.jumlah_pekerja ? String(d.jumlah_pekerja) : "",
-          lokasi: d.lokasi_teks ?? "",
-          wilayahId: "",
-          kecamatanId: "",
-          keahlianIds: [],
-          upah: d.upah_ditawarkan ? String(d.upah_ditawarkan) : "",
-          satuanUpah: d.satuan_upah ?? "harian",
-          mulai: mulaiIsoValid ? d.mulai : "",
-          syaratTersirat: d.syarat_tersirat ?? [],
-          yangBelumJelas,
-          kelengkapan: d.kelengkapan ?? 0,
-          teksAsli: teks,
-        });
-        setKeahlianDisarankan(d.keahlian_dibutuhkan ?? []);
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Terjadi kesalahan.");
-        router.replace("/employer/post");
-      } finally {
-        setMemuat(false);
-      }
-    })();
+      setBidang({
+        judul: d.judul_baku ?? "",
+        jenisKerja: d.jenis_kerja ?? "",
+        jumlahPekerja: d.jumlah_pekerja ? String(d.jumlah_pekerja) : "",
+        lokasi: d.lokasi_teks ?? "",
+        wilayahId: "",
+        kecamatanId: "",
+        keahlianIds: [],
+        upah: d.upah_ditawarkan ? String(d.upah_ditawarkan) : "",
+        satuanUpah: d.satuan_upah ?? "harian",
+        mulai: mulaiIsoValid ? d.mulai : "",
+        syaratTersirat: d.syarat_tersirat ?? [],
+        yangBelumJelas,
+        kelengkapan: d.kelengkapan ?? 0,
+        teksAsli: teks,
+      });
+      setKeahlianDisarankan(d.keahlian_dibutuhkan ?? []);
+    } catch (err) {
+      const pesan = err instanceof Error ? err.message : "Terjadi kesalahan.";
+      setGagalEkstrak(pesan);
+      toast.error(pesan);
+    } finally {
+      setMemuat(false);
+    }
   }, [router]);
+
+  useEffect(() => {
+    void mulaiEkstrak();
+  }, [mulaiEkstrak, ulang]);
 
   async function tayangkan(paksa: boolean) {
     if (!bidang || menayangkan) return;
@@ -202,11 +274,34 @@ function IsiHasil() {
     }
   }
 
-  if (memuat || !bidang) {
+  if (memuat) {
+    return <KerangkaMemuat teksCuplikan={teksAsli} />;
+  }
+
+  if (gagalEkstrak || !bidang) {
     return (
-      <p role="status" className="text-body text-tanah-600">
-        Membaca tulisan Anda…
-      </p>
+      <div className="mx-auto flex w-full max-w-2xl flex-col items-center gap-6 rounded-2xl border border-tanah-200 bg-tanah-0 p-8 text-center shadow-1">
+        <span className="flex size-16 items-center justify-center rounded-full bg-bahaya-50">
+          <TriangleAlert className="size-8 text-bahaya-600" aria-hidden />
+        </span>
+        <h1 className="text-h1">Belum bisa membaca tulisan</h1>
+        <p className="max-w-md text-body-lg text-tanah-600">
+          {gagalEkstrak ??
+            "Ada gangguan saat membaca tulisan Anda. Coba lagi, atau kembali tulis ulang."}
+        </p>
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
+          <Button
+            size="lg"
+            className="w-full sm:w-auto"
+            onClick={() => setUlang((n) => n + 1)}
+          >
+            Coba lagi
+          </Button>
+          <Button asChild size="lg" variant="outline" className="w-full sm:w-auto">
+            <Link href="/employer/post">Kembali tulis ulang</Link>
+          </Button>
+        </div>
+      </div>
     );
   }
 
@@ -451,22 +546,12 @@ function IsiHasil() {
 
 const IsiHasilDinamis = dynamic(() => Promise.resolve(IsiHasil), {
   ssr: false,
-  loading: () => (
-    <p className="text-body text-tanah-600" role="status">
-      Membaca tulisan Anda…
-    </p>
-  ),
+  loading: () => <KerangkaMemuat />,
 });
 
 export default function HalamanHasilEkstraksi() {
   return (
-    <Suspense
-      fallback={
-        <p className="text-body text-tanah-600" role="status">
-          Membaca tulisan Anda…
-        </p>
-      }
-    >
+    <Suspense fallback={<KerangkaMemuat />}>
       <IsiHasilDinamis />
     </Suspense>
   );

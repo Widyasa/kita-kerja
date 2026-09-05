@@ -27,6 +27,7 @@ export class GeminiError extends Error {
     public debug?: string
   ) {
     super(pesan_pengguna);
+    this.name = "GeminiError";
   }
 }
 
@@ -74,8 +75,103 @@ export interface CallGeminiError {
   pesan_pengguna: string;
 }
 
+/** Klasifikasi error API/SDK → kode + pesan pengguna + debug. */
+function klasifikasiErrorApi(err: unknown): GeminiError {
+  const teks = String(err);
+  const lower = teks.toLowerCase();
+
+  if (
+    /\b429\b/.test(teks) ||
+    lower.includes("resource_exhausted") ||
+    lower.includes("quota") ||
+    lower.includes("rate limit")
+  ) {
+    return new GeminiError(
+      "kuota",
+      "Kuota AI sementara penuh. Coba lagi dalam beberapa saat.",
+      teks.slice(0, 1200),
+    );
+  }
+
+  if (
+    /\b401\b/.test(teks) ||
+    /\b403\b/.test(teks) ||
+    lower.includes("api key") ||
+    lower.includes("permission") ||
+    lower.includes("unauthenticated") ||
+    lower.includes("unauthorized")
+  ) {
+    return new GeminiError(
+      "konfigurasi",
+      "AI belum siap. Coba lagi nanti.",
+      teks.slice(0, 1200),
+    );
+  }
+
+  if (
+    (/\b404\b/.test(teks) && lower.includes("model")) ||
+    lower.includes("model not found") ||
+    lower.includes("is not found for api")
+  ) {
+    return new GeminiError(
+      "konfigurasi",
+      "Model AI tidak tersedia. Coba lagi nanti.",
+      teks.slice(0, 1200),
+    );
+  }
+
+  if (
+    lower.includes("timeout") ||
+    lower.includes("etimedout") ||
+    lower.includes("econnreset") ||
+    lower.includes("fetch failed") ||
+    lower.includes("network") ||
+    lower.includes("unavailable") ||
+    /\b503\b/.test(teks) ||
+    /\b500\b/.test(teks)
+  ) {
+    return new GeminiError(
+      "jaringan",
+      "Koneksi ke AI bermasalah. Coba lagi dalam beberapa saat.",
+      teks.slice(0, 1200),
+    );
+  }
+
+  return new GeminiError(
+    "gagal",
+    "AI tidak bisa menjawab saat ini. Silakan gunakan jalur manual.",
+    teks.slice(0, 1200),
+  );
+}
+
+async function generateJsonText(
+  client: GoogleGenAI,
+  model: string,
+  promptParts: Content[],
+  responseSchema: object,
+  temperature: number,
+): Promise<string> {
+  const response = await client.models.generateContent({
+    model,
+    contents: promptParts,
+    config: {
+      temperature,
+      responseMimeType: "application/json",
+      responseSchema: responseSchema as object,
+    },
+  });
+
+  const jsonText = response.text ?? null;
+  if (!jsonText) {
+    throw new GeminiError("gagal", "AI tidak memberikan jawaban. Coba lagi.");
+  }
+  return jsonText;
+}
+
 /**
  * Panggil Gemini dengan guardrail, logging, dan fallback ladder.
+ * Bila panggilan pertama gagal sebelum ada teks (jaringan/model), coba sekali
+ * lagi dengan model light agar ekstraksi tidak sering 503 intermiten.
  */
 export async function callGemini<T>({
   jenis,
@@ -110,27 +206,60 @@ export async function callGemini<T>({
     return { ok: false, kode: "gagal", pesan_pengguna: "AI tidak bisa menjawab saat ini. Silakan gunakan jalur manual." };
   }
 
-  const modelName = useLight ? modelLight : modelMain;
+  const modelUtama = useLight ? modelLight : modelMain;
+  const modelCadangan =
+    modelUtama === modelLight ? modelMain : modelLight;
   const client = getClient();
   const mulai = Date.now();
 
   let jsonText: string | null = null;
+  let modelTerpakai = modelUtama;
 
   try {
-    // 3. Panggil Gemini
-    const response = await client.models.generateContent({
-      model: modelName,
-      contents: promptParts,
-      config: {
+    try {
+      jsonText = await generateJsonText(
+        client,
+        modelUtama,
+        promptParts,
+        responseSchema,
         temperature,
-        responseMimeType: "application/json",
-        responseSchema: responseSchema as any,
-      },
-    });
+      );
+    } catch (pertama) {
+      const classified =
+        pertama instanceof GeminiError ? pertama : klasifikasiErrorApi(pertama);
 
-    jsonText = response.text ?? null;
-    if (!jsonText) {
-      throw new GeminiError("gagal", "AI tidak memberikan jawaban. Coba lagi.");
+      // Jangan retry kuota/validasi; untuk jaringan/gagal/konfigurasi coba model cadangan
+      const bisaRetry =
+        classified.kode === "jaringan" ||
+        classified.kode === "gagal" ||
+        classified.kode === "konfigurasi";
+
+      if (!bisaRetry || modelCadangan === modelUtama) {
+        throw classified;
+      }
+
+      try {
+        modelTerpakai = modelCadangan;
+        jsonText = await generateJsonText(
+          client,
+          modelCadangan,
+          promptParts,
+          responseSchema,
+          temperature,
+        );
+        logAi({
+          userId,
+          jenis,
+          model: modelCadangan,
+          latensiMs: Date.now() - mulai,
+          status: "sukses",
+          catatan: `fallback setelah gagal model=${modelUtama} kode=${classified.kode}: ${(classified.debug ?? classified.message).slice(0, 400)}`,
+        }).catch(() => {});
+      } catch (kedua) {
+        throw kedua instanceof GeminiError
+          ? kedua
+          : klasifikasiErrorApi(kedua);
+      }
     }
 
     // 4. Parse & validasi Zod
@@ -140,39 +269,43 @@ export async function callGemini<T>({
       throw new GeminiError(
         "validasi",
         "Jawaban AI tidak sesuai format. Coba dengan kalimat lain.",
-        `raw=${jsonText.slice(0, 800)} | issues=${JSON.stringify(zodResult.error.issues).slice(0, 800)}`
+        `raw=${jsonText.slice(0, 800)} | issues=${JSON.stringify(zodResult.error.issues).slice(0, 800)}`,
       );
     }
 
     const latensiMs = Date.now() - mulai;
 
-    // 5. Log ke database (fire-and-forget)
+    // 5. Log ke database (fire-and-forget) — skip bila sudah dilog di fallback
+    if (modelTerpakai === modelUtama) {
+      logAi({
+        userId,
+        jenis,
+        model: modelTerpakai,
+        latensiMs,
+        status: "sukses",
+      }).catch(() => {});
+    }
+
+    return { ok: true, data: zodResult.data, model: modelTerpakai, latensiMs };
+  } catch (err) {
+    const latensiMs = Date.now() - mulai;
+    const geminiErr =
+      err instanceof GeminiError ? err : klasifikasiErrorApi(err);
+
     logAi({
       userId,
       jenis,
-      model: modelName,
+      model: modelTerpakai,
       latensiMs,
-      status: "sukses",
+      status: geminiErr.kode === "validasi" ? "ditolak_validasi" : "gagal",
+      catatan: geminiErr.debug ?? geminiErr.message,
     }).catch(() => {});
 
-    return { ok: true, data: zodResult.data, model: modelName, latensiMs };
-  } catch (err) {
-    const latensiMs = Date.now() - mulai;
-
-    if (err instanceof GeminiError) {
-      logAi({ userId, jenis, model: modelName, latensiMs, status: "ditolak_validasi", catatan: err.debug ?? err.message }).catch(() => {});
-      return { ok: false, kode: err.kode, pesan_pengguna: err.pesan_pengguna };
-    }
-
-    // Network / API error
-    logAi({ userId, jenis, model: modelName, latensiMs, status: "gagal", catatan: String(err) }).catch(() => {});
-
-    // Fallback ladder: retry once with simpler prompt
-    if (jsonText === null) {
-      return { ok: false, kode: "jaringan", pesan_pengguna: "Koneksi ke AI bermasalah. Coba lagi dalam beberapa saat." };
-    }
-
-    return { ok: false, kode: "gagal", pesan_pengguna: "AI tidak bisa menjawab saat ini. Silakan gunakan jalur manual." };
+    return {
+      ok: false,
+      kode: geminiErr.kode,
+      pesan_pengguna: geminiErr.pesan_pengguna,
+    };
   }
 }
 

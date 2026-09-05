@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronRight, Inbox, SquarePlus } from "lucide-react";
+import { Inbox, SquarePlus } from "lucide-react";
 
 import { Button } from "@/component/ui/button";
 import { KeadaanKosong } from "@/component/bersama/KeadaanKosong";
-import { BadgeStatusLowongan } from "@/component/pemberi/BadgeStatusLowongan";
 import { createClient } from "@/lib/supabase/server-client";
 import { dasborPemberi } from "@/lib/data/pemberi";
-import { formatRupiah, formatTanggal } from "@/lib/mock/utils";
 import type { StatusLowongan } from "@/lib/mock/types";
+import { cn } from "@/lib/utils";
+
+import { DaftarLowongan } from "./daftar-lowongan";
 
 export const metadata: Metadata = {
   title: "Lowongan Saya",
@@ -21,7 +22,8 @@ export const metadata: Metadata = {
  *
  * Berbeda dari dasbor yang hanya menampilkan lowongan berstatus "tayang",
  * halaman ini menampilkan SEMUA lowongan milik pemberi kerja, diurutkan
- * agar yang masih tayang berada di atas.
+ * agar yang masih tayang berada di atas. Filter status + batas tampil
+ * (Muat lebih banyak) agar daftar panjang tetap mudah dipindai.
  */
 const URUTAN_STATUS: Record<StatusLowongan, number> = {
   tayang: 0,
@@ -31,16 +33,46 @@ const URUTAN_STATUS: Record<StatusLowongan, number> = {
   ditutup: 4,
 };
 
-export default async function HalamanLowonganSaya() {
+type FilterStatus = "semua" | "tayang" | "ditutup";
+
+const FILTER: { id: FilterStatus; label: string }[] = [
+  { id: "semua", label: "Semua" },
+  { id: "tayang", label: "Tayang" },
+  { id: "ditutup", label: "Ditutup" },
+];
+
+function parseFilter(raw: string | string[] | undefined): FilterStatus {
+  const v = Array.isArray(raw) ? raw[0] : raw;
+  if (v === "tayang" || v === "ditutup") return v;
+  return "semua";
+}
+
+export default async function HalamanLowonganSaya({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string | string[] }>;
+}) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   const { lowongan } = await dasborPemberi(user!.id);
+  const filter = parseFilter((await searchParams).status);
 
   const terurut = [...lowongan].sort(
     (a, b) => URUTAN_STATUS[a.status] - URUTAN_STATUS[b.status],
   );
+
+  const tersaring =
+    filter === "semua"
+      ? terurut
+      : terurut.filter((l) => l.status === filter);
+
+  const hitung = {
+    semua: lowongan.length,
+    tayang: lowongan.filter((l) => l.status === "tayang").length,
+    ditutup: lowongan.filter((l) => l.status === "ditutup").length,
+  };
 
   return (
     <div className="flex flex-col gap-8">
@@ -59,7 +91,7 @@ export default async function HalamanLowonganSaya() {
         </Button>
       </header>
 
-      {terurut.length === 0 ? (
+      {lowongan.length === 0 ? (
         <KeadaanKosong
           ikon={Inbox}
           judul="Belum ada lowongan"
@@ -68,44 +100,52 @@ export default async function HalamanLowonganSaya() {
           hrefAksi="/employer/post"
         />
       ) : (
-        <ul className="flex flex-col gap-3">
-          {terurut.map((l) => (
-            <li key={l.id}>
-              <Link
-                href={`/employer/jobs/${l.id}`}
-                className="flex flex-col gap-3 rounded-2xl border border-tanah-200 bg-tanah-0 p-5 shadow-1 transition-colors duration-(--duration-fast) hover:bg-tanah-50 focus-visible:ring-[3px] focus-visible:ring-biru-600/40 focus-visible:outline-none"
-              >
-                <div className="flex flex-wrap items-center gap-3">
-                  <h2 className="text-h3">{l.judul_baku}</h2>
-                  <BadgeStatusLowongan status={l.status} />
-                  <span className="ml-auto flex items-center gap-1 text-label font-semibold text-biru-600">
-                    Kelola
-                    <ChevronRight className="size-4" aria-hidden />
-                  </span>
-                </div>
-                <p className="text-body text-tanah-600">
-                  {l.lokasi_teks ?? "Lokasi belum disebutkan"} · mulai{" "}
-                  {l.mulai ? formatTanggal(l.mulai) : "belum ditentukan"} ·{" "}
-                  {l.jumlah_calon > 0 ? (
-                    <span className="font-semibold text-tanah-900">
-                      {l.jumlah_calon} calon masuk
-                    </span>
-                  ) : (
-                    "belum ada calon"
+        <>
+          <nav
+            aria-label="Saring status lowongan"
+            className="flex flex-wrap gap-2 border-b border-tanah-200 pb-3"
+          >
+            {FILTER.map((f) => {
+              const aktif = filter === f.id;
+              const href =
+                f.id === "semua" ? "/employer/jobs" : `/employer/jobs?status=${f.id}`;
+              return (
+                <Link
+                  key={f.id}
+                  href={href}
+                  aria-current={aktif ? "page" : undefined}
+                  className={cn(
+                    "rounded-lg px-4 py-2 text-label font-semibold transition-colors duration-(--duration-fast) focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-biru-600/40",
+                    aktif
+                      ? "bg-biru-600 text-tanah-0"
+                      : "bg-tanah-100 text-tanah-700 hover:bg-tanah-200",
                   )}
-                </p>
-                {/* Upah selalu ditampilkan — bila kosong, katakan apa adanya (BUG-013). */}
-                <p className="text-label text-tanah-600">
-                  {l.upah_ditawarkan === null || l.satuan_upah === null
-                    ? "Upah belum disebutkan"
-                    : `Upah ${formatRupiah(l.upah_ditawarkan)} / ${
-                        l.satuan_upah === "bulanan" ? "bulan" : l.satuan_upah
-                      }`}
-                </p>
-              </Link>
-            </li>
-          ))}
-        </ul>
+                >
+                  {f.label}
+                  <span className="ml-1.5 tabular-nums opacity-80">
+                    {hitung[f.id]}
+                  </span>
+                </Link>
+              );
+            })}
+          </nav>
+
+          {tersaring.length === 0 ? (
+            <KeadaanKosong
+              ikon={Inbox}
+              judul={
+                filter === "tayang"
+                  ? "Tidak ada lowongan tayang"
+                  : "Tidak ada lowongan ditutup"
+              }
+              penjelasan="Coba filter lain, atau pasang lowongan baru."
+              labelAksi="Lihat semua"
+              hrefAksi="/employer/jobs"
+            />
+          ) : (
+            <DaftarLowongan lowongan={tersaring} />
+          )}
+        </>
       )}
     </div>
   );
