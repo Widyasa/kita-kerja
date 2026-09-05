@@ -8,8 +8,9 @@ import { cookies } from "next/headers";
 import { z } from "zod";
 
 const apiKey = process.env.GEMINI_API_KEY;
-const modelMain = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
-const modelLight = process.env.GEMINI_MODEL_LIGHT ?? "gemini-2.0-flash-lite";
+/** Default ikut model Flash yang masih didukung (2.0 Flash-Lite sudah shutdown Juni 2026). */
+const modelMain = process.env.GEMINI_MODEL ?? "gemini-3.1-flash";
+const modelLight = process.env.GEMINI_MODEL_LIGHT ?? "gemini-3.1-flash-lite";
 
 let genai: GoogleGenAI | null = null;
 
@@ -115,7 +116,7 @@ function klasifikasiErrorApi(err: unknown): GeminiError {
   ) {
     return new GeminiError(
       "konfigurasi",
-      "Model AI tidak tersedia. Coba lagi nanti.",
+      "Model AI tidak tersedia. Coba lagi nanti, atau isi Kartu Kerja lewat jalur manual.",
       teks.slice(0, 1200),
     );
   }
@@ -296,13 +297,18 @@ export async function callGemini<T>({
     const geminiErr =
       err instanceof GeminiError ? err : klasifikasiErrorApi(err);
 
+    const catatanOps =
+      geminiErr.kode === "konfigurasi"
+        ? `model_utama=${modelUtama} model_cadangan=${modelCadangan} | ${geminiErr.debug ?? geminiErr.message}`
+        : (geminiErr.debug ?? geminiErr.message);
+
     logAi({
       userId,
       jenis,
       model: modelTerpakai,
       latensiMs,
       status: geminiErr.kode === "validasi" ? "ditolak_validasi" : "gagal",
-      catatan: geminiErr.debug ?? geminiErr.message,
+      catatan: catatanOps.slice(0, 1200),
     }).catch(() => {});
 
     return {

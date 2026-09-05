@@ -128,8 +128,8 @@ export async function POST(request: Request) {
 
   if (!ai.ok) {
     return NextResponse.json(
-      { ok: false, pesan: ai.pesan_pengguna },
-      { status: 503 }
+      { ok: false, pesan: ai.pesan_pengguna, kode: ai.kode },
+      { status: ai.kode === "kuota" ? 429 : 503 },
     );
   }
 

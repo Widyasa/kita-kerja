@@ -63,6 +63,8 @@ export default function HalamanNgobrolKerja() {
   const [mengirim, setMengirim] = useState(false);
   // Nomor pertanyaan yang sudah pernah diulang — maks 1x per nomor.
   const [sudahDiulang, setSudahDiulang] = useState<Set<number>>(new Set());
+  /** Pesan gagal AI (model/kuota/dll.) — tampilkan CTA isi manual, bukan toast saja. */
+  const [galatAi, setGalatAi] = useState<string | null>(null);
 
   // Pulihkan progres sesi dari sessionStorage (tahan refresh).
   useEffect(() => {
@@ -178,6 +180,7 @@ export default function HalamanNgobrolKerja() {
 
       setMengirim(true);
       setTahap("berpikir");
+      setGalatAi(null);
       const mulai = Date.now();
       try {
         const audio_base64 = await blobKeBase64(blob);
@@ -218,7 +221,10 @@ export default function HalamanNgobrolKerja() {
           setTahap("putaran");
         }
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Terjadi kesalahan.");
+        const pesan =
+          err instanceof Error ? err.message : "Terjadi kesalahan.";
+        toast.error(pesan);
+        setGalatAi(pesan);
         setTahap("putaran");
       } finally {
         setMengirim(false);
@@ -383,6 +389,21 @@ export default function HalamanNgobrolKerja() {
             <PesanProses teks="Sebentar ya, saya dengarkan dulu…" />
           ) : (
             <TombolRekam mode="tahan" onSelesai={rekamSelesai} className="py-2" />
+          )}
+
+          {galatAi && (
+            <div
+              role="alert"
+              className="flex flex-col gap-3 rounded-xl border border-hati-600/25 bg-hati-50 p-4"
+            >
+              <p className="text-body text-tanah-900">{galatAi}</p>
+              <Button asChild variant="outline" className="w-full">
+                <Link href="/worker/interview/manual">
+                  <PencilLine aria-hidden />
+                  Isi manual saja
+                </Link>
+              </Button>
+            </div>
           )}
 
           <div className="flex flex-col items-start gap-1">
