@@ -45,30 +45,39 @@ export function KartuKonfirmasi({
 
   const nama = namaTampilKeahlian(keahlian);
 
+  const barisBadge = (
+    <div className="mt-2 flex flex-wrap items-center gap-2">
+      <BadgeLapis lapis={keahlian.lapis} />
+      <span
+        className={cn(
+          "rounded-pill px-3 py-1 text-label",
+          !keahlian.dikonfirmasi_pekerja && keahlian.level === "ahli"
+            ? "bg-biru-100 text-biru-800"
+            : "bg-tanah-100 text-tanah-700",
+        )}
+      >
+        {LABEL_LEVEL[keahlian.level]}
+      </span>
+    </div>
+  );
+
   // ---------- keadaan sudah diperiksa ----------
   if (keahlian.dikonfirmasi_pekerja && !mengedit) {
     return (
       <article className="rounded-2xl border border-aman-600/50 bg-tanah-0 p-5 shadow-1">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div>
-            <h3 className="text-h3">{nama}</h3>
-            <p className="mt-1 text-body text-tanah-600">
-              Sebutan Anda: &ldquo;{keahlian.sebutan_pekerja}&rdquo;
-            </p>
-          </div>
-          <div className="flex flex-col items-end gap-2">
-            <BadgeLapis lapis={keahlian.lapis} />
-            <span className="rounded-pill bg-tanah-100 px-3 py-1 text-label text-tanah-700">
-              {LABEL_LEVEL[keahlian.level]}
-            </span>
-          </div>
+        <div className="min-w-0">
+          <h3 className="text-h3 break-words">{nama}</h3>
+          <p className="mt-1 text-body break-words text-tanah-600">
+            Sebutan Anda: &ldquo;{keahlian.sebutan_pekerja}&rdquo;
+          </p>
+          {barisBadge}
         </div>
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <p className="flex items-center gap-2 text-label text-aman-600">
-            <CheckCircle2 className="size-5" aria-hidden />
+            <CheckCircle2 className="size-5 shrink-0" aria-hidden />
             Sudah diperiksa — terima kasih.
           </p>
-          <Button variant="ghost" size="sm" onClick={onUbahLagi}>
+          <Button variant="ghost" size="sm" className="self-start" onClick={onUbahLagi}>
             <Pencil aria-hidden />
             Perbaiki lagi
           </Button>
@@ -79,26 +88,12 @@ export function KartuKonfirmasi({
 
   return (
     <article className="rounded-2xl border border-tanah-200 bg-tanah-0 p-5 shadow-1">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h3 className="text-h3">{nama}</h3>
-          <p className="mt-1 text-body text-tanah-600">
-            Sebutan Anda: &ldquo;{keahlian.sebutan_pekerja}&rdquo;
-          </p>
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          <BadgeLapis lapis={keahlian.lapis} />
-          <span
-            className={cn(
-              "rounded-pill px-3 py-1 text-label",
-              keahlian.level === "ahli"
-                ? "bg-biru-100 text-biru-800"
-                : "bg-tanah-100 text-tanah-700",
-            )}
-          >
-            {LABEL_LEVEL[keahlian.level]}
-          </span>
-        </div>
+      <div className="min-w-0">
+        <h3 className="text-h3 break-words">{nama}</h3>
+        <p className="mt-1 text-body break-words text-tanah-600">
+          Sebutan Anda: &ldquo;{keahlian.sebutan_pekerja}&rdquo;
+        </p>
+        {barisBadge}
       </div>
 
       {mengedit ? (
