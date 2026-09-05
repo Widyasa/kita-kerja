@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth/server";
 import { callGemini, demoSimulasiAktif } from "@/lib/ai/gemini-client";
-import { SkemaEkstrakLowongan } from "@/lib/ai/output-schemas";
+import { SkemaEkstrakLowongan, normalisasiMentahEkstrak, type EkstrakLowongan } from "@/lib/ai/output-schemas";
 import { PROMPT_EKSTRAK_LOWONGAN } from "@/lib/ai/prompt-job-extract";
 import { jagaEkstrakLowongan } from "@/lib/ai/guard";
 import { z } from "zod";
@@ -9,6 +9,12 @@ import { z } from "zod";
 const BodySchema = z.object({
   teks: z.string().min(3).max(5000),
 });
+
+/** Zod + normalisasi mentah — coerce sebelum validasi ketat. */
+const SkemaEkstrakDenganNormalisasi = z.preprocess(
+  normalisasiMentahEkstrak,
+  SkemaEkstrakLowongan,
+) as z.ZodType<EkstrakLowongan>;
 
 export async function POST(request: Request) {
   const userOrResponse = await requireRole("pemberi_kerja");
@@ -48,7 +54,7 @@ export async function POST(request: Request) {
         kelengkapan: { type: "number" },
       },
     },
-    zodSchema: SkemaEkstrakLowongan,
+    zodSchema: SkemaEkstrakDenganNormalisasi,
     temperature: 0.3,
     userId: userOrResponse.id,
     demoPaksaKuotaHabis: kuotaHabis,

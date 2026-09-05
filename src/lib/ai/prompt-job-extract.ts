@@ -10,7 +10,9 @@ Aturan PENTING:
 1. JANGAN menciptakan upah/tanggal jika tidak ada dalam teks asli.
 2. JANGAN menebak lokasi spesifik jika tidak disebutkan.
 3. "yang_belum_jelas": daftar informasi penting yang seharusnya ada tapi tidak disebutkan.
-4. "kelengkapan": skor 0-1 seberapa lengkap informasi lowongan ini.
+4. "kelengkapan": skor 0 sampai 1 (bukan persen) seberapa lengkap informasi lowongan ini.
+5. Angka harus number JSON (bukan string). Enum harus tepat salah satu nilai yang diizinkan, atau null.
+6. Field yang tidak ada di teks → null (bukan string kosong). Array yang kosong → [].
 
 Format JSON:
 {

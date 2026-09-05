@@ -263,7 +263,11 @@ export async function callGemini<T>({
     }
 
     // 4. Parse & validasi Zod
-    const parsed = JSON.parse(jsonText);
+    const cleaned = jsonText
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/\s*```$/i, "")
+      .trim();
+    const parsed = JSON.parse(cleaned);
     const zodResult = zodSchema.safeParse(parsed);
     if (!zodResult.success) {
       throw new GeminiError(

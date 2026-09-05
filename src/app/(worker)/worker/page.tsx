@@ -42,7 +42,7 @@ export default async function HalamanBerandaPekerja() {
   const { lowongan: lowonganCocok, idSudahDilamar: idSudahDilamarAsli } =
     await daftarLowonganUntukPekerja(user!.id);
   const teratas = lowonganCocok
-    .filter((l) => !idSudahDilamarAsli.has(l.id))
+    .filter((l) => !idSudahDilamarAsli.has(l.id) && Boolean(l.alasan_cocok))
     .slice(0, 3);
 
   return (
@@ -171,23 +171,29 @@ export default async function HalamanBerandaPekerja() {
             {lamaranTeratas.map((lm) => {
               const info = INFO_STATUS_LAMARAN[lm.status];
               return (
-                <li
-                  key={lm.id}
-                  className="rounded-2xl border border-tanah-200 bg-tanah-0 p-5 shadow-1"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <h3 className="text-body font-bold text-tanah-900">
-                      {lm.judul_baku}
-                    </h3>
-                    <span
-                      className={`inline-flex items-center rounded-pill px-3 py-1 text-label font-semibold ${info.kelas}`}
-                    >
-                      {info.label}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-label text-tanah-600">
-                    {info.penjelasan}
-                  </p>
+                <li key={lm.id}>
+                  <Link
+                    href={`/worker/jobs/${lm.lowongan_id}`}
+                    className="block rounded-2xl border border-tanah-200 bg-tanah-0 p-5 shadow-1 transition-shadow duration-(--duration-fast) hover:shadow-2 focus-visible:ring-[3px] focus-visible:ring-biru-600/40 focus-visible:outline-none"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h3 className="text-body font-bold text-tanah-900">
+                        {lm.judul_baku}
+                      </h3>
+                      <span
+                        className={`inline-flex items-center rounded-pill px-3 py-1 text-label font-semibold ${info.kelas}`}
+                      >
+                        {info.label}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-label text-tanah-600">
+                      {info.penjelasan}
+                    </p>
+                    <p className="mt-3 inline-flex items-center gap-2 text-body font-bold text-biru-600">
+                      Lihat lowongan
+                      <ArrowRight className="size-5" aria-hidden />
+                    </p>
+                  </Link>
                 </li>
               );
             })}

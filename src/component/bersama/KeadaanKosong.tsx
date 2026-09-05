@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 /**
  * KeadaanKosong — setiap daftar kosong WAJIB menjelaskan langkah berikutnya,
  * bukan hanya menulis "belum ada data" (Bagian 4.5).
+ * Tombol aksi opsional bila CTA sudah ada di luar komponen (mis. halaman companion).
  */
 export function KeadaanKosong({
   ikon: Ikon,
@@ -28,11 +29,13 @@ export function KeadaanKosong({
   sebagaiJudulHalaman?: boolean;
   /** jelaskan langkah berikutnya dalam bahasa sederhana */
   penjelasan: string;
-  labelAksi: string;
+  labelAksi?: string;
   hrefAksi?: string;
   onAksi?: () => void;
   className?: string;
 }) {
+  const tampilAksi = Boolean(labelAksi);
+
   return (
     <div
       className={cn(
@@ -49,15 +52,16 @@ export function KeadaanKosong({
         <h2 className="text-h3">{judul}</h2>
       )}
       <p className="max-w-sm text-body text-tanah-600">{penjelasan}</p>
-      {hrefAksi ? (
-        <Button asChild size="lg" className="mt-2">
-          <Link href={hrefAksi}>{labelAksi}</Link>
-        </Button>
-      ) : (
-        <Button size="lg" className="mt-2" onClick={onAksi}>
-          {labelAksi}
-        </Button>
-      )}
+      {tampilAksi &&
+        (hrefAksi ? (
+          <Button asChild size="lg" className="mt-2">
+            <Link href={hrefAksi}>{labelAksi}</Link>
+          </Button>
+        ) : (
+          <Button size="lg" className="mt-2" onClick={onAksi}>
+            {labelAksi}
+          </Button>
+        ))}
     </div>
   );
 }

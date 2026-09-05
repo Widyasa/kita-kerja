@@ -4,6 +4,9 @@
  */
 
 import { z } from "zod";
+import { SkemaEkstrakLowongan } from "@/lib/ai/output-schemas";
+
+export { SkemaEkstrakLowongan };
 
 export const SkemaKeahlianKeluaran = z.object({
   nama_baku: z.string().min(1).max(100).nullable(),
@@ -21,27 +24,13 @@ export const SkemaHasilWawancara = z.object({
   ringkasan: z.string().max(500).optional(),
 });
 
-export const SkemaEkstrakLowongan = z.object({
-  judul_baku: z.string().max(200).nullable(),
-  jenis_kerja: z.enum(["harian", "borongan", "paruh_waktu", "menginap"]).nullable(),
-  jumlah_pekerja: z.number().int().min(1).max(100).nullable(),
-  upah_ditawarkan: z.number().int().min(0).nullable(),
-  satuan_upah: z.enum(["harian", "bulanan", "borongan", "per_jam"]).nullable(),
-  lokasi_teks: z.string().max(300).nullable(),
-  mulai: z.string().nullable(),
-  syarat_tersirat: z.array(z.string()).default([]),
-  keahlian_dibutuhkan: z.array(z.string()).default([]),
-  yang_belum_jelas: z.array(z.string()).default([]),
-  kelengkapan: z.number().min(0).max(1).default(0),
-});
-
 export const SkemaSaringan = z.object({
   temuan: z.array(
     z.object({
       jenis: z.string(),
       kutipan: z.string(),
       penjelasan: z.string(),
-    })
+    }),
   ),
   pertanyaan_disarankan: z.array(z.string()),
   skor_ai: z.number().int().min(0).max(60),
@@ -69,7 +58,7 @@ interface KeahlianBersih {
  */
 export function jagaKeahlian(
   keahlian: KeahlianBersih[],
-  transkripGabungan: string
+  transkripGabungan: string,
 ): KeahlianBersih[] {
   return keahlian
     .filter((k) => k.kutipan_bukti.trim().length >= 3)
@@ -88,28 +77,28 @@ function verifikasiKutipan(kutipan: string, transkrip: string): boolean {
   const t = transkrip.toLowerCase().replace(/[^\w\s]/g, "").trim();
   if (t.includes(k)) return true;
 
-  // Partial match: cek overlap token
   const kTokens = k.split(/\s+/).filter(Boolean);
   const tTokens = t.split(/\s+/).filter(Boolean);
   if (kTokens.length === 0) return false;
 
   let matched = 0;
   for (const token of kTokens) {
-    if (tTokens.some((t) => t.includes(token) || token.includes(t))) {
+    if (tTokens.some((tt) => tt.includes(token) || token.includes(tt))) {
       matched++;
     }
   }
   return matched / kTokens.length >= 0.6;
 }
 
-/** Klem level berdasarkan keyakinan. */
-function klemLevel(keyakinan: number, levelAsli: "pemula" | "terampil" | "ahli"): "pemula" | "terampil" | "ahli" {
+function klemLevel(
+  keyakinan: number,
+  levelAsli: "pemula" | "terampil" | "ahli",
+): "pemula" | "terampil" | "ahli" {
   if (keyakinan >= 0.75) return levelAsli;
   if (keyakinan >= 0.5) return "terampil";
   return "pemula";
 }
 
-/** Bersihkan pola nominal (Rp..., ribu/rb/juta/jt/k, angka >= 5 digit). */
 function bersihkanNominal(teks: string): string {
   return teks
     .replace(/\bRp[\s.]?[\d.,]+\b/gi, "—")
@@ -120,11 +109,16 @@ function bersihkanNominal(teks: string): string {
 }
 
 /** Bersihkan keluaran ekstraksi lowongan. */
-export function jagaEkstrakLowongan(data: z.input<typeof SkemaEkstrakLowongan>): z.infer<typeof SkemaEkstrakLowongan> {
+export function jagaEkstrakLowongan(
+  data: z.infer<typeof SkemaEkstrakLowongan>,
+): z.infer<typeof SkemaEkstrakLowongan> {
   return {
     ...data,
     upah_ditawarkan: data.upah_ditawarkan ?? null,
-    jumlah_pekerja: Math.min(data.jumlah_pekerja ?? 1, 100),
+    jumlah_pekerja:
+      data.jumlah_pekerja == null
+        ? null
+        : Math.min(Math.max(1, data.jumlah_pekerja), 100),
     syarat_tersirat: (data.syarat_tersirat ?? []).slice(0, 20),
     keahlian_dibutuhkan: (data.keahlian_dibutuhkan ?? []).slice(0, 10),
     yang_belum_jelas: (data.yang_belum_jelas ?? []).slice(0, 10),

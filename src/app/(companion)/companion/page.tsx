@@ -61,8 +61,6 @@ export default async function HalamanPekerjaDidampingi() {
           ikon={Users}
           judul="Belum ada pekerja yang didampingi"
           penjelasan="Pekerja yang Anda daftarkan akan muncul di sini beserta status Kartu Kerjanya. Mulai dengan menekan tombol di atas — tidak perlu nomor HP."
-          labelAksi="Daftarkan pekerja baru"
-          hrefAksi="/companion/register"
         />
       ) : (
         <ul className="flex flex-col gap-4">

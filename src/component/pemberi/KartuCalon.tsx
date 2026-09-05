@@ -139,7 +139,7 @@ export function KartuCalon({
           <p className="mt-2 text-body text-tanah-900">
             {calon.keahlian.length === 0
               ? "Pekerja ini belum menerbitkan Kartu Kerja, jadi keahliannya belum bisa dicocokkan. Tanyakan langsung pengalamannya sebelum memutuskan."
-              : "Keahlian pekerja ini belum bertumpang tindih dengan kebutuhan lowongan. Tanyakan langsung pengalamannya sebelum memutuskan."}
+              : "Sistem belum punya penjelasan kecocokan untuk calon ini. Periksa Kartu Kerja lengkap dan tanyakan langsung pengalamannya sebelum memutuskan."}
           </p>
         )}
       </div>

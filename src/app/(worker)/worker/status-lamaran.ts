@@ -18,7 +18,7 @@ export const INFO_STATUS_LAMARAN: Record<
   diundang: {
     label: "Diundang",
     penjelasan:
-      "Pemberi kerja tertarik dengan Kartu Kerja Anda — hubungi beliau dan sepakati upah serta tanggal mulai secara jelas.",
+      "Pemberi kerja tertarik dengan Kartu Kerja Anda — buka lowongan ini untuk melihat detail, lalu tunggu atau lanjut ke kesepakatan bila sudah ditawarkan.",
     kelas: "bg-kuning-50 text-kuning-800",
   },
   disepakati: {
