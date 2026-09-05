@@ -113,30 +113,30 @@ export default async function HalamanPekerjaDidampingi() {
                           Belum punya Kartu Kerja
                         </p>
                         <p className="text-body text-tanah-600">
-                          Ajak {pekerja.nama} ngobrol beberapa menit. Ia yang
-                          menjawab, Anda yang mendampingi.
+                          Ngobrol Kerja harus dijalankan dari akun{" "}
+                          {pekerja.nama} (email + kata sandi yang didaftarkan).
+                          Anda mendampingi di sampingnya — bukan lewat tautan
+                          dari sini.
                         </p>
                       </div>
                     </div>
                     <Button asChild variant="outline" className="w-full">
-                      <Link href="/worker/interview">
+                      <Link href="/sign-in">
                         <Mic aria-hidden />
-                        Mulai wawancara untuknya
+                        Buka halaman masuk untuk pekerja
                       </Link>
                     </Button>
                   </div>
                 )}
 
-                {/* Setiap pekerja di daftar ini masih "didampingi" (belum
-                    punya HP asli) — tautan klaim memungkinkan pekerja
-                    mengambil alih akunnya sendiri begitu ia punya HP. */}
+                {/* Tautan klaim — pekerja mengambil alih akun sendiri. */}
                 <div className="flex items-center justify-between gap-3 rounded-xl border border-tanah-200 bg-tanah-50 p-4">
                   <div className="min-w-0">
                     <p className="text-label text-tanah-600">
                       Tautan klaim untuk {pekerja.nama}
                     </p>
                     <p className="truncate font-mono text-label text-tanah-800">
-                      https://kita-kerja.example/claim/{pekerja.id}
+                      /claim/{pekerja.id}
                     </p>
                   </div>
                   <Button asChild variant="outline" size="sm" className="shrink-0">

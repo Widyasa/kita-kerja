@@ -4,7 +4,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ArrowLeft, ArrowRight, HandHeart, Mic, PhoneOff } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  HandHeart,
+  Loader2,
+  Mail,
+  Mic,
+  UserPlus,
+} from "lucide-react";
 
 import { Button } from "@/component/ui/button";
 import { Input } from "@/component/ui/input";
@@ -17,16 +25,12 @@ interface PilihanWilayah {
 }
 
 /**
- * /companion/register — mendaftarkan pekerja TANPA HP (CONTEXT.md).
- * Satu tugas per layar, tiga langkah dengan indikator titik:
+ * /companion/register — mendaftarkan pekerja dengan email + kata sandi
+ * (selaras /register). HP bukan kunci Auth.
  *
- *   1. Nama + wilayah (+ nomor HP OPSIONAL — tidak pernah wajib)
- *   2. Persetujuan berbahasa polos — akun milik pekerja
- *   3. Penjelasan wawancara — yang menjawab adalah pekerja, bukan pendamping
- *      → mendaftarkan akun pekerja lewat POST /api/companion/register.
- *      Wawancara sendiri harus dijalankan dari login pekerja, bukan dari sini.
- *
- * Wilayah diambil dari GET /api/wilayah saat halaman dimuat.
+ *   1. Nama, wilayah, email, kata sandi
+ *   2. Persetujuan — akun milik pekerja
+ *   3. Konfirmasi + buat akun
  */
 
 type Langkah = 1 | 2 | 3;
@@ -57,17 +61,32 @@ function IndikatorTitik({ langkah }: { langkah: Langkah }) {
   );
 }
 
+function slugEmailSementara(nama: string): string {
+  const dasar = nama
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ".")
+    .replace(/^\.+|\.+$/g, "")
+    .slice(0, 24);
+  const akhir = crypto.randomUUID().slice(0, 6);
+  return `${dasar || "pekerja"}.${akhir}@kitakerja.test`;
+}
+
 export default function HalamanDaftarkanPekerja() {
   const router = useRouter();
   const [langkah, setLangkah] = useState<Langkah>(1);
   const [nama, setNama] = useState("");
   const [wilayahId, setWilayahId] = useState("");
-  const [noHp, setNoHp] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [pekerjaSetuju, setPekerjaSetuju] = useState(false);
   const [wilayah, setWilayah] = useState<PilihanWilayah[]>([]);
   const [sibuk, setSibuk] = useState(false);
 
   const namaTampil = nama.trim() || "pekerja ini";
+  const namaValid = nama.trim().length >= 3;
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const passwordValid = password.length >= 8;
 
   useEffect(() => {
     fetch("/api/wilayah")
@@ -85,8 +104,9 @@ export default function HalamanDaftarkanPekerja() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           nama: nama.trim(),
+          email: email.trim(),
+          password,
           wilayah_id: wilayahId,
-          no_hp: noHp.trim() || undefined,
         }),
       });
       const json = await res.json();
@@ -100,9 +120,10 @@ export default function HalamanDaftarkanPekerja() {
     }
   }
 
-  // ============ LANGKAH 1 — Nama + wilayah (HP opsional) ============
+  // ============ LANGKAH 1 — Identitas + email/password ============
   if (langkah === 1) {
-    const bolehLanjut = nama.trim().length > 0 && wilayahId !== "";
+    const bolehLanjut =
+      namaValid && wilayahId !== "" && emailValid && passwordValid;
     return (
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between gap-2">
@@ -116,7 +137,8 @@ export default function HalamanDaftarkanPekerja() {
         <div className="flex flex-col gap-3">
           <h1 className="text-h1">Siapa yang Anda dampingi?</h1>
           <p className="text-body-lg text-tanah-700">
-            Isi atas nama pekerjanya. Nomor HP tidak wajib.
+            Isi atas nama pekerja. Akun dibuat dengan email dan kata sandi —
+            sama seperti daftar publik.
           </p>
         </div>
 
@@ -162,29 +184,59 @@ export default function HalamanDaftarkanPekerja() {
             </select>
           </div>
 
-          {/* Nomor HP OPSIONAL — tidak pernah wajib, default tanpa */}
-          <div className="flex flex-col gap-3 rounded-xl border border-tanah-200 bg-tanah-0 p-5 shadow-1">
-            <div className="flex items-start gap-3">
-              <PhoneOff className="mt-0.5 size-6 shrink-0 text-tanah-500" aria-hidden />
-              <div className="flex flex-col gap-1">
-                <label htmlFor="no-hp-pekerja" className="text-body font-semibold">
-                  Nomor HP (tidak wajib)
-                </label>
-                <p className="text-body text-tanah-600">
-                  Banyak pekerja yang didampingi belum punya HP. Kosongkan saja
-                  — akun tetap bisa dibuat dan tetap miliknya.
-                </p>
-              </div>
-            </div>
+          <div className="flex flex-col gap-2">
+            <label htmlFor="email-pekerja" className="text-body font-semibold">
+              Email untuk masuk
+            </label>
             <Input
-              id="no-hp-pekerja"
-              type="tel"
-              inputMode="tel"
-              value={noHp}
-              onChange={(e) => setNoHp(e.target.value)}
-              placeholder="Boleh dikosongkan"
+              id="email-pekerja"
+              type="email"
+              inputMode="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="nama@contoh.com"
               autoComplete="off"
+              className="h-14 text-body-lg"
             />
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                if (!nama.trim()) {
+                  toast.error("Isi nama pekerja dulu sebelum membuat email sementara.");
+                  return;
+                }
+                setEmail(slugEmailSementara(nama));
+              }}
+            >
+              <Mail aria-hidden />
+              Belum punya email — buat sementara
+            </Button>
+            <p className="text-label text-tanah-600">
+              Email sementara memakai domain uji. Catat bersama kata sandi agar
+              pekerja bisa masuk nanti.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label htmlFor="password-pekerja" className="text-body font-semibold">
+              Kata sandi
+            </label>
+            <Input
+              id="password-pekerja"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Minimal 8 karakter"
+              autoComplete="new-password"
+              className="h-14 text-body-lg"
+            />
+            {password.length > 0 && !passwordValid && (
+              <p className="text-label text-hati-600" role="alert">
+                Kata sandi minimal 8 karakter
+              </p>
+            )}
           </div>
 
           <Button type="submit" size="lg" className="w-full" disabled={!bolehLanjut}>
@@ -196,7 +248,7 @@ export default function HalamanDaftarkanPekerja() {
     );
   }
 
-  // ============ LANGKAH 2 — Persetujuan berbahasa polos ============
+  // ============ LANGKAH 2 — Persetujuan ============
   if (langkah === 2) {
     return (
       <div className="flex flex-col gap-6">
@@ -218,8 +270,8 @@ export default function HalamanDaftarkanPekerja() {
         <div className="flex items-start gap-4 rounded-xl border border-biru-200 bg-biru-50 p-5">
           <HandHeart className="mt-1 size-8 shrink-0 text-biru-600" aria-hidden />
           <p className="text-body-lg text-biru-800">
-            Akun ini milik {namaTampil}. Anda hanya membantu mengisinya. Bila
-            nanti ia punya HP sendiri, akun ini bisa dipindahkan.
+            Akun ini milik {namaTampil}. Anda hanya mendampingi. Email dan kata
+            sandi dipakai {namaTampil} untuk masuk sendiri.
           </p>
         </div>
 
@@ -252,7 +304,7 @@ export default function HalamanDaftarkanPekerja() {
     );
   }
 
-  // ============ LANGKAH 3 — Penjelasan wawancara ============
+  // ============ LANGKAH 3 — Konfirmasi ============
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between gap-2">
@@ -266,10 +318,20 @@ export default function HalamanDaftarkanPekerja() {
       <div className="flex flex-col gap-3">
         <h1 className="text-h1">Akun {namaTampil} akan dibuat</h1>
         <p className="text-body-lg text-tanah-700">
-          Ngobrol Kerja — sesi tanya jawab kira-kira 3 menit yang menyusun
-          Kartu Kerja {namaTampil} — dijalankan dari akun {namaTampil}{" "}
-          sendiri, bukan dari akun Anda. Ini perlu dilakukan {namaTampil}{" "}
-          sendiri saat ia sudah bisa masuk dengan nomor HP-nya.
+          Setelah terdaftar, {namaTampil} masuk dengan email di bawah, lalu
+          menjawab Ngobrol Kerja sendiri. Anda mendampingi di sampingnya —
+          bukan lewat akun pendamping.
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-3 rounded-xl border border-tanah-200 bg-tanah-0 p-5 shadow-1">
+        <p className="text-label text-tanah-600">Email masuk</p>
+        <p className="break-all font-mono text-body font-semibold text-tanah-900">
+          {email.trim()}
+        </p>
+        <p className="text-label text-tanah-600">
+          Catat kata sandinya bersama {namaTampil} — tidak ditampilkan lagi di
+          sini setelah akun dibuat.
         </p>
       </div>
 
@@ -282,19 +344,18 @@ export default function HalamanDaftarkanPekerja() {
             Setelah didaftarkan
           </p>
           <p className="mt-1 text-body text-tanah-600">
-            {noHp.trim()
-              ? `${namaTampil} bisa masuk sendiri kapan saja dengan nomor HP yang tadi diisi, lalu menjawab Ngobrol Kerja dengan suaranya sendiri.`
-              : `Karena belum ada nomor HP, ${namaTampil} belum bisa masuk sendiri untuk menjawab Ngobrol Kerja. Status kartunya akan terlihat di daftar Pekerja Saya begitu ia bisa melakukannya nanti.`}
+            Buka halaman masuk, masukkan email dan kata sandi {namaTampil}, lalu
+            mulai Ngobrol Kerja dari beranda pekerja.
           </p>
         </div>
       </div>
 
-      <Button
-        size="lg"
-        className="w-full"
-        disabled={sibuk}
-        onClick={daftarkan}
-      >
+      <Button size="lg" className="w-full" disabled={sibuk} onClick={daftarkan}>
+        {sibuk ? (
+          <Loader2 className="animate-spin" aria-hidden />
+        ) : (
+          <UserPlus aria-hidden />
+        )}
         Daftarkan {namaTampil}
       </Button>
 
