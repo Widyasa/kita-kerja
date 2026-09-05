@@ -9,7 +9,6 @@ import {
   ArrowRight,
   HandHeart,
   Loader2,
-  Mail,
   Mic,
   UserPlus,
 } from "lucide-react";
@@ -25,15 +24,24 @@ interface PilihanWilayah {
 }
 
 /**
- * /companion/register — mendaftarkan pekerja dengan email + kata sandi
- * (selaras /register). HP bukan kunci Auth.
+ * /companion/register — mendaftarkan pekerja dengan email asli + kata sandi
+ * (selaras /register). Tanpa email sementara / domain uji.
  *
- *   1. Nama, wilayah, email, kata sandi
+ *   1. Nama, wilayah, email, kata sandi + konfirmasi
  *   2. Persetujuan — akun milik pekerja
  *   3. Konfirmasi + buat akun
  */
 
 type Langkah = 1 | 2 | 3;
+
+const DOMAIN_UJI = /(^|\.)kitakerja\.test$/i;
+
+function emailAsliValid(email: string): boolean {
+  const e = email.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) return false;
+  const domain = e.split("@")[1] ?? "";
+  return !DOMAIN_UJI.test(domain);
+}
 
 function IndikatorTitik({ langkah }: { langkah: Langkah }) {
   return (
@@ -61,17 +69,6 @@ function IndikatorTitik({ langkah }: { langkah: Langkah }) {
   );
 }
 
-function slugEmailSementara(nama: string): string {
-  const dasar = nama
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, ".")
-    .replace(/^\.+|\.+$/g, "")
-    .slice(0, 24);
-  const akhir = crypto.randomUUID().slice(0, 6);
-  return `${dasar || "pekerja"}.${akhir}@kitakerja.test`;
-}
-
 export default function HalamanDaftarkanPekerja() {
   const router = useRouter();
   const [langkah, setLangkah] = useState<Langkah>(1);
@@ -79,14 +76,16 @@ export default function HalamanDaftarkanPekerja() {
   const [wilayahId, setWilayahId] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordKonfirmasi, setPasswordKonfirmasi] = useState("");
   const [pekerjaSetuju, setPekerjaSetuju] = useState(false);
   const [wilayah, setWilayah] = useState<PilihanWilayah[]>([]);
   const [sibuk, setSibuk] = useState(false);
 
   const namaTampil = nama.trim() || "pekerja ini";
   const namaValid = nama.trim().length >= 3;
-  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const emailValid = emailAsliValid(email);
   const passwordValid = password.length >= 8;
+  const passwordSama = password === passwordKonfirmasi && passwordKonfirmasi.length > 0;
 
   useEffect(() => {
     fetch("/api/wilayah")
@@ -123,7 +122,7 @@ export default function HalamanDaftarkanPekerja() {
   // ============ LANGKAH 1 — Identitas + email/password ============
   if (langkah === 1) {
     const bolehLanjut =
-      namaValid && wilayahId !== "" && emailValid && passwordValid;
+      namaValid && wilayahId !== "" && emailValid && passwordValid && passwordSama;
     return (
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between gap-2">
@@ -137,8 +136,8 @@ export default function HalamanDaftarkanPekerja() {
         <div className="flex flex-col gap-3">
           <h1 className="text-h1">Siapa yang Anda dampingi?</h1>
           <p className="text-body-lg text-tanah-700">
-            Isi atas nama pekerja. Akun dibuat dengan email dan kata sandi —
-            sama seperti daftar publik.
+            Isi atas nama pekerja. Pakai email yang bisa diakses pekerja nanti —
+            bukan email sementara atau domain uji.
           </p>
         </div>
 
@@ -198,25 +197,17 @@ export default function HalamanDaftarkanPekerja() {
               autoComplete="off"
               className="h-14 text-body-lg"
             />
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full"
-              onClick={() => {
-                if (!nama.trim()) {
-                  toast.error("Isi nama pekerja dulu sebelum membuat email sementara.");
-                  return;
-                }
-                setEmail(slugEmailSementara(nama));
-              }}
-            >
-              <Mail aria-hidden />
-              Belum punya email — buat sementara
-            </Button>
             <p className="text-label text-tanah-600">
-              Email sementara memakai domain uji. Catat bersama kata sandi agar
-              pekerja bisa masuk nanti.
+              Wajib email asli yang pekerja (atau Anda atas namanya) bisa buka.
+              Tanpa email yang bisa diakses, jangan daftarkan dulu.
             </p>
+            {email.trim().length > 0 && !emailValid && (
+              <p className="text-label text-hati-600" role="alert">
+                {/kitakerja\.test$/i.test(email.trim())
+                  ? "Email domain uji tidak diizinkan. Pakai email asli."
+                  : "Format email tidak valid."}
+              </p>
+            )}
           </div>
 
           <div className="flex flex-col gap-2">
@@ -235,6 +226,29 @@ export default function HalamanDaftarkanPekerja() {
             {password.length > 0 && !passwordValid && (
               <p className="text-label text-hati-600" role="alert">
                 Kata sandi minimal 8 karakter
+              </p>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="password-konfirmasi"
+              className="text-body font-semibold"
+            >
+              Konfirmasi kata sandi
+            </label>
+            <Input
+              id="password-konfirmasi"
+              type="password"
+              value={passwordKonfirmasi}
+              onChange={(e) => setPasswordKonfirmasi(e.target.value)}
+              placeholder="Ulangi kata sandi"
+              autoComplete="new-password"
+              className="h-14 text-body-lg"
+            />
+            {passwordKonfirmasi.length > 0 && !passwordSama && (
+              <p className="text-label text-hati-600" role="alert">
+                Kata sandi tidak sama
               </p>
             )}
           </div>
@@ -318,9 +332,9 @@ export default function HalamanDaftarkanPekerja() {
       <div className="flex flex-col gap-3">
         <h1 className="text-h1">Akun {namaTampil} akan dibuat</h1>
         <p className="text-body-lg text-tanah-700">
-          Setelah terdaftar, {namaTampil} masuk dengan email di bawah, lalu
-          menjawab Ngobrol Kerja sendiri. Anda mendampingi di sampingnya —
-          bukan lewat akun pendamping.
+          Setelah terdaftar, berikan email dan kata sandi ke {namaTampil}. Ia
+          masuk di halaman masuk, lalu menjawab Ngobrol Kerja sendiri. Anda
+          mendampingi di sampingnya.
         </p>
       </div>
 
@@ -330,8 +344,8 @@ export default function HalamanDaftarkanPekerja() {
           {email.trim()}
         </p>
         <p className="text-label text-tanah-600">
-          Catat kata sandinya bersama {namaTampil} — tidak ditampilkan lagi di
-          sini setelah akun dibuat.
+          Pastikan {namaTampil} juga ingat kata sandinya — tidak ditampilkan
+          lagi di sini setelah akun dibuat.
         </p>
       </div>
 

@@ -33,6 +33,18 @@ export async function POST(request: Request) {
   }
 
   const email = normalisasiEmail(body.email);
+  const domain = email.split("@")[1] ?? "";
+  if (/(^|\.)kitakerja\.test$/i.test(domain)) {
+    return NextResponse.json(
+      {
+        ok: false,
+        pesan:
+          "Email domain uji tidak diizinkan. Pakai email asli yang bisa diakses pekerja.",
+      },
+      { status: 400 },
+    );
+  }
+
   const phone = body.no_hp?.replace(/\D/g, "")
     ? normalisasiHp(body.no_hp)
     : null;

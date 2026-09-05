@@ -4,7 +4,6 @@ import {
   CircleCheck,
   HandHeart,
   Mic,
-  Share2,
   UserPlus,
   Users,
 } from "lucide-react";
@@ -60,7 +59,7 @@ export default async function HalamanPekerjaDidampingi() {
         <KeadaanKosong
           ikon={Users}
           judul="Belum ada pekerja yang didampingi"
-          penjelasan="Pekerja yang Anda daftarkan akan muncul di sini beserta status Kartu Kerjanya. Mulai dengan menekan tombol di atas — tidak perlu nomor HP."
+          penjelasan="Pekerja yang Anda daftarkan akan muncul di sini beserta status Kartu Kerjanya. Mulai dengan menekan tombol di atas — siapkan email asli pekerja."
         />
       ) : (
         <ul className="flex flex-col gap-4">
@@ -113,10 +112,9 @@ export default async function HalamanPekerjaDidampingi() {
                           Belum punya Kartu Kerja
                         </p>
                         <p className="text-body text-tanah-600">
-                          Ngobrol Kerja harus dijalankan dari akun{" "}
-                          {pekerja.nama} (email + kata sandi yang didaftarkan).
-                          Anda mendampingi di sampingnya — bukan lewat tautan
-                          dari sini.
+                          Berikan email dan kata sandi yang didaftarkan ke{" "}
+                          {pekerja.nama}. Ia masuk sendiri, lalu menjawab
+                          Ngobrol Kerja — Anda mendampingi di sampingnya.
                         </p>
                       </div>
                     </div>
@@ -128,24 +126,6 @@ export default async function HalamanPekerjaDidampingi() {
                     </Button>
                   </div>
                 )}
-
-                {/* Tautan klaim — pekerja mengambil alih akun sendiri. */}
-                <div className="flex items-center justify-between gap-3 rounded-xl border border-tanah-200 bg-tanah-50 p-4">
-                  <div className="min-w-0">
-                    <p className="text-label text-tanah-600">
-                      Tautan klaim untuk {pekerja.nama}
-                    </p>
-                    <p className="truncate font-mono text-label text-tanah-800">
-                      /claim/{pekerja.id}
-                    </p>
-                  </div>
-                  <Button asChild variant="outline" size="sm" className="shrink-0">
-                    <Link href={`/claim/${pekerja.id}`}>
-                      <Share2 aria-hidden />
-                      Buka
-                    </Link>
-                  </Button>
-                </div>
               </li>
             );
           })}
